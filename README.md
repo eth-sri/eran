@@ -341,6 +341,10 @@ Contributors
  
 * Adrian Hoffmann - adriahof@student.ethz.ch
 
+* [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
+
+* [Dana Drachsler Cohen](https://www.sri.inf.ethz.ch/people/dana) - dana.drachsler@inf.ethz.ch 
+
 * [Markus Püschel](https://acl.inf.ethz.ch/people/markusp/) - pueschel@inf.ethz.ch
 
 * [Martin Vechev](https://www.sri.inf.ethz.ch/vechev.php) - martin.vechev@inf.ethz.ch
