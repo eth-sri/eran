@@ -1,6 +1,8 @@
 ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz.ch/img/sri-logo.svg">
 ========
 
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
 ![High Level](https://raw.githubusercontent.com/eth-sri/diffai/master/media/overview.png)
 
 ETH Robusness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).  ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  $`L_{\infty}`$-norm attacks, geometric transformations, etc). 
