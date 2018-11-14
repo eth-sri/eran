@@ -3,7 +3,7 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/diffai/master/media/overview.png)
 
-ETH Robusness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).  ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  $`L_{\infty}`$-norm attacks, geometric transformations, etc). 
+ETH Robusness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).  ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
 
 ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN is based on two abstract domains:
 
@@ -108,7 +108,7 @@ python3 . <netname> <epsilon> <domain> <dataset>
 
 * <netname>: path to the network file.
 
-* <epsilon>: A float value between 0 and 1 specifying bound for the $`L_{\infty}`$-norm based perturbation.
+* <epsilon>: A float value between 0 and 1 specifying bound for the L∞-norm based perturbation.
 
 * <domain>: can be either 'deepzono' (for the DeepZ domain) or 'deeppoly'. Note that the residual layers are currently only supported with the DeepZ domain. 
 
@@ -121,7 +121,7 @@ Example
 python3 . ../nets/pytorch/mnist/convBig__DiffAI.pyt 0.1 deepzono mnist
 ```
 
-will evaluate the local robustness of the MNIST convolutional network (upto $`35K`$ neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:
+will evaluate the local robustness of the MNIST convolutional network (upto 35K neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:
 
 * 'Verified' for an image when it can prove the robustness of the network and 'Failed' when it cannot. It will also print an error message when the network misclassifies an image.
 
@@ -156,60 +156,60 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 
 | Dataset  |   Model  |  Type   | #units | #layers| Activation | Training Defense| Download |
 | :-------- | :-------- | :-------- | :-------------| :-------------| :------------ | :------------- | :---------------:|
-| MNIST   | $`3 \times 100`$   | fully connected | 310 | 3    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_3_100.tf)|
-|         | $`6 \times 100`$   | fully connected | 610 | 6    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_6_100.tf)|
-|         | $`9 \times 200`$ | fully connected | 1,810 | 9   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_9_200.tf)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnRELU__Point_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | ReLU  | PGD$`_{\epsilon=0.1}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnRELU__PGDK_w_0.1_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 |  6  | ReLU | PGD$`_{\epsilon=0.3}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnRELU__PGDK_w_0.3_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010  | 6   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnSIGMOID__Point_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 |  6  | Sigmoid | PGD$`_{\epsilon=0.1}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnSIGMOID__PGDK_w_0.1_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Sigmoid | PGD$`_{\epsilon=0.3}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnSIGMOID__PGDK_w_0.3_6_500.pyt)|
-|         | $`6 \times 500`$  | fully connected | 3,010 | 6 |    Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnTANH__Point_6_500.pyt)|
-|         | $`6 \times 500`$ |  fully connected| 3,010 | 6   | Tanh | PGD$`_{\epsilon=0.1}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnTANH__PGDK_w_0.1_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   |  Tanh | PGD$`_{\epsilon=0.3}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnTANH__PGDK_w_0.3_6_500.pyt)|
-|         | $`4 \times 1024`$ | fully connected | 4,106 | 4   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_4_1024.tf)|
+| MNIST   | 3x100   | fully connected | 310 | 3    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_3_100.tf)|
+|         | 6x100   | fully connected | 610 | 6    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_6_100.tf)|
+|         | 9x200 | fully connected | 1,810 | 9   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_9_200.tf)|
+|         | 6x500 | fully connected | 3,010 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnRELU__Point_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | ReLU  | PGD eps=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnRELU__PGDK_w_0.1_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 |  6  | ReLU | PGD eps=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnRELU__PGDK_w_0.3_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010  | 6   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnSIGMOID__Point_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 |  6  | Sigmoid | PGD eps=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnSIGMOID__PGDK_w_0.1_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | Sigmoid | PGD eps=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnSIGMOID__PGDK_w_0.3_6_500.pyt)|
+|         | 6x500  | fully connected | 3,010 | 6 |    Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnTANH__Point_6_500.pyt)|
+|         | 6x500 |  fully connected| 3,010 | 6   | Tanh | PGD eps=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnTANH__PGDK_w_0.1_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   |  Tanh | PGD eps=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/ffnnTANH__PGDK_w_0.3_6_500.pyt)|
+|         | 4x1024 | fully connected | 4,106 | 4   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_relu_4_1024.tf)|
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convSmallRELU__Point.pyt)|
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convSmallRELU__PGDK.pyt) |
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convSmallRELU__DiffAI.pyt) |
 |         | ConvMed | convolutional | 4,804 | 3  | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGRELU__Point.pyt) |
-|         | ConvMed | convolutional | 4,804 | 3   | ReLU | PGD$`_{\epsilon=0.1}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGRELU__PGDK_w_0.1.pyt) |
-|         | ConvMed | convolutional | 4,804 | 3   | ReLU | PGD$`_{\epsilon=0.3}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGRELU__PGDK_w_0.3.pyt) |
+|         | ConvMed | convolutional | 4,804 | 3   | ReLU | PGD eps=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGRELU__PGDK_w_0.1.pyt) |
+|         | ConvMed | convolutional | 4,804 | 3   | ReLU | PGD eps=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGRELU__PGDK_w_0.3.pyt) |
 |         | ConvMed | convolutional | 4,804 | 3   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGSIGMOID__Point.pyt) |
-|         | ConvMed | convolutional | 4,804 | 3   | Sigmoid | PGD$`_{\epsilon=0.1}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGSIGMOID__PGDK_w_0.1.pyt) | 
-|         | ConvMed | convolutional | 4,804 | 3   | Sigmoid | PGD$`_{\epsilon=0.3}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGSIGMOID__PGDK_w_0.3.pyt) | 
+|         | ConvMed | convolutional | 4,804 | 3   | Sigmoid | PGD eps=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGSIGMOID__PGDK_w_0.1.pyt) | 
+|         | ConvMed | convolutional | 4,804 | 3   | Sigmoid | PGD eps=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGSIGMOID__PGDK_w_0.3.pyt) | 
 |         | ConvMed | convolutional | 4,804 | 3   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGTANH__Point.pyt) |
-|         | ConvMed | convolutional | 4,804 | 3   | Tanh | PGD$`_{\epsilon=0.1}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGTANH__PGDK_w_0.1.pyt) | 
-|         | ConvMed | convolutional | 4,804 | 3   |  Tanh | PGD$`_{\epsilon=0.3}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGTANH__PGDK_w_0.3.pyt) |
+|         | ConvMed | convolutional | 4,804 | 3   | Tanh | PGD eps=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGTANH__PGDK_w_0.1.pyt) | 
+|         | ConvMed | convolutional | 4,804 | 3   |  Tanh | PGD eps=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convMedGTANH__PGDK_w_0.3.pyt) |
 |         | ConvMaxpool | convolutional | 13,798 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/mnist/mnist_conv_maxpool.tf)|
 |         | ConvBig | convolutional | 34,688 | 6  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convBigRELU__DiffAI.pyt) |
 |         | ConvSuper | convolutional | 88,500 | 6  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/convSuperRELU__DiffAI.pyt) |
 |         | Skip      | Residual | 71,650 | 9 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/skip__DiffAI.pyt) |
-| CIFAR10 | $`4 \times 100`$ | fully connected | 410 | 4 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_4_100.tf) |
-|         | $`6 \times 100`$ | fully connected | 610 | 6 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_6_100.tf) |
-|         | $`9 \times 200`$ | fully connected | 1,810 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_9_200.tf) |
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnRELU__Point_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | ReLU | PGD$`_{\epsilon=0.0078}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnRELU__PGDK_w_0.0078_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | ReLU | PGD$`_{\epsilon=0.0313}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnRELU__PGDK_w_0.0313_6_500.pyt)| 
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnSIGMOID__Point_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Sigmoid | PGD$`_{\epsilon=0.0078}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnSIGMOID__PGDK_w_0.0078_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Sigmoid | PGD$`_{\epsilon=0.0313}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnSIGMOID__PGDK_w_0.0313_6_500.pyt)| 
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnTANH__Point_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Tanh | PGD$`_{\epsilon=0.0078}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnTANH__PGDK_w_0.0078_6_500.pyt)|
-|         | $`6 \times 500`$ | fully connected | 3,010 | 6   | Tanh | PGD$`_{\epsilon=0.0313}`$ |  [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnTANH__PGDK_w_0.0313_6_500.pyt)| 
-|         | $`7 \times 1024`$ | fully connected | 7,178 | 7 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_7_1024.tf) |
+| CIFAR10 | 4x100 | fully connected | 410 | 4 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_4_100.tf) |
+|         | 6x100 | fully connected | 610 | 6 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_6_100.tf) |
+|         | 9x200 | fully connected | 1,810 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_9_200.tf) |
+|         | 6x500 | fully connected | 3,010 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnRELU__Point_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | ReLU | PGD eps=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnRELU__PGDK_w_0.0078_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | ReLU | PGD eps=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnRELU__PGDK_w_0.0313_6_500.pyt)| 
+|         | 6x500 | fully connected | 3,010 | 6   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnSIGMOID__Point_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | Sigmoid | PGD eps=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnSIGMOID__PGDK_w_0.0078_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | Sigmoid | PGD eps=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnSIGMOID__PGDK_w_0.0313_6_500.pyt)| 
+|         | 6x500 | fully connected | 3,010 | 6   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnTANH__Point_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | Tanh | PGD eps=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnTANH__PGDK_w_0.0078_6_500.pyt)|
+|         | 6x500 | fully connected | 3,010 | 6   | Tanh | PGD eps=0.0313 |  [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/ffnnTANH__PGDK_w_0.0313_6_500.pyt)| 
+|         | 7x1024 | fully connected | 7,178 | 7 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_relu_7_1024.tf) |
 |         | ConvSmall | convolutional | 4,852 | 3 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convSmallRELU__Point.pyt)|
 |         | ConvSmall   | convolutional  | 4,852 | 3  | ReLU  | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convSmallRELU__PGDK.pyt)|
 |         | ConvSmall  | convolutional | 4,852 | 3  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convSmallRELU__DiffAI.pyt)|
 |         | ConvMed | convolutional | 6,244 | 3 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGRELU__Point.pyt) |
-|         | ConvMed | convolutional | 6,244 | 3   | ReLU | PGD$`_{\epsilon=0.0078}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGRELU__PGDK_w_0.0078.pyt) |
-|         | ConvMed | convolutional | 6,244 | 3   | ReLU | PGD$`_{\epsilon=0.0313}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGRELU__PGDK_w_0.0313.pyt) | 
+|         | ConvMed | convolutional | 6,244 | 3   | ReLU | PGD eps=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGRELU__PGDK_w_0.0078.pyt) |
+|         | ConvMed | convolutional | 6,244 | 3   | ReLU | PGD eps=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGRELU__PGDK_w_0.0313.pyt) | 
 |         | ConvMed | convolutional | 6,244 | 3   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGSIGMOID__Point.pyt) |
-|         | ConvMed | convolutional | 6,244 | 3   | Sigmoid | PGD$`_{\epsilon=0.0078}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGSIGMOID__PGDK_w_0.0078.pyt) |
-|         | ConvMed | convolutional | 6,244 | 3   | Sigmoid | PGD$`_{\epsilon=0.0313}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGSIGMOID__PGDK_w_0.0313.pyt) | 
+|         | ConvMed | convolutional | 6,244 | 3   | Sigmoid | PGD eps=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGSIGMOID__PGDK_w_0.0078.pyt) |
+|         | ConvMed | convolutional | 6,244 | 3   | Sigmoid | PGD eps=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGSIGMOID__PGDK_w_0.0313.pyt) | 
 |         | ConvMed | convolutional | 6,244 | 3   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGTANH__Point.pyt) |
-|         | ConvMed | convolutional | 6,244 | 3   | Tanh | PGD$`_{\epsilon=0.0078}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGTANH__PGDK_w_0.0078.pyt) |
-|         | ConvMed | convolutional | 6,244 | 3   | Tanh | PGD$`_{\epsilon=0.0313}`$ | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGTANH__PGDK_w_0.0313.pyt) |  
+|         | ConvMed | convolutional | 6,244 | 3   | Tanh | PGD eps=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGTANH__PGDK_w_0.0078.pyt) |
+|         | ConvMed | convolutional | 6,244 | 3   | Tanh | PGD eps=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convMedGTANH__PGDK_w_0.0313.pyt) |  
 |         | ConvMaxpool | convolutional | 53,938 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_conv_maxpool.tf)|
 |         | ConvBig | convolutional | 62,464 | 6 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convBigRELU__DiffAI.pyt) | 
 
@@ -217,7 +217,7 @@ We provide the first 100 images from the testset of both MNIST and CIFAR10 datas
 
 Experimental Results
 --------------
-We ran our experiments for the feedforward networks on a 3.3 GHz 10 core Intel i9-7900X Skylake CPU with a main memory of 64 GB whereas our experiments for the convolutional networks were run on a 2.6 GHz 14 core Intel Xeon CPU E5-2690 with 512 GB of main memory. We first compare the precision and performance of DeepZ and DeepPoly vs [Fast-Lin](https://github.com/huanzhang12/CertifiedReLURobustness) on the MNIST $`6 \times 100`$ network in single threaded mode. It can be seen that DeepZ has the same precision as Fast-Lin whereas DeepPoly is more precise while also being faster.
+We ran our experiments for the feedforward networks on a 3.3 GHz 10 core Intel i9-7900X Skylake CPU with a main memory of 64 GB whereas our experiments for the convolutional networks were run on a 2.6 GHz 14 core Intel Xeon CPU E5-2690 with 512 GB of main memory. We first compare the precision and performance of DeepZ and DeepPoly vs [Fast-Lin](https://github.com/huanzhang12/CertifiedReLURobustness) on the MNIST 6x100 network in single threaded mode. It can be seen that DeepZ has the same precision as Fast-Lin whereas DeepPoly is more precise while also being faster.
 
 ![High Level](https://files.sri.inf.ethz.ch/eran/plots/mnist_6_100.png)
 
