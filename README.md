@@ -333,7 +333,7 @@ More experimental results can be found in our papers.
 Contributors
 --------------
 
-* [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) - gsingh@inf.ethz.ch
+* [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
 
 * [Matthew Mirman](https://www.mirman.com) - matt@mirman.com
 
