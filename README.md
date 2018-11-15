@@ -106,13 +106,13 @@ cd tf-verify
 python3 . <netname> <epsilon> <domain> <dataset>
 ```
 
-* <netname>: path to the network file.
+* ```<netname>```: path to the network file.
 
-* <epsilon>: A float value between 0 and 1 specifying bound for the L∞-norm based perturbation.
+* ```<epsilon>```: A float value between 0 and 1 specifying bound for the L∞-norm based perturbation.
 
-* <domain>: can be either 'deepzono' (for the DeepZ domain) or 'deeppoly'. Note that the residual layers are currently only supported with the DeepZ domain. 
+* ```<domain>```: can be either 'deepzono' (for the DeepZ domain) or 'deeppoly'. Note that the residual layers are currently only supported with the DeepZ domain. 
 
-* <dataset>: can be either 'mnist' or 'cifar10'
+* ```<dataset>```: can be either 'mnist' or 'cifar10'
 
 Example
 -------------
