@@ -21,14 +21,14 @@ rm gmp-6.1.2.tar.xz
 
 
 
-wget https://www.mpfr.org/mpfr-current/mpfr-4.0.1.tar.xz
-tar -xvf mpfr-4.0.1.tar.xz
-cd mpfr-4.0.1
+wget https://www.mpfr.org/mpfr-current/mpfr-4.0.2.tar.xz
+tar -xvf mpfr-4.0.2.tar.xz
+cd mpfr-4.0.2
 ./configure
 make
 make install
 cd ..
-rm mpfr-4.0.1.tar.xz
+rm mpfr-4.0.2.tar.xz
 
 
 
