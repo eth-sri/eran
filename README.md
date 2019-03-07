@@ -78,7 +78,7 @@ make install
 
 Update the LD_LIBRARY_PATH:
 ```
-export LD_BLIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 ```
 
 We also provide an install script that will install ELINA and all the necessary dependencies. One can run it as follows:
