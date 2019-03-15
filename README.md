@@ -148,6 +148,13 @@ Publications
 
     POPL 2019.
 
+*  [Boosting Robustness Certification of Neural Networks](https://www.sri.inf.ethz.ch/publications/singh2019refinement).
+
+    Gagandeep Singh, Timon Gehr, Markus Püschel, and Martin Vechev. 
+
+    ICLR 2019.
+
+
 
 Neural Networks and Datasets
 ---------------
