@@ -10,27 +10,53 @@ from deepzono_nodes import *
 from functools import reduce
 import ctypes
 
-
+class layers:
+    def __init__(self):
+        self.layertypes = []
+        self.weights = []
+        self.biases = []
+        self.filters = []
+        self.numfilters = []
+        self.filter_size = [] 
+        self.input_shape = []
+        self.strides = []
+        self.padding = []
+        self.pool_size = []
+        self.numlayer = 0
+        self.ffn_counter = 0
+        self.conv_counter = 0
+        self.maxpool_counter = 0
+        self.maxpool_lb = []
+        self.maxpool_ub = []
+        self.specLB = []
+        self.specUB = []
+        self.lastlayer = None
 
 class Analyzer:
-    def __init__(self, ir_list, domain):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp):
         """
         Arguments
         ---------
         ir_list: list
             list of Node-Objects (e.g. from DeepzonoNodes), first one must create an abstract element
         domain: str
-            either 'deepzono' or 'deeppoly'
+            either 'deepzono', 'refinezono' or 'deeppoly'
         """
         self.ir_list = ir_list
         self.is_greater = is_greater_zono
+        self.refine = False
         if domain == 'deeppoly':
             self.man = fppoly_manager_alloc()
             self.is_greater = is_greater
-        elif domain == 'deepzono':
+        elif domain == 'deepzono' or domain == 'refinezono':
             self.man = zonoml_manager_alloc()
             self.is_greater = is_greater_zono
+        if domain == 'refinezono':
+            self.refine = True
         self.domain = domain
+        self.nn = nn
+        self.timeout_lp = timeout_lp
+        self.timeout_milp = timeout_milp
     
     
     def __del__(self):
@@ -42,9 +68,14 @@ class Analyzer:
         processes self.ir_list and returns the resulting abstract element
         """
         element = self.ir_list[0].transformer(self.man)
+        nlb = []
+        nub = []
         for i in range(1, len(self.ir_list)):
-            element = self.ir_list[i].transformer(self.man, element)
-        return element
+            if self.domain == 'deepzono' or self.domain == 'refinezono':
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
+            else:
+                element = self.ir_list[i].transformer(self.man, element)
+        return element, nlb, nub
     
     
     def analyze(self):
@@ -56,9 +87,9 @@ class Analyzer:
         output: int
             index of the dominant class. If no class dominates then returns -1
         """
-        element     = self.get_abstract0()
+        element, nlb, nub  = self.get_abstract0()
         output_size = 0
-        if self.domain == 'deepzono':
+        if self.domain == 'deepzono' or self.domain == 'refinezono':
             output_size = self.ir_list[-1].output_length
         else:
             output_size = reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
@@ -79,7 +110,7 @@ class Analyzer:
                 break
         
         elina_abstract0_free(self.man, element)
-        return dominant_class
+        return dominant_class, nlb, nub
     
     
     

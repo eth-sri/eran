@@ -1,3 +1,5 @@
+#!/bin/bash
+
 wget ftp://ftp.gnu.org/gnu/m4/m4-1.4.1.tar.gz
 tar -xvzf m4-1.4.1.tar.gz
 cd m4-1.4.1
@@ -37,8 +39,17 @@ cd ELINA
 ./configure
 make
 make install
+cd ..
 
+wget https://packages.gurobi.com/8.1/gurobi8.1.0_linux64.tar.gz
+tar -xvf gurobi8.1.0_linux64.tar.gz
+cd gurobi810/linux64
+python3 setup.py install
+cp lib/libgurobi81.so /usr/lib
+BASEDIR=$(dirname $0)
+cd ../../
 
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib
 
 ldconfig
 

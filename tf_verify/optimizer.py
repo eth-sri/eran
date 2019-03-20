@@ -13,7 +13,7 @@ class Optimizer:
         Arguments
         ---------
         operations : list
-            list of dicts, each dict contains a mapping from a domain (like deepzono or deeppoly) to a tuple with resources (like matrices, biases ...)
+            list of dicts, each dict contains a mapping from a domain (like deepzono, refinezono or deeppoly) to a tuple with resources (like matrices, biases ...)
         resources : list
             list of str, each one being a type of operation (like "MatMul", "Conv2D", "Add" ...)
         """
@@ -21,7 +21,7 @@ class Optimizer:
         self.resources  = resources
     
     
-    def get_deepzono(self, specLB, specUB):
+    def get_deepzono(self, nn, specLB, specUB):
         """
         This function will go through self.operations and self.resources and creates a list of Deepzono-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deepzono'] holds the resources for the operation of type self.operations[i]                
@@ -52,15 +52,31 @@ class Optimizer:
                 if i != nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
                     matrix,  m_input_names, _, _           = self.resources[i][domain]
                     bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
+                    
+                    nn.weights.append(matrix)
+                    nn.biases.append(bias)
+                    nn.layertypes.append('Affine')
+                    nn.numlayer+= 1
                     output.append(DeepzonoAffine(matrix, bias, m_input_names, b_output_name, b_output_shape))
                     i += 2
                 else:
+                    #self.resources[i][domain].append(refine)
                     output.append(DeepzonoMatmul(*self.resources[i][domain]))
                     i += 1
             elif self.operations[i] == "Conv2D":
                 if i != nbr_op-1 and self.operations[i+1] == "BiasAdd":
                     filters, image_shape, strides, padding, c_input_names, _, _ = self.resources[i][domain]
                     bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
+                    nn.numfilters.append(filters.shape[3])
+                    nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                    nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                    nn.strides.append([strides[0],strides[1]])
+                    nn.padding.append(padding=="VALID")
+                    nn.filters.append(filters)
+           
+                    nn.biases.append(bias)
+                    nn.layertypes.append('Conv2D')
+                    nn.numlayer+=1
                     output.append(DeepzonoConvbias(image_shape, filters, bias, strides, padding, c_input_names, b_output_name, b_output_shape))
                     i += 2
                 else:
@@ -68,6 +84,7 @@ class Optimizer:
                     output.append(DeepzonoConv(image_shape, filters, strides, padding, input_names, output_name, output_shape))
                     i += 1
             elif self.operations[i] == "Add":
+                #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "MaxPool":
@@ -75,9 +92,14 @@ class Optimizer:
                 output.append(DeepzonoMaxpool(image_shape, window_size, strides, padding, input_names, output_name, output_shape))
                 i += 1
             elif self.operations[i] == "Resadd":
+                #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Relu":
+                #self.resources[i][domain].append(refine)
+                if nn.layertypes[len(nn.layertypes)-1]=='Affine':
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Sigmoid":

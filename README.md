@@ -15,7 +15,7 @@ Both domains are implemented in the [ELINA](http://elina.ethz.ch/) library for n
 
 Requirements 
 ------------
-GNU C compiler, ELINA
+GNU C compiler, ELINA, Gurobi's Python interface,
 
 python3.6 or higher, tensorflow 1.11 or higher, numpy.
 
@@ -74,21 +74,40 @@ cd ELINA
 ./configure
 make
 make install
+cd ..
 ```
 
-Update the LD_LIBRARY_PATH:
+Install Gurobi:
 ```
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+wget https://packages.gurobi.com/8.1/gurobi8.1.0_linux64.tar.gz
+tar -xvf gurobi8.1.0_linux64.tar.gz
+cd gurobi810/linux64
+python3 setup.py install
+sudo cp lib/libgurobi81.so /usr/lib
+cd ../../
+
 ```
 
-We also provide an install script that will install ELINA and all the necessary dependencies. One can run it as follows:
+Update environment variables:
+```
+export GUROBI_HOME="Current_directory/gurobi810/linux64"
+export PATH="${PATH}:${GUROBI_HOME}/bin"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
+
+```
+
+We also provide a scripts that will install ELINA and all the necessary dependencies. One can run it as follows:
 
 ```
 sudo./install.sh
+source gurobi_setup_path.sh
 
 ```
 
-To install the python dependencies (numpy and tensorflow), type:
+
+Note that to run ERAN with Gurobi one needs to obtain an academic license for gurobi from https://user.gurobi.com/download/licenses/free-academic.
+
+To install the remaining python dependencies (numpy and tensorflow), type:
 
 ```
 pip3 install -r requirements.txt
@@ -103,22 +122,23 @@ Usage
 ```
 cd tf-verify
 
-python3 . <netname> <epsilon> <domain> <dataset>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10> [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float>
 ```
 
-* ```<netname>```: path to the network file.
+* ```<epsilon>```: specifies bound for the L∞-norm based perturbation.
 
-* ```<epsilon>```: A float value between 0 and 1 specifying bound for the L∞-norm based perturbation.
+* Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
 
-* ```<domain>```: can be either 'deepzono' (for the DeepZ domain) or 'deeppoly'. Note that the residual layers are currently only supported with the DeepZ domain. 
+* Refinezono refines the analysis results from the DeepZ domain using the approach in our ICLR'19 paper. Note that Refinezono only supports feedforward and convolutional networks currently. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
-* ```<dataset>```: can be either 'mnist' or 'cifar10'
+* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. 
+
 
 Example
 -------------
 
 ```
-python3 . ../nets/pytorch/mnist/convBig__DiffAI.pyt 0.1 deepzono mnist
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --epsilon 0.1 --domain deepzono --dataset mnist
 ```
 
 will evaluate the local robustness of the MNIST convolutional network (upto 35K neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:

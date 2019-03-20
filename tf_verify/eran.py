@@ -37,10 +37,9 @@ class ERAN:
         self.optimizer  = Optimizer(operations, resources)
     
     
-    def analyze_box(self, specLB, specUB, domain):
+    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp):
         """
-        This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have two domains, 'deepzono'
-        and 'deeppoly'.
+        This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
         
         Arguments
         ---------
@@ -49,7 +48,7 @@ class ERAN:
         specUB : numpy.ndarray
             ndarray with the upper bound of the input box
         domain : str
-            either 'deepzono' or 'deeppoly', decides which set of abstract transformers is used.
+            either 'deepzono', 'refinezono' or 'deeppoly', decides which set of abstract transformers is used.
             
         Return
         ------
@@ -57,16 +56,18 @@ class ERAN:
             if the analysis is succesfull (it could prove robustness for this box) then the index of the class that dominates is returned
             if the analysis couldn't prove robustness then -1 is returned
         """
-        assert domain in ['deepzono', 'deeppoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
+        assert domain in ['deepzono', 'refinezono', 'deeppoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
         specLB = np.reshape(specLB, (-1,))
         specUB = np.reshape(specUB, (-1,))
-        
-        if domain == 'deepzono':
-            execute_list   = self.optimizer.get_deepzono(specLB, specUB)
-            analyzer       = Analyzer(execute_list, domain)
+        nn = layers()
+        nn.specLB = specLB
+        nn.specUB = specUB
+        if domain == 'deepzono' or domain == 'refinezono':
+            execute_list   = self.optimizer.get_deepzono(nn,specLB, specUB)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp)
         elif domain == 'deeppoly':
             execute_list   = self.optimizer.get_deeppoly(specLB, specUB)
-            analyzer       = Analyzer(execute_list, domain)
-        dominant_class = analyzer.analyze()
-        return dominant_class
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp)
+        dominant_class, nlb, nub = analyzer.analyze()
+        return dominant_class, nn, nlb, nub
         

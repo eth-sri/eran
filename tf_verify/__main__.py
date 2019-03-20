@@ -7,16 +7,33 @@ from read_net_file import *
 import tensorflow as tf
 import csv
 import time
+from deepzono_milp import * 
+import argparse
 
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
+parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--netname', type=str, default=None, help='the network name, the extension can be only .pyt, .tf and .meta')
+parser.add_argument('--epsilon', type=float, default=0, help='the epsilon for L_infinity perturbation')
+parser.add_argument('--domain', type=str, default=None, help='the domain name can be either deepzono, refinezono or deeppoly')
+parser.add_argument('--dataset', type=str, default=None, help='the dataset, can be either mnist or cifar10')
+parser.add_argument('--complete', type=str2bool, default=False,  help='flag specifying where to use complete verification or not')
+parser.add_argument('--timeout_lp', type=float, default=1,  help='timeout for the LP solver')
+parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for the MILP solver')
 
+args = parser.parse_args()
 
+#if len(sys.argv) < 4 or len(sys.argv) > 5:
+#    print('usage: python3.6 netname epsilon domain dataset')
+#    exit(1)
 
-if len(sys.argv) < 4 or len(sys.argv) > 5:
-    print('usage: python3.6 netname epsilon domain dataset')
-    exit(1)
-
-netname = sys.argv[1]
+netname = args.netname
 filename, file_extension = os.path.splitext(netname)
 
 is_trained_with_pytorch = False
@@ -31,27 +48,32 @@ elif(file_extension!= ".tf"):
     exit(1)
 
 
-epsilon = np.float64(sys.argv[2])
+epsilon = args.epsilon
 if((epsilon<0) or (epsilon>1)):
     print("epsilon can only be between 0 and 1")
     exit(1)
 
-domain = sys.argv[3]
+domain = args.domain
 
-if((domain!='deepzono') and (domain!='deeppoly')):
-    print("domain name can be either deepzono or deeppoly")
+if((domain!='deepzono') and (domain!='refinezono') and (domain!='deeppoly')):
+    print("domain name can be either deepzono, refinezono or deeppoly")
     exit(1)
 
-dataset = sys.argv[4]
+dataset = args.dataset
 if((dataset!='mnist') and (dataset!='cifar10')):
     print("only mnist and cifar10 dataset are supported")
     exit(1)
+
+
 
 
 is_conv = False
 mean = 0
 std = 0
 
+complete = (domain=='deepzono') and (args.complete==True)
+
+print("netname ", netname, " epsilon ", epsilon, " domain ", domain, " dataset ", dataset, "args complete ", args.complete, " complete ",complete, " timeout_lp ",args.timeout_lp)
 if(is_saved_tf_model):
     netfolder = os.path.dirname(netname) 
 
@@ -129,8 +151,8 @@ for test in tests:
     if(is_trained_with_pytorch):
         normalize(specLB, means, stds)
         normalize(specUB, means, stds)
-    
-    label = eran.analyze_box(specLB, specUB, domain)
+   
+    label,_,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp)
     if(label == int(test[0])):
         if(dataset=='mnist'):   
             specLB = np.clip(image - epsilon,0,1)
@@ -146,12 +168,16 @@ for test in tests:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
         start = time.time()
-        perturbed_label = eran.analyze_box(specLB, specUB, domain)
+        perturbed_label, nn, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp)
         if(perturbed_label==label):
             print("img", total_images, "Verified", label)
             verified_images += 1
         else:
-            print("img", total_images, "Failed")
+            if complete==True and verify_network_with_milp(nn, specLB, specUB, label, nlb, nub):
+               print("img", total_images, "Verified", label)
+               verified_images += 1
+            else:
+               print("img", total_images, "Failed")
         correctly_classified_images +=1    
         end = time.time()
         print(end - start)
