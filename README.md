@@ -131,7 +131,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * Refinezono refines the analysis results from the DeepZ domain using the approach in our ICLR'19 paper. Note that Refinezono only supports feedforward and convolutional networks currently. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
-* Since we use timeout for the solvers, the results with the Refinezono domain will vary depending on the processor speeds. 
+* Since Refinezono uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
 * Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. 
 
