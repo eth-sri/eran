@@ -3,7 +3,7 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).  ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).  ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). Note that ERAN subsumes the first abstract interpretation based analyzer [AI2](https://www.sri.inf.ethz.ch/publications/gehr2018ai), so please use ERAN directly when comparing against AI2. 
 
 ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN is based on two abstract domains:
 
@@ -11,7 +11,7 @@ ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound unde
 
 * DeepPoly [POPL'19]: A domain that combines floating point Polyhedra with Intervals.
 
-Both domains are implemented in the [ELINA](http://elina.ethz.ch/) library for numerical abstractions. More details can be found in the publications below.
+Both domains are implemented in the [ELINA](http://elina.ethz.ch/) library for numerical abstractions. More details can be found in the publications below. 
 
 Requirements 
 ------------
