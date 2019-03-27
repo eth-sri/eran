@@ -13,9 +13,9 @@ ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound unde
 
 Both domains are implemented in the [ELINA](http://elina.ethz.ch/) library for numerical abstractions. More details can be found in the publications below. 
 
-ERAN subsumes [AI2](https://www.sri.inf.ethz.ch/publications/gehr2018ai)
+ERAN subsumes AI2
 --------------------
-Note that ERAN subsumes the first abstract interpretation based analyzer AI2, so if you aim to compare, please use ERAN as a baseline. 
+Note that ERAN subsumes the first abstract interpretation based analyzer [AI2](https://www.sri.inf.ethz.ch/publications/gehr2018ai), so if you aim to compare, please use ERAN as a baseline. 
 
 Requirements 
 ------------
