@@ -577,8 +577,8 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub):
             model.setObjective(obj,GRB.MINIMIZE)
             model.optimize()
             
-            if(model.objval<0):             
-                return False
+            if(model.objval<0):            
+                return False, model.x[0:784]
    
-    return True
+    return True, model.x[0:784]
   

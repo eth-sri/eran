@@ -173,11 +173,17 @@ for test in tests:
             print("img", total_images, "Verified", label)
             verified_images += 1
         else:
-            if complete==True and verify_network_with_milp(nn, specLB, specUB, label, nlb, nub):
-               print("img", total_images, "Verified", label)
-               verified_images += 1
-            else:
-               print("img", total_images, "Failed")
+            if complete==True:
+               verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, label, nlb, nub)
+               if(verified_flag==True):
+                   print("img", total_images, "Verified", label)
+                   verified_images += 1
+               else:
+                   print("img", total_images, "Failed")
+                   cex_label,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', args.timeout_lp, args.timeout_milp)
+                   if(cex_label!=label):
+                       print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+               
         correctly_classified_images +=1    
         end = time.time()
         print(end - start)

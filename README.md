@@ -137,7 +137,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * Since Refinezono uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
-* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. 
+* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. When complete verification fails, ERAN prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. 
 
 
 Example
