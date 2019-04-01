@@ -371,12 +371,26 @@ class DeepzonoAffine(DeepzonoMatmul):
         output : ElinaAbstract0Ptr
             abstract element after the transformer
         """
-        
         offset, old_length = self.abstract_information
-        man, destructive, element, start_offset, weights, num_var, expr_offset, expr_size = self.get_arguments(man, element)
-        element = ffn_matmult_zono(man, destructive, element, start_offset, weights, self.bias, num_var, expr_offset, expr_size)
+        man, destructive, element, start_offset, weights, num_vars, expr_offset, expr_size = self.get_arguments(man, element)
+        element = ffn_matmult_zono(man, destructive, element, start_offset, weights, self.bias, num_vars, expr_offset, expr_size)
         #if self.refine == 'True':
         #    refine_after_affine(self, man, element, nlb, nub)
+        dimension = elina_abstract0_dimension(man,element)
+        var_in_element = dimension.intdim + dimension.realdim 
+        bounds = elina_abstract0_to_box(man,element)
+        lbi = []
+        ubi = []
+        for i in range(num_vars):
+            inf = bounds[i+start_offset].contents.inf
+            sup = bounds[i+start_offset].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+
+        elina_interval_array_free(bounds,var_in_element)
         nn.last_layer = 'Affine'
         return remove_dimensions(man, element, offset, old_length)
         
@@ -456,6 +470,8 @@ class DeepzonoConv:
         """
         offset, old_length  = self.abstract_information
         element = conv_matmult_zono(*self.get_arguments(man, element))
+        
+        
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -507,6 +523,23 @@ class DeepzonoConvbias(DeepzonoConv):
         bias     = self.bias
         has_bias = True
         element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias)
+        num_vars = self.output_length
+        
+        dimension = elina_abstract0_dimension(man,element)
+        num_neurons = dimension.intdim + dimension.realdim
+        bounds = elina_abstract0_to_box(man,element)
+        lbi = []
+        ubi = []
+        for i in range(num_vars):
+            inf = bounds[i+start_offset].contents.inf
+            sup = bounds[i+start_offset].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+
+        elina_interval_array_free(bounds,num_neurons)
         nn.last_layer='Conv2D'
         return remove_dimensions(man, element, offset, old_length)
 
@@ -567,23 +600,6 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         output : ElinaAbstract0Ptr
             abstract element after the transformer
         """
-
-        offset, length = self.abstract_information
-        dimension = elina_abstract0_dimension(man,element)
-        num_neurons = dimension.realdim + dimension.intdim
-        bounds = elina_abstract0_to_box(man,element)
-        lbi = []
-        ubi = []
-        for i in range(length):
-            inf = bounds[i+offset].contents.inf
-            sup = bounds[i+offset].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-    
-        nlb.append(lbi)
-        nub.append(ubi) 
-
-        elina_interval_array_free(bounds,num_neurons)
         if refine==True:
             element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp, timeout_milp)
         else:

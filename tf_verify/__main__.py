@@ -71,7 +71,7 @@ is_conv = False
 mean = 0
 std = 0
 
-complete = (domain=='deepzono') and (args.complete==True)
+complete = (args.complete==True)
 
 print("netname ", netname, " epsilon ", epsilon, " domain ", domain, " dataset ", dataset, "args complete ", args.complete, " complete ",complete, " timeout_lp ",args.timeout_lp)
 if(is_saved_tf_model):
@@ -125,6 +125,33 @@ def normalize(image, means, stds):
                 image[i+2048] = tmp[count]
                 count = count+1
 
+def denormalize(image, means, stds):
+    if(dataset=='mnist'):
+        for i in range(len(image)):
+            image[i] = image[i]*stds[0] + means[0]
+    else:
+        count = 0
+        tmp = np.zeros(3072)
+        for i in range(1024):
+            tmp[count] = image[count]*stds[0] + means[0]
+            count = count + 1
+            tmp[count] = image[count]*stds[1] + means[1]
+            count = count + 1
+            tmp[count] = image[count]*stds[2] + means[2]
+            count = count + 1
+
+        if(is_conv):
+            for i in range(3072):
+                image[i] = tmp[i]
+        else:
+            count = 0
+            for i in range(1024):
+                image[i] = tmp[count]
+                count = count+1
+                image[i+1024] = tmp[count]
+                count = count+1
+                image[i+2048] = tmp[count]
+                count = count+1
         
 
 if(dataset=='mnist'):
@@ -152,7 +179,7 @@ for test in tests:
         normalize(specLB, means, stds)
         normalize(specUB, means, stds)
    
-    label,_,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp)
+    label,nn,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp)
     if(label == int(test[0])):
         if(dataset=='mnist'):   
             specLB = np.clip(image - epsilon,0,1)
@@ -168,7 +195,7 @@ for test in tests:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
         start = time.time()
-        perturbed_label, nn, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp)
+        perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp)
         if(perturbed_label==label):
             print("img", total_images, "Verified", label)
             verified_images += 1
@@ -182,8 +209,12 @@ for test in tests:
                    print("img", total_images, "Failed")
                    cex_label,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', args.timeout_lp, args.timeout_milp)
                    if(cex_label!=label):
+                       if(is_trained_with_pytorch):
+                           denormalize(adv_image, means, stds)
                        print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
-               
+            else: 
+                   print("img", total_images, "Failed")
+ 
         correctly_classified_images +=1    
         end = time.time()
         print(end - start)

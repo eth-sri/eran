@@ -74,7 +74,7 @@ class Analyzer:
             if self.domain == 'deepzono' or self.domain == 'refinezono':
                 element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
             else:
-                element = self.ir_list[i].transformer(self.man, element)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub)
         return element, nlb, nub
     
     

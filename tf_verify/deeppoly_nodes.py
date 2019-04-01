@@ -89,7 +89,7 @@ class DeeppolyNode:
 
 
 class DeeppolyReluNodeFirst(DeeppolyNode):
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
         transformer for the first layer of a neural network, if that first layer is fully connected with relu
         
@@ -106,11 +106,26 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_first_relu_layer(man, element, *self.get_arguments())
+        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        lbi = []
+        ubi = []
+        for i in range(num_neurons):
+            inf = bounds[i].contents.inf
+            sup = bounds[i].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+        
+        elina_interval_array_free(bounds,num_neurons)
+        nn.ffn_counter+=1
         return element
 
 
 class DeeppolySigmoidNodeFirst(DeeppolyNode):
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with sigmoid
             
@@ -131,7 +146,7 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
 
 
 class DeeppolyTanhNodeFirst(DeeppolyNode):
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with tanh
             
@@ -153,7 +168,7 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
 
 
 class DeeppolyReluNodeIntermediate(DeeppolyNode):
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
         transformer for any intermediate fully connected layer with relu
         
@@ -170,10 +185,25 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments())
+        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        lbi = []
+        ubi = []
+        for i in range(num_neurons):
+            inf = bounds[i].contents.inf
+            sup = bounds[i].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+        
+        elina_interval_array_free(bounds,num_neurons)
+        nn.ffn_counter+=1
         return element
 
 class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
             transformer for any intermediate fully connected layer with sigmoid
             
@@ -194,7 +224,7 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
 
 
 class DeeppolyTanhNodeIntermediate(DeeppolyNode):
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
             transformer for any intermediate fully connected layer with tanh
             
@@ -230,7 +260,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         DeeppolyNode.__init__(self, weights, bias)
         self.relu_present = relu_present
         
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
         transformer for a fully connected layer if it's the last layer in the network
         
@@ -247,6 +277,21 @@ class DeeppolyReluNodeLast(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present)
+        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        lbi = []
+        ubi = []
+        for i in range(num_neurons):
+            inf = bounds[i].contents.inf
+            sup = bounds[i].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+        
+        elina_interval_array_free(bounds,num_neurons)
+        nn.ffn_counter+=1
         return element
 
 
@@ -265,7 +310,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
         DeeppolySigmoidNode.__init__(self, weights, bias)
         self.sigmoid_present = sigmoid_present
             
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -300,7 +345,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
         DeeppolyTanhNode.__init__(self, weights, bias)
         self.tanh_present = tanh_present
             
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -363,7 +408,7 @@ class DeeppolyConv2dNodeIntermediate:
         return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.padding == "VALID", True
         
             
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
         transformer for a convolutional layer, if that layer is an intermediate of the network
         
@@ -380,13 +425,28 @@ class DeeppolyConv2dNodeIntermediate:
             abstract element after the transformer 
         """
         conv_handle_intermediate_relu_layer(man, element, *self.get_arguments())
+        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        lbi = []
+        ubi = []
+        for i in range(num_neurons):
+            inf = bounds[i].contents.inf
+            sup = bounds[i].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+        
+        elina_interval_array_free(bounds,num_neurons)
+        nn.conv_counter+=1
         return element
 
 
 
 
 class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):    
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
         transformer for a convolutional layer, if that layer is the first of the network
         
@@ -403,6 +463,21 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
             abstract element after the transformer 
         """    
         conv_handle_first_layer(man, element, *self.get_arguments())
+        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        lbi = []
+        ubi = []
+        for i in range(num_neurons):
+            inf = bounds[i].contents.inf
+            sup = bounds[i].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+    
+        nlb.append(lbi)
+        nub.append(ubi) 
+        
+        elina_interval_array_free(bounds,num_neurons)
+        nn.ffn_counter+=1
         return element    
 
 
@@ -426,7 +501,7 @@ class DeeppolyMaxpool:
         self.window_size = np.ascontiguousarray([window_size[0], window_size[1], 1], dtype=np.uintp)
     
     
-    def transformer(self, man, element):
+    def transformer(self, nn, man, element, nlb, nub):
         """
         transformer for a maxpool layer, this can't be the first layer of a network
         
