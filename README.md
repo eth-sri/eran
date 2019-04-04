@@ -3,7 +3,7 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).  ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation). for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification. ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
 
 ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following three analysis:
 
@@ -128,20 +128,20 @@ Usage
 ```
 cd tf-verify
 
-python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10> [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10/acasxu> [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float>
 ```
 
-* ```<epsilon>```: specifies bound for the L∞-norm based perturbation.
+* ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing ACAS Xu networks.
 
 * Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
 
-* Refinezono refines the analysis results from the DeepZ domain using the approach in our ICLR'19 paper. Note that Refinezono only supports feedforward and convolutional networks currently. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
+* Refinezono refines the analysis results from the DeepZ domain using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
 * Since Refinezono uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
 * Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. When complete verification fails, ERAN prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. 
 
-
+* ERAN currently supports verifying only the property 9 for ACAS Xu as defined in [https://arxiv.org/pdf/1702.01135.pdf] (known to be hard). Support for other properties will be added soon.
 
 Example
 -------------
@@ -159,6 +159,7 @@ will evaluate the local robustness of the MNIST convolutional network (upto 35K 
 * The ratio of images on which the network is robust versus the number of images on which it classifies correctly.
  
 
+For the ACAS Xu network, ERAN will output whether the property has been verified along with the timing.
 
 Publications
 -------------
@@ -253,7 +254,7 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 |         | ConvMaxpool | convolutional | 53,938 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/tensorflow/cifar/cifar_conv_maxpool.tf)|
 |         | ConvBig | convolutional | 62,464 | 6 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/cifar/convBigRELU__DiffAI.pyt) | 
 
-We provide the first 100 images from the testset of both MNIST and CIFAR10 datasets in the 'data' folder. Our analyzer first verifies whether the neural network classifies an image correctly before performing robustness analysis.
+We provide the first 100 images from the testset of both MNIST and CIFAR10 datasets in the 'data' folder. Our analyzer first verifies whether the neural network classifies an image correctly before performing robustness analysis. In the same folder, we also provide ACAS Xu networks and property specifications.
 
 Experimental Results
 --------------

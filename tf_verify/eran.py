@@ -37,7 +37,7 @@ class ERAN:
         self.optimizer  = Optimizer(operations, resources)
     
     
-    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp):
+    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, specnumber=0):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
         
@@ -64,10 +64,10 @@ class ERAN:
         nn.specUB = specUB
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list   = self.optimizer.get_deepzono(nn,specLB, specUB)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber)
         elif domain == 'deeppoly':
             execute_list   = self.optimizer.get_deeppoly(specLB, specUB)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber)
         dominant_class, nlb, nub = analyzer.analyze()
         return dominant_class, nn, nlb, nub
         

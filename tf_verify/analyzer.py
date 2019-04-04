@@ -33,7 +33,7 @@ class layers:
         self.lastlayer = None
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber):
         """
         Arguments
         ---------
@@ -57,7 +57,8 @@ class Analyzer:
         self.nn = nn
         self.timeout_lp = timeout_lp
         self.timeout_milp = timeout_milp
-    
+        self.specnumber = specnumber    
+
     
     def __del__(self):
         elina_manager_free(self.man)
@@ -100,15 +101,24 @@ class Analyzer:
         #elina_interval_array_free(bounds,output_size)
     
         dominant_class = -1
-        for i in range(output_size):
+        if self.specnumber==0:
+            for i in range(output_size):
+                flag = True
+                for j in range(output_size):
+                    if i!=j and not self.is_greater(self.man, element, i, j):
+                        flag = False
+                if flag:
+                    dominant_class = i
+                    break
+        elif self.specnumber==9:
             flag = True
-            for j in range(output_size):
-                if i!=j and not self.is_greater(self.man, element, i, j):
+            for i in range(output_size):
+                if i!=3 and not self.is_greater(self.man, element, i, 3):
                     flag = False
+                    break
             if flag:
-                dominant_class = i
-                break
-        
+                dominant_class = 3
+                
         elina_abstract0_free(self.man, element)
         return dominant_class, nlb, nub
     

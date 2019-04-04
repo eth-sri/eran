@@ -553,7 +553,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 
     return resl, resu, sorted(indices)
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub):
+def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub, is_max=True):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.maxpool_counter = 0
@@ -573,12 +573,17 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub):
     for i in range(output_size):
         if(i!=c):
             obj = LinExpr()
-            obj += 1*var_list[counter+c]
-            obj += -1*var_list[counter + i]
+            if is_max:
+                obj += 1*var_list[counter+c]
+                obj += -1*var_list[counter + i]
+            else:
+                obj += -1*var_list[counter+c]
+                obj += 1*var_list[counter + i]
             model.setObjective(obj,GRB.MINIMIZE)
             model.optimize()
             
-            if(model.objval<0):            
+            if(model.objval<0):  
+                        
                 return False, model.x[0:input_size]
    
     return True, model.x[0:input_size]
