@@ -3,7 +3,7 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation). for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification. ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete robustness verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification. ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify robustness of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
 
 ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following three analysis:
 
@@ -159,7 +159,7 @@ will evaluate the local robustness of the MNIST convolutional network (upto 35K 
 * The ratio of images on which the network is robust versus the number of images on which it classifies correctly.
  
 
-For the ACAS Xu network, ERAN will output whether the property has been verified along with the timing.
+For the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
 
 Publications
 -------------
