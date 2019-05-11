@@ -63,7 +63,7 @@ rm gmp-6.1.2.tar.xz
 
 Install mpfr:
 ```
-wget https://www.mpfr.org/mpfr-current/mpfr-4.0.1.tar.xz
+wget https://www.mpfr.org/mpfr-current/mpfr-4.0.2.tar.xz
 tar -xvf mpfr-4.0.1.tar.xz
 cd mpfr-4.0.1
 ./configure
@@ -105,7 +105,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 We also provide scripts that will install ELINA and all the necessary dependencies. One can run it as follows:
 
 ```
-sudo./install.sh
+sudo ./install.sh
 source gurobi_setup_path.sh
 
 ```
