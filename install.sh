@@ -26,7 +26,7 @@ rm gmp-6.1.2.tar.xz
 wget https://www.mpfr.org/mpfr-current/mpfr-4.0.2.tar.xz
 tar -xvf mpfr-4.0.2.tar.xz
 cd mpfr-4.0.2
-./configure --use-area-heuristic
+./configure
 make
 make install
 cd ..

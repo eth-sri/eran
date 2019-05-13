@@ -89,7 +89,7 @@ class DeeppolyNode:
 
 
 class DeeppolyReluNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
         transformer for the first layer of a neural network, if that first layer is fully connected with relu
         
@@ -125,7 +125,7 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
 
 
 class DeeppolySigmoidNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with sigmoid
             
@@ -146,7 +146,7 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
 
 
 class DeeppolyTanhNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with tanh
             
@@ -168,7 +168,7 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
 
 
 class DeeppolyReluNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
         transformer for any intermediate fully connected layer with relu
         
@@ -184,7 +184,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments())
+        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
         lbi = []
@@ -203,7 +203,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         return element
 
 class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
             transformer for any intermediate fully connected layer with sigmoid
             
@@ -219,12 +219,12 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
             output : ElinaAbstract0Ptr
             abstract element after the transformer
             """
-        ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments())
+        ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_area_heuristic)
         return element
 
 
 class DeeppolyTanhNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
             transformer for any intermediate fully connected layer with tanh
             
@@ -240,7 +240,7 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
             output : ElinaAbstract0Ptr
             abstract element after the transformer
             """
-        ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments())
+        ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_area_heuristic)
         return element
 
 
@@ -260,7 +260,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         DeeppolyNode.__init__(self, weights, bias)
         self.relu_present = relu_present
         
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
         transformer for a fully connected layer if it's the last layer in the network
         
@@ -276,7 +276,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present)
+        ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present, use_area_heuristic)
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
         lbi = []
@@ -310,7 +310,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
         DeeppolySigmoidNode.__init__(self, weights, bias)
         self.sigmoid_present = sigmoid_present
             
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -326,7 +326,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
                     output : ElinaAbstract0Ptr
                     abstract element after the transformer 
         """
-        ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present)
+        ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_area_heuristic)
         return element
 
 
@@ -345,7 +345,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
         DeeppolyTanhNode.__init__(self, weights, bias)
         self.tanh_present = tanh_present
             
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -361,7 +361,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
                     output : ElinaAbstract0Ptr
                     abstract element after the transformer 
         """
-        ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present)
+        ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_area_heuristic)
         return element
 
 
@@ -408,7 +408,7 @@ class DeeppolyConv2dNodeIntermediate:
         return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.padding == "VALID", True
         
             
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
         transformer for a convolutional layer, if that layer is an intermediate of the network
         
@@ -424,7 +424,7 @@ class DeeppolyConv2dNodeIntermediate:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        conv_handle_intermediate_relu_layer(man, element, *self.get_arguments())
+        conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
         lbi = []

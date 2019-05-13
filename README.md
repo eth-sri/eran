@@ -77,7 +77,7 @@ Install ELINA:
 ```
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure --use-area-heuristic
+./configure
 make
 make install
 cd ..
@@ -128,10 +128,12 @@ Usage
 ```
 cd tf-verify
 
-python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10/acasxu> [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10/acasxu> [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False>
 ```
 
 * ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing ACAS Xu networks.
+
+* ```<use_area_heuristic>```: specifies whether to use area heuristic for the ReLU approximation in DeepPoly
 
 * Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
 

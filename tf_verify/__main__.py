@@ -40,6 +40,7 @@ parser.add_argument('--dataset', type=str, default=None, help='the dataset, can 
 parser.add_argument('--complete', type=str2bool, default=False,  help='flag specifying where to use complete verification or not')
 parser.add_argument('--timeout_lp', type=float, default=1,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for the MILP solver')
+parser.add_argument('--use_area_heuristic', type=str2bool, default=True,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
 
 args = parser.parse_args()
 
@@ -263,7 +264,16 @@ else:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
    
-        label,nn,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp)
+        label,nn,nlb,nub = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+        #for number in range(len(nub)):
+        #    for element in range(len(nub[number])):
+        #        if(nub[number][element]<=0):
+        #            print('False')
+        #        else:
+        #            print('True')
+                    
+        #print("concrete ", nlb[len(nlb)-1])
+        #if(label == int(test[0])):
         if(label == int(test[0])):
             if(dataset=='mnist'):   
                 specLB = np.clip(image - epsilon,0,1)
@@ -279,7 +289,8 @@ else:
                 normalize(specLB, means, stds)
                 normalize(specUB, means, stds)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp)
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+            print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
             if(perturbed_label==label):
                 print("img", total_images, "Verified", label)
                 verified_images += 1
@@ -291,7 +302,7 @@ else:
                        verified_images += 1
                    else:
                        print("img", total_images, "Failed")
-                       cex_label,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', args.timeout_lp, args.timeout_milp)
+                       cex_label,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
                        if(cex_label!=label):
                            if(is_trained_with_pytorch):
                                denormalize(adv_image, means, stds)

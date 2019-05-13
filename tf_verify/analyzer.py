@@ -33,7 +33,7 @@ class layers:
         self.lastlayer = None
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic):
         """
         Arguments
         ---------
@@ -57,7 +57,8 @@ class Analyzer:
         self.nn = nn
         self.timeout_lp = timeout_lp
         self.timeout_milp = timeout_milp
-        self.specnumber = specnumber    
+        self.specnumber = specnumber
+        self.use_area_heuristic = use_area_heuristic    
 
     
     def __del__(self):
@@ -75,7 +76,7 @@ class Analyzer:
             if self.domain == 'deepzono' or self.domain == 'refinezono':
                 element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
             else:
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.use_area_heuristic)
         return element, nlb, nub
     
     
@@ -105,17 +106,26 @@ class Analyzer:
             for i in range(output_size):
                 flag = True
                 for j in range(output_size):
-                    if i!=j and not self.is_greater(self.man, element, i, j):
-                        flag = False
+                    if self.domain == 'deepzono' or self.domain == 'refinezono':
+                        if i!=j and not self.is_greater(self.man, element, i, j):
+                            flag = False
+                    else:
+                        if i!=j and not self.is_greater(self.man, element, i, j, self.use_area_heuristic):
+                            flag = False
                 if flag:
                     dominant_class = i
                     break
         elif self.specnumber==9:
             flag = True
             for i in range(output_size):
-                if i!=3 and not self.is_greater(self.man, element, i, 3):
-                    flag = False
-                    break
+                if self.domain == 'deepzono' or self.domain == 'refinezono':
+                    if i!=3 and not self.is_greater(self.man, element, i, 3):
+                        flag = False
+                        break
+                else:
+                    if i!=3 and not self.is_greater(self.man, element, i, 3, self.use_area_heuristic):
+                        flag = False
+                        break
             if flag:
                 dominant_class = 3
                 
