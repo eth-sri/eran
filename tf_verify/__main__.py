@@ -206,7 +206,7 @@ if dataset=='acasxu':
     start_val = np.copy(specLB)
     end_val = np.copy(specUB)
     flag = True
-    _,nn,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp, specnumber)
+    _,nn,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp, args.use_area_heuristic, specnumber)
     start = time.time()
     for i in range(num_splits[0]):
         specLB[0] = start_val[0] + i*step_size[0]
@@ -227,7 +227,7 @@ if dataset=='acasxu':
                         specLB[4] = start_val[4] + m*step_size[4]
                         specUB[4] = np.fmin(end_val[4],start_val[4]+ (m+1)*step_size[4])
 
-                        label,_,nlb,nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, specnumber)
+                        label,_,nlb,nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic, specnumber)
                         
                         if(specnumber==9 and label!=3):
                             if complete==True:
