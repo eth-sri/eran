@@ -446,7 +446,7 @@ class DeeppolyConv2dNodeIntermediate:
 
 
 class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):    
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
         transformer for a convolutional layer, if that layer is the first of the network
         
