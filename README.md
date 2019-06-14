@@ -126,7 +126,7 @@ Usage
 -------------
 
 ```
-cd tf-verify
+cd tf_verify
 
 python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10/acasxu> [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False>
 ```
