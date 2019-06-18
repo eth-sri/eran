@@ -110,10 +110,17 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
             print("\tWShape: ", W.shape)
             print("\tBShape: ", b.shape)
         elif curr_line == "MaxPooling2D":
-            args = runRepl(net.readline()[:-1], ["input_shape" , "pool_size"])
+            maxpool_line = net.readline()[:-1]
+            if 'stride' in maxpool_line:
+                args = runRepl(maxpool_line, ["input_shape" , "pool_size", "stride"])
+                stride = [1] + args['stride'] + [1]
+            else:
+                args = runRepl(maxpool_line, ["input_shape" , "pool_size"])
+                stride = [1] + args['pool_size'] + [1]
+            ksize =  [1] + args['pool_size'] + [1]
             print("MaxPool", args)
-            ksize = [1] + args['pool_size'] + [1]
-            x = tf.nn.max_pool(tf.reshape(x, [1] + args["input_shape"]), padding="VALID", strides=ksize, ksize=ksize)
+            
+            x = tf.nn.max_pool(tf.reshape(x, [1] + args["input_shape"]), padding="VALID", strides=stride, ksize=ksize)
             print("\tOutShape: ", x.shape)
         elif curr_line == "Conv2D":
             is_conv = True
