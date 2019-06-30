@@ -117,7 +117,7 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
             else:
                 args = runRepl(maxpool_line, ["input_shape" , "pool_size"])
                 stride = [1] + args['pool_size'] + [1]
-            if("padding" in line):
+            if("padding" in maxpool_line):
                 if(args["padding"]==1):
                     padding_arg = "SAME"
                 else:
