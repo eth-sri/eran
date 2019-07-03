@@ -448,7 +448,7 @@ class DeepzonoConv:
         image_size  = (c_size_t * 3)(self.image_size[0],self.image_size[1],self.image_size[2])
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
         element     = add_dimensions(man, element, offset+old_length, new_length)
-        return man, True, element, old_length, self.filters, np.ndarray([0,0,0]), image_size, 0, filter_size, num_filters, strides, self.padding == "VALID", False
+        return man, True, element, old_length+offset, self.filters, np.ndarray([0,0,0]), image_size, offset, filter_size, num_filters, strides, self.padding == "VALID", False
         
     
     
@@ -522,9 +522,10 @@ class DeepzonoConvbias(DeepzonoConv):
         man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias = self.get_arguments(man, element)
         bias     = self.bias
         has_bias = True
+        #print("start ", start_offset,expr_offset,filter_size,num_filters)
         element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias)
         num_vars = self.output_length
-        
+        #print("coming here")
         dimension = elina_abstract0_dimension(man,element)
         num_neurons = dimension.intdim + dimension.realdim
         bounds = elina_abstract0_to_box(man,element)

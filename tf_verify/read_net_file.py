@@ -68,6 +68,8 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
     net = open(net_file,'r')
     x = tf.placeholder(tf.float64, [in_len], name = "x")
     y = None
+    z1 = None
+    z2 = None
     last_layer = None
     h,w,c = None, None, None
     is_conv = False
@@ -76,6 +78,14 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
         if 'Normalize' in curr_line:
             mean = extract_mean(curr_line)
             std = extract_std(curr_line)
+        elif 'ParSum1' in curr_line:
+            z1 = x
+            print("par sum1")
+        elif 'ParSum2' in curr_line:
+            z2 = x
+            x = z1
+        elif 'ParSumComplete' in curr_line:
+            x = tf.add(z2,x)
         elif 'SkipNet1' in curr_line:
             y = x
             print("skip net1")
