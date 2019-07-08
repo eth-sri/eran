@@ -9,11 +9,38 @@ from fppoly import *
 from elina_interval import *
 from elina_abstract0 import *
 from elina_manager import *
+from functools import reduce
 
+def add_input_output_information_deeppoly(self, input_names, output_name, output_shape):
+    """
+    sets for an object the three fields:
+        - self.output_length
+        - self.input_names
+        - self.output_name
+    which will mainly be used by the Optimizer, but can also be used by the Nodes itself
+    
+    Arguments
+    ---------
+    self : Object
+        will be a DeepzonoNode, but could be any object
+    input_names : iterable
+        iterable of strings, each one being the name of another Deepzono-Node
+    output_name : str
+        name of self
+    output_shape : iterable
+        iterable of ints with the shape of the output of this node
+        
+    Return
+    ------
+    None 
+    """
+    self.output_length = reduce((lambda x, y: x*y), output_shape)
+    self.input_names   = input_names
+    self.output_name   = output_name
 
 
 class DeeppolyInput:
-    def __init__(self, specLB, specUB):
+    def __init__(self, specLB, specUB, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -24,6 +51,7 @@ class DeeppolyInput:
         """
         self.specLB = np.ascontiguousarray(specLB, dtype=np.double)
         self.specUB = np.ascontiguousarray(specUB, dtype=np.double)
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
     
     
     def transformer(self, man):
@@ -48,7 +76,7 @@ class DeeppolyNode:
     """
     Parent class for all the classes that implement fully connected layers
     """
-    def __init__(self, weights, bias):
+    def __init__(self, weights, bias, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -59,7 +87,7 @@ class DeeppolyNode:
         """
         self.weights = np.ascontiguousarray(weights, dtype=np.double)
         self.bias    = np.ascontiguousarray(bias,    dtype=np.double)
-    
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
     
     def get_arguments(self):
         """
@@ -71,7 +99,7 @@ class DeeppolyNode:
             the four entries are pointers to the rows of the matrix, the bias, the length of the output, and the length of the input
         """
         xpp = self.get_xpp()
-        return xpp, self.bias, self.weights.shape[0], self.weights.shape[1]
+        return xpp, self.bias, self.weights.shape[0], self.weights.shape[1], self.predecessors
     
     
     def get_xpp(self):
@@ -246,7 +274,7 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
 
 
 class DeeppolyReluNodeLast(DeeppolyNode):
-    def __init__(self, weights, bias, relu_present):
+    def __init__(self, weights, bias, relu_present, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -257,7 +285,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         relu_present : bool
             whether this layer has relu or not
         """
-        DeeppolyNode.__init__(self, weights, bias)
+        DeeppolyNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.relu_present = relu_present
         
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
@@ -296,7 +324,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
 
 
 class DeeppolySigmoidNodeLast(DeeppolyNode):
-    def __init__(self, weights, bias, sigmoid_present):
+    def __init__(self, weights, bias, sigmoid_present, input_names, output_name, output_shape):
         """
             Arguments
             ---------
@@ -307,7 +335,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
             relu_present : bool
             whether this layer has sigmoid or not
             """
-        DeeppolySigmoidNode.__init__(self, weights, bias)
+        DeeppolySigmoidNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.sigmoid_present = sigmoid_present
             
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
@@ -331,7 +359,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
 
 
 class DeeppolyTanhNodeLast(DeeppolyNode):
-    def __init__(self, weights, bias, tanh_present):
+    def __init__(self, weights, bias, tanh_present, input_names, output_name, output_shape):
         """
             Arguments
             ---------
@@ -342,7 +370,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
             relu_present : bool
             whether this layer has relu or not
             """
-        DeeppolyTanhNode.__init__(self, weights, bias)
+        DeeppolyTanhNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.tanh_present = tanh_present
             
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
@@ -366,7 +394,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
 
 
 class DeeppolyConv2dNodeIntermediate:
-    def __init__(self, filters, strides, padding, bias, image_shape):
+    def __init__(self, filters, strides, padding, bias, image_shape, input_names, output_name, output_shape):
         """
         collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
         
@@ -386,7 +414,7 @@ class DeeppolyConv2dNodeIntermediate:
         self.strides     = np.ascontiguousarray(strides, dtype=np.uintp)
         self.bias        = np.ascontiguousarray(bias, dtype=np.double)
         self.padding    =  padding
-    
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
     
     def get_arguments(self):
         """
@@ -405,7 +433,7 @@ class DeeppolyConv2dNodeIntermediate:
         filter_size = (c_size_t * 2) (self.filters.shape[0], self.filters.shape[1])
         numfilters  = self.filters.shape[3]
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
-        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.padding == "VALID", True
+        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.padding == "VALID", True, self.predecessors
         
             
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
@@ -424,6 +452,7 @@ class DeeppolyConv2dNodeIntermediate:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
+        print("predecessors ", self, self.predecessors) 
         conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
@@ -484,7 +513,7 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
 
 
 class DeeppolyMaxpool:
-    def __init__(self, image_shape, window_size, strides):
+    def __init__(self, image_shape, window_size, strides, input_names, output_name, output_shape):
         """
         collects the information needed for the handle_maxpool_layer transformer and brings it into the required shape
         
@@ -499,9 +528,10 @@ class DeeppolyMaxpool:
         """
         self.image_shape = np.ascontiguousarray(image_shape, dtype=np.uintp)
         self.window_size = np.ascontiguousarray([window_size[0], window_size[1], 1], dtype=np.uintp)
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
     
-    
-    def transformer(self, nn, man, element, nlb, nub):
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         """
         transformer for a maxpool layer, this can't be the first layer of a network
         
@@ -517,6 +547,24 @@ class DeeppolyMaxpool:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        handle_maxpool_layer(man, element, self.window_size, self.image_shape)
+        handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
         return element
 
+
+class DeeppolyResadd:
+    def __init__(self, input_names, output_name, output_shape):
+        """
+        Arguments
+        ---------
+        input_names : iterable
+            iterable with the names of the two nodes you want to add
+        output_name : str
+            name of this node's output
+        output_shape : iterable
+            iterable of ints with the shape of the output of this node
+        """
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+        handle_residual_layer(man,element,self.output_length,self.predecessors)
+        return element

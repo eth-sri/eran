@@ -234,59 +234,88 @@ class Optimizer:
         
         i = 0
         while i < len(self.operations):
+            #print(self.operations[i])
             if self.operations[i] == "Placeholder":
-                output.append(DeeppolyInput(specLB, specUB))
+                input_names, output_name, output_shape = self.resources[i][domain]
+                output.append(DeeppolyInput(specLB, specUB, input_names, output_name, output_shape))
                 i += 1
             elif i == 1 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                                matrix, = self.resources[i][domain]
-                                bias,   = self.resources[i+1][domain]
+                                matrix,input_names,_,_ = self.resources[i][domain]
+                                bias,_,output_name,output_shape   = self.resources[i+1][domain]
                                 if(self.operations[i+2] == "Relu"):
-                                    output.append(DeeppolyReluNodeFirst(matrix, bias))
+                                    output.append(DeeppolyReluNodeFirst(matrix, bias, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Sigmoid"):
-                                    output.append(DeeppolySigmoidNodeFirst(matrix, bias))
+                                    output.append(DeeppolySigmoidNodeFirst(matrix, bias, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Tanh"):
-                                    output.append(DeeppolyTanhNodeFirst(matrix, bias))
+                                    output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
                                 i += 3
             elif i == len(self.operations)-3 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                                matrix, = self.resources[i][domain]
-                                bias,   = self.resources[i+1][domain]
+                                matrix, input_names,_,_ = self.resources[i][domain]
+                                bias,_, output_name, output_shape   = self.resources[i+1][domain]
                                 if(self.operations[i+2] == "Relu"):
-                                    output.append(DeeppolyReluNodeLast(matrix, bias, True))
+                                    output.append(DeeppolyReluNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Sigmoid"):
-                                    output.append(DeeppolySigmoidNodeLast(matrix, bias, True))
+                                    output.append(DeeppolySigmoidNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Tanh"):
-                                    output.append(DeeppolyTanhNodeLast(matrix, bias, True))
+                                    output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                                 i += 3
             elif i == len(self.operations)-2 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                matrix, = self.resources[i][domain]
-                bias,   = self.resources[i+1][domain]
-                output.append(DeeppolyReluNodeLast(matrix, bias, False))
+                matrix, input_names, _, _ = self.resources[i][domain]
+                bias,_, output_name, output_shape   = self.resources[i+1][domain]
+                output.append(DeeppolyReluNodeLast(matrix, bias, False, input_names, output_name, output_shape))
                 i += 2
             elif self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                                matrix, = self.resources[i][domain]
-                                bias,   = self.resources[i+1][domain]
+                                matrix, input_names, _,_ = self.resources[i][domain]
+                                bias,_, output_name, output_shape   = self.resources[i+1][domain]
                                 if(self.operations[i+2] == "Relu"):
-                                    output.append(DeeppolyReluNodeIntermediate(matrix, bias))
+                                    output.append(DeeppolyReluNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Sigmoid"):
-                                    output.append(DeeppolySigmoidNodeIntermediate(matrix, bias))
+                                    output.append(DeeppolySigmoidNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                                 elif(self.operations[i+2]=="Tanh"):
-                                    output.append(DeeppolyTanhNodeIntermediate(matrix, bias))
+                                    output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                                 i += 3
             elif self.operations[i] == "MaxPool":
-                image_shape, window_size, out_shape = self.resources[i][domain]
-                output.append(DeeppolyMaxpool(image_shape, window_size, strides))
+                image_shape, window_size, out_shape, input_names, output_name, output_shape = self.resources[i][domain]
+                output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
                 i += 1
             elif i == 1 and self.operations[1] == "Conv2D" and self.operations[2] == "BiasAdd" and self.operations[3] == "Relu":
-                filters, image_shape, strides, padding = self.resources[i][domain]
-                bias, = self.resources[i+1][domain]
-                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape))
+                #print("resources ", self.resources[i][domain])
+                filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
+                bias,_,output_name, output_shape = self.resources[i+1][domain]
+                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
                 i += 3
             elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd" and self.operations[i+2] == "Relu":
-                filters, image_shape, strides, padding = self.resources[i][domain]
-                bias, = self.resources[i+1][domain]
-                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape))
+                
+                filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
+                bias,_,output_name,output_shape = self.resources[i+1][domain]
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
                 i += 3
+            elif self.operations[i] == "Resadd":
+                #self.resources[i][domain].append(refine)
+                output.append(DeeppolyResadd(*self.resources[i][domain]))
+                i += 1
             else:
-                assert 0, "the Deeppoly analyzer doesn't support this network"        
+                assert 0, "the Deeppoly analyzer doesn't support this network"
+        index_store = {} 
+        unique_input = []
+        index = 0
+        for node in output:
+            for input_name in node.input_names:
+                if not input_name in unique_input:
+                   index_store[input_name] = index
+                   unique_input.append(input_name)
+                   index+=1   
+            #print("input names ",node.input_names, "output name",node.output_name)
+        for node in output:
+            predecessors = (c_size_t *len(node.input_names))()
+            i = 0
+            for input_name in node.input_names:
+                predecessors[i] = index_store[input_name]
+                i+=1
+            node.predecessors = predecessors
+            #print("node ",node)
+            #if(len(predecessors)>0):
+            #    print("predecessors ", predecessors[0])
+                #print("input name ", input_name, "index ", index_store[input_name])
         return output
 

@@ -130,8 +130,8 @@ class TFTranslator:
 					in_out_info = (input_tensor_names, op.outputs[0].name, tensorshape_to_intlist(op.outputs[0].shape))
 			
 					if op.type == "MatMul":
-						deeppoly_res = self.matmul_resources(op)
-						deepzono_res = deeppoly_res + in_out_info
+						deeppoly_res = self.matmul_resources(op) + in_out_info
+						deepzono_res = deeppoly_res 
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "Add":
 						left_type  = op.inputs[0].op.type
@@ -139,36 +139,36 @@ class TFTranslator:
 						if left_type == 'Const' and right_type == 'Const':
 							assert 0, "we don't support the addition of two constants yet"
 						elif left_type == 'Const' or right_type == 'Const':
-							deeppoly_res = self.add_resources(op)
-							deepzono_res = deeppoly_res + in_out_info
+							deeppoly_res = self.add_resources(op) + in_out_info
+							deepzono_res = deeppoly_res
 							operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 						else:
 							operation_types[-1] = "Resadd"
-							operation_resources.append({'deepzono':in_out_info})
+							operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
 					elif op.type == "BiasAdd":
 						if op.inputs[1].op.type == 'Const':
-							deeppoly_res = self.add_resources(op)
-							deepzono_res = deeppoly_res + in_out_info
+							deeppoly_res = self.add_resources(op) + in_out_info
+							deepzono_res = deeppoly_res
 							operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 						else:
 							assert 0, "this bias add doesn't meet our assumption (bias is constant)"
 					elif op.type == "Conv2D":
 						filters, image_shape, strides, padding = self.conv2d_resources(op)
-						deeppoly_res = (filters, image_shape, strides, padding)
-						deepzono_res = deeppoly_res + in_out_info
+						deeppoly_res = (filters, image_shape, strides, padding) + in_out_info
+						deepzono_res = deeppoly_res 
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "MaxPool":
 						image_shape, window_size, strides, padding = self.maxpool_resources(op)
-						deeppoly_res =  (image_shape, window_size, in_out_info[2])
+						deeppoly_res =  (image_shape, window_size, in_out_info[2]) + in_out_info
 						deepzono_res = (image_shape, window_size, strides, padding) + in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "Placeholder":
-						deeppoly_res = ()
+						deeppoly_res = in_out_info
 						deepzono_res = in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type in ["Relu", "Sigmoid", "Tanh"]:
-						deeppoly_res = self.nonlinearity_resources(op)
-						deepzono_res = deeppoly_res + in_out_info
+						deeppoly_res = self.nonlinearity_resources(op) + in_out_info
+						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					#elif op.type == "ConcatV2":
 					#	print("Concatv2")

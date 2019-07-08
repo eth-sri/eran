@@ -264,7 +264,7 @@ else:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
    
-        label,nn,nlb,nub = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+        label,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
