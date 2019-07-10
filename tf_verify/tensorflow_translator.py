@@ -126,7 +126,6 @@ class TFTranslator:
 						if kind == 'Const':
 							continue
 						input_tensor_names.append(name)
-			
 					in_out_info = (input_tensor_names, op.outputs[0].name, tensorshape_to_intlist(op.outputs[0].shape))
 			
 					if op.type == "MatMul":

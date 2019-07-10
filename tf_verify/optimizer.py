@@ -241,7 +241,8 @@ class Optimizer:
                 i += 1
             elif i == 1 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                                 matrix,input_names,_,_ = self.resources[i][domain]
-                                bias,_,output_name,output_shape   = self.resources[i+1][domain]
+                                bias,_,_,_   = self.resources[i+1][domain]
+                                _,output_name,output_shape = self.resources[i+2][domain]
                                 if(self.operations[i+2] == "Relu"):
                                     output.append(DeeppolyReluNodeFirst(matrix, bias, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Sigmoid"):
@@ -251,7 +252,8 @@ class Optimizer:
                                 i += 3
             elif i == len(self.operations)-3 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                                 matrix, input_names,_,_ = self.resources[i][domain]
-                                bias,_, output_name, output_shape   = self.resources[i+1][domain]
+                                bias,_, _, _   = self.resources[i+1][domain]
+                                _,output_name,output_shape = self.resources[i+2][domain]
                                 if(self.operations[i+2] == "Relu"):
                                     output.append(DeeppolyReluNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Sigmoid"):
@@ -266,7 +268,8 @@ class Optimizer:
                 i += 2
             elif self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                                 matrix, input_names, _,_ = self.resources[i][domain]
-                                bias,_, output_name, output_shape   = self.resources[i+1][domain]
+                                bias,_, _, _   = self.resources[i+1][domain]
+                                _,output_name,output_shape = self.resources[i+2][domain]
                                 if(self.operations[i+2] == "Relu"):
                                     output.append(DeeppolyReluNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                                 elif(self.operations[i+2] == "Sigmoid"):
@@ -282,12 +285,14 @@ class Optimizer:
                 #print("resources ", self.resources[i][domain])
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,output_name, output_shape = self.resources[i+1][domain]
+                _,output_name,output_shape = self.resources[i+2][domain]
                 output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
                 i += 3
             elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd" and self.operations[i+2] == "Relu":
                 
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
-                bias,_,output_name,output_shape = self.resources[i+1][domain]
+                bias,_,_,_ = self.resources[i+1][domain]
+                _,output_name,output_shape = self.resources[i+2][domain]
                 output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
                 i += 3
             elif self.operations[i] == "Resadd":
@@ -296,26 +301,36 @@ class Optimizer:
                 i += 1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support this network"
-        index_store = {} 
-        unique_input = []
-        index = 0
+        #index_store = {} 
+        #unique_input = []
+        output_index_store = {}
+        #index = 0
+        index_o = 0
         for node in output:
-            for input_name in node.input_names:
-                if not input_name in unique_input:
-                   index_store[input_name] = index
-                   unique_input.append(input_name)
-                   index+=1   
+            #print("node ",node)
+            output_index_store[node.output_name] = index_o
+            #print("output index ",index_o)
+            index_o+=1
+            #for input_name in node.input_names:
+            #    print("input names ",node.input_names,node.output_name)
+            #    if not input_name in unique_input:
+            #       index_store[input_name] = index
+            #       print("index ",index)
+            #       unique_input.append(input_name)
+            #       index+=1   
             #print("input names ",node.input_names, "output name",node.output_name)
         for node in output:
             predecessors = (c_size_t *len(node.input_names))()
             i = 0
             for input_name in node.input_names:
-                predecessors[i] = index_store[input_name]
+                predecessors[i] = output_index_store[input_name]
                 i+=1
             node.predecessors = predecessors
-            #print("node ",node)
-            #if(len(predecessors)>0):
-            #    print("predecessors ", predecessors[0])
+            #print("node ",node,output_index_store[node.output_name])
+            #if(len(predecessors)==1):
+                #print("predecessors ", predecessors[0])
+            #if(len(predecessors)==2):
+                #print("predecessors ", predecessors[0],predecessors[1])
                 #print("input name ", input_name, "index ", index_store[input_name])
         return output
 

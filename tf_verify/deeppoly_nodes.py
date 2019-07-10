@@ -452,7 +452,7 @@ class DeeppolyConv2dNodeIntermediate:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        print("predecessors ", self, self.predecessors) 
+        #print("predecessors ", self, self.predecessors) 
         conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
