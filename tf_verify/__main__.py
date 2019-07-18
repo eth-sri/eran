@@ -263,8 +263,12 @@ else:
         if(is_trained_with_pytorch):
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
-   
+        
         label,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+        #print("nlb ", nlb[len(nlb)-1])
+        #print("nub ",nub[len(nub)-1])
+            #print("nlb ", nlb[3])
+            #print("nub ",nub[3])
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
@@ -290,7 +294,7 @@ else:
                 normalize(specUB, means, stds)
             start = time.time()
             perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
-            print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
+            #print( "nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
             if(perturbed_label==label):
                 print("img", total_images, "Verified", label)
                 verified_images += 1
