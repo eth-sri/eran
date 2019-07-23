@@ -86,6 +86,8 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
             x = z1
         elif 'ParSumComplete' in curr_line:
             x = tf.add(z2,x)
+        elif 'ParSumReLU' in curr_line:
+            x = tf.nn.relu(tf.add(z2,x))
         elif 'SkipNet1' in curr_line:
             y = x
             print("skip net1")
@@ -101,7 +103,7 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
         elif ((curr_line == "ReLU") or (curr_line == "Sigmoid") or (curr_line == "Tanh") or (curr_line == "Affine")):
             print(curr_line)
             W = None
-            if (last_layer == "Conv2D" or last_layer=="ParSumComplete") and is_trained_with_pytorch:
+            if (last_layer == "Conv2D" or last_layer=="ParSumComplete" or last_layer=="ParSumReLU") and is_trained_with_pytorch:
                 W = myConst(permutation(parseVec(net), h, w, c).transpose())
             else:
                 W = myConst(parseVec(net).transpose())
@@ -151,6 +153,8 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
                 start = 8
             elif("Tanh" in line):
                 start = 5
+            elif("Affine" in line):
+                start = 7
             if 'padding' in line:
                 args =  runRepl(line[start:-1], ["filters", "input_shape", "kernel_size", "stride", "padding"])
             else:
@@ -185,6 +189,8 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
                 x = tf.nn.sigmoid(tf.nn.bias_add(x, b))
             elif("Tanh" in line):
                 x = tf.nn.tanh(tf.nn.bias_add(x, b))
+            elif("Affine" in line):
+                x = tf.nn.bias_add(x, b)
             else:
                 raise Exception("Unsupported activation: ", curr_line)
         elif curr_line == "":
