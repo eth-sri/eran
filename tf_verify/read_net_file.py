@@ -101,7 +101,7 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
         elif ((curr_line == "ReLU") or (curr_line == "Sigmoid") or (curr_line == "Tanh") or (curr_line == "Affine")):
             print(curr_line)
             W = None
-            if last_layer == "Conv2D" and is_trained_with_pytorch:
+            if (last_layer == "Conv2D" or last_layer=="ParSumComplete") and is_trained_with_pytorch:
                 W = myConst(permutation(parseVec(net), h, w, c).transpose())
             else:
                 W = myConst(parseVec(net).transpose())
