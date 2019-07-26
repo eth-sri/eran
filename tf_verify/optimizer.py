@@ -301,7 +301,7 @@ class Optimizer:
             elif self.operations[i] == "Resadd" and self.operations[i+1] == "Relu":
                 input_names,_,_ = self.resources[i][domain]
                 _,output_name,output_shape = self.resources[i+1][domain]
-                output.append(DeeppolyResaddRelu(input_names,output_name,output_shape, True))
+                output.append(DeeppolyResadd(input_names,output_name,output_shape, True))
                 i += 2
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
