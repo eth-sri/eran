@@ -284,7 +284,7 @@ class Optimizer:
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,output_name, output_shape = self.resources[i+1][domain]
                 _,output_name,output_shape = self.resources[i+2][domain]
-                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
+                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape,True))
                 i += 3
             elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd" and self.operations[i+2] == "Relu":
                 
