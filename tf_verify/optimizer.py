@@ -41,7 +41,6 @@ class Optimizer:
         output = []
         domain = 'deepzono'
         nbr_op = len(self.operations)
-        
         i = 0
         while i < nbr_op:
             if self.operations[i] == "Placeholder":
@@ -201,7 +200,6 @@ class Optimizer:
                     active_abstracts.append(node.output_name)
                     abstract_length.append(node.output_length)
                     i += 1
-        
         return ir_list
                 
             
@@ -293,11 +291,22 @@ class Optimizer:
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,_,_ = self.resources[i+1][domain]
                 _,output_name,output_shape = self.resources[i+2][domain]
-                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape,True))
                 i += 3
+            elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd" and self.operations[i+2] != "Relu":
+                filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
+                bias,_,output_name,output_shape = self.resources[i+1][domain]
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape,False))
+                i += 2
+            elif self.operations[i] == "Resadd" and self.operations[i+1] == "Relu":
+                input_names,_,_ = self.resources[i][domain]
+                _,output_name,output_shape = self.resources[i+1][domain]
+                output.append(DeeppolyResaddRelu(input_names,output_name,output_shape, True))
+                i += 2
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
-                output.append(DeeppolyResadd(*self.resources[i][domain]))
+                input_names,output_name,output_shape = self.resources[i][domain]
+                output.append(DeeppolyResadd(input_names,output_name,output_shape, False))
                 i += 1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support this network"
@@ -307,7 +316,7 @@ class Optimizer:
         #index = 0
         index_o = 0
         for node in output:
-            #print("node ",node)
+            #print("node ",node.output_name)
             output_index_store[node.output_name] = index_o
             #print("output index ",index_o)
             index_o+=1
@@ -326,11 +335,11 @@ class Optimizer:
                 predecessors[i] = output_index_store[input_name]
                 i+=1
             node.predecessors = predecessors
-            #print("node ",node,output_index_store[node.output_name])
+            #print("predecessors ",node.input_names,node.predecessors)
             #if(len(predecessors)==1):
-                #print("predecessors ", predecessors[0])
+            #    print("predecessors ", node.input_names, predecessors[0], node.output_name)
             #if(len(predecessors)==2):
-                #print("predecessors ", predecessors[0],predecessors[1])
+            #    print("predecessors ", node.input_names, predecessors[0],predecessors[1], node.output_name)
                 #print("input name ", input_name, "index ", index_store[input_name])
         return output
 

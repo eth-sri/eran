@@ -394,7 +394,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
 
 
 class DeeppolyConv2dNodeIntermediate:
-    def __init__(self, filters, strides, padding, bias, image_shape, input_names, output_name, output_shape):
+    def __init__(self, filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu):
         """
         collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
         
@@ -414,6 +414,7 @@ class DeeppolyConv2dNodeIntermediate:
         self.strides     = np.ascontiguousarray(strides, dtype=np.uintp)
         self.bias        = np.ascontiguousarray(bias, dtype=np.double)
         self.padding    =  padding
+        self.has_relu    = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
     
     def get_arguments(self):
@@ -453,7 +454,10 @@ class DeeppolyConv2dNodeIntermediate:
             abstract element after the transformer 
         """
         #print("predecessors ", self, self.predecessors) 
-        conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        if(self.has_relu):
+            conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        else:
+            conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
         lbi = []
@@ -552,7 +556,7 @@ class DeeppolyMaxpool:
 
 
 class DeeppolyResadd:
-    def __init__(self, input_names, output_name, output_shape):
+    def __init__(self, input_names, output_name, output_shape, has_relu):
         """
         Arguments
         ---------
@@ -563,8 +567,14 @@ class DeeppolyResadd:
         output_shape : iterable
             iterable of ints with the shape of the output of this node
         """
+        self.has_relu = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
-        handle_residual_layer(man,element,self.output_length,self.predecessors)
+        if(self.has_relu):
+             handle_residual_relu_layer(man,element,self.output_length,self.predecessors)
+        else:
+             handle_residual_affine_layer(man,element,self.output_length,self.predecessors)
         return element
+
+
