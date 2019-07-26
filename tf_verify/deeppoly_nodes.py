@@ -572,9 +572,9 @@ class DeeppolyResadd:
 
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
         if(self.has_relu):
-             handle_residual_relu_layer(man,element,self.output_length,self.predecessors)
+             handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         else:
-             handle_residual_affine_layer(man,element,self.output_length,self.predecessors)
+             handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         return element
 
 
