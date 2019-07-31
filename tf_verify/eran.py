@@ -70,4 +70,39 @@ class ERAN:
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         dominant_class, nlb, nub = analyzer.analyze()
         return dominant_class, nn, nlb, nub
+
+
+    def analyze_zonotope(self, original, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0):
+        """
+        This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
+
+        Arguments
+        ---------
+        original : numpy.ndarray
+            ndarray with the original input
+        zonotope : numpy.ndarray
+            ndarray with the zonotope
+        domain : str
+            either 'deepzono', 'refinezono' or 'deeppoly', decides which set of abstract transformers is used.
+
+        Return
+        ------
+        dominant_class : int
+            if the analysis is succesfull (it could prove robustness for this box) then the index of the class that dominates is returned
+            if the analysis couldn't prove robustness then -1 is returned
+        """
+        assert domain in ['deepzono', 'refinezono', 'deeppoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
+        original = np.reshape(original, (-1,))
+        zonotope = np.reshape(zonotope, (-1,))
+        nn = layers()
+        nn.original = original
+        nn.zonotope = zonotope
+        if domain == 'deepzono' or domain == 'refinezono':
+            execute_list   = self.optimizer.get_deepzono(nn, original, zonotope, True)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+        elif domain == 'deeppoly':
+            execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+        dominant_class, nlb, nub = analyzer.analyze()
+        return dominant_class, nn, nlb, nub
         

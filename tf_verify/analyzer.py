@@ -30,6 +30,8 @@ class layers:
         self.maxpool_ub = []
         self.specLB = []
         self.specUB = []
+        self.original = []
+        self.zonotope = []
         self.lastlayer = None
 
 class Analyzer:
@@ -109,9 +111,11 @@ class Analyzer:
                     if self.domain == 'deepzono' or self.domain == 'refinezono':
                         if i!=j and not self.is_greater(self.man, element, i, j):
                             flag = False
+                            break
                     else:
                         if i!=j and not self.is_greater(self.man, element, i, j, self.use_area_heuristic):
                             flag = False
+                            break
                 if flag:
                     dominant_class = i
                     break

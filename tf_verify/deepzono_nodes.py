@@ -186,6 +186,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp,
      
     return element
 
+
 class DeepzonoInput:
     def __init__(self, specLB, specUB, input_names, output_name, output_shape):
         """
@@ -203,22 +204,59 @@ class DeepzonoInput:
         add_input_output_information(self, input_names, output_name, output_shape)
         self.specLB = np.ascontiguousarray(specLB, dtype=np.double)
         self.specUB = np.ascontiguousarray(specUB, dtype=np.double)
-    
+
     def transformer(self, man):
         """
         creates an abstract element from the input spec
-        
+
         Arguments
         ---------
         man : ElinaManagerPtr
             inside this manager the abstract element will be created
-        
+
         Return
         ------
         output : ElinaAbstract0Ptr
             new abstract element representing the element specified by self.specLB and self.specUB
         """
         return zonotope_from_network_input(man, 0, len(self.specLB), self.specLB, self.specUB)
+
+
+
+
+class DeepzonoInputZonotope:
+    def __init__(self, original, zonotope, input_names, output_name, output_shape):
+        """
+        Arguments
+        ---------
+        specLB : numpy.ndarray
+            1D array with the lower bound of the input spec
+        specUB : numpy.ndarray
+            1D array with the upper bound of the input spec
+        output_name : str
+            name of this node's output
+        output_shape : iterable
+            iterable of ints with the shape of the output of this node
+        """
+        add_input_output_information(self, input_names, output_name, output_shape)
+        self.original = np.ascontiguousarray(original, dtype=np.double)
+        self.zonotope = np.ascontiguousarray(zonotope, dtype=np.double)
+
+    def transformer(self, man):
+        """
+        creates an abstract element from the input spec
+
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            inside this manager the abstract element will be created
+
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            TODO: is this transformer needed for zonotope or can we return zonotope?
+        """
+        return zonotope_from_network_input_zonotope(man, 0, len(self.original), self.original, self.zonotope)
 
 
 
