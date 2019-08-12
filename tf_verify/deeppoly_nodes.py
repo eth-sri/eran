@@ -9,6 +9,7 @@ from fppoly import *
 from elina_interval import *
 from elina_abstract0 import *
 from elina_manager import *
+from deepzono_milp import *
 from functools import reduce
 
 def add_input_output_information_deeppoly(self, input_names, output_name, output_shape):
@@ -52,8 +53,8 @@ class DeeppolyInput:
         self.specLB = np.ascontiguousarray(specLB, dtype=np.double)
         self.specUB = np.ascontiguousarray(specUB, dtype=np.double)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
-    
-    
+
+
     def transformer(self, man):
         """
         creates an abstract element from the input spec
@@ -88,7 +89,7 @@ class DeeppolyNode:
         self.weights = np.ascontiguousarray(weights, dtype=np.double)
         self.bias    = np.ascontiguousarray(bias,    dtype=np.double)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
-    
+
     def get_arguments(self):
         """
         facilitates putting together all the arguments for the transformers in the child classes
@@ -100,8 +101,8 @@ class DeeppolyNode:
         """
         xpp = self.get_xpp()
         return xpp, self.bias, self.weights.shape[0], self.weights.shape[1], self.predecessors
-    
-    
+
+
     def get_xpp(self):
         """
         helper function to get pointers to the rows of self.weights.
@@ -117,7 +118,7 @@ class DeeppolyNode:
 
 
 class DeeppolyReluNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
         transformer for the first layer of a neural network, if that first layer is fully connected with relu
         
@@ -143,17 +144,19 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             sup = bounds[i].contents.sup
             lbi.append(inf.contents.val.dbl)
             ubi.append(sup.contents.val.dbl)
-    
+
         nlb.append(lbi)
-        nub.append(ubi) 
-        
+        nub.append(ubi)
+
+        #encode_2reLu_cons(nn, man, element, 0, 0, num_neurons, lbi, ubi, relu3vars_list, relu2vars_list, relu1var_list, False, 'refinepoly')
+
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
         return element
 
 
 class DeeppolySigmoidNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with sigmoid
             
@@ -174,7 +177,7 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
 
 
 class DeeppolyTanhNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with tanh
             
@@ -196,7 +199,7 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
 
 
 class DeeppolyReluNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
         transformer for any intermediate fully connected layer with relu
         
@@ -212,26 +215,49 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
-        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(),  use_area_heuristic)
+        layerno = nn.ffn_counter + nn.conv_counter
+        bounds = box_for_layer(man, element, layerno)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
         ubi = []
+        candidate_vars = []
         for i in range(num_neurons):
             inf = bounds[i].contents.inf
             sup = bounds[i].contents.sup
             lbi.append(inf.contents.val.dbl)
             ubi.append(sup.contents.val.dbl)
-    
+            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
+                candidate_vars.append(i)
         nlb.append(lbi)
-        nub.append(ubi) 
-        
+        nub.append(ubi)
+        #print("lbi ", timeout_milp, "ubi ", timeout_lp)
+        if(refine):
+        #TODO handle residual layers here
+            if layerno<=1:
+               use_milp = 1
+               timeout = timeout_milp
+            else:
+               use_milp = 0
+               timeout = timeout_lp
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+            nlb.pop()
+            nub.pop()
+            nlb.append(resl)
+            nub.append(resu)
+            lbi = nlb[layerno]
+            ubi = nub[layerno]
+            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+            for i in range(len(indices)):
+                j = indices[i]
+                update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
         return element
 
 class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
             transformer for any intermediate fully connected layer with sigmoid
             
@@ -252,7 +278,7 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
 
 
 class DeeppolyTanhNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
             transformer for any intermediate fully connected layer with tanh
             
@@ -287,8 +313,8 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         """
         DeeppolyNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.relu_present = relu_present
-        
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
         transformer for a fully connected layer if it's the last layer in the network
         
@@ -304,20 +330,45 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present, use_area_heuristic)
+        ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present,  use_area_heuristic)
+        layerno = nn.ffn_counter + nn.conv_counter
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
         lbi = []
         ubi = []
+        candidate_vars = []
         for i in range(num_neurons):
             inf = bounds[i].contents.inf
             sup = bounds[i].contents.sup
             lbi.append(inf.contents.val.dbl)
             ubi.append(sup.contents.val.dbl)
-    
+            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
+                candidate_vars.append(i)
         nlb.append(lbi)
-        nub.append(ubi) 
-        
+        nub.append(ubi)
+        #print("lbi ", lbi, "ubi ", ubi)
+        if(refine):
+        #TODO handle residual layers here
+            if layerno<=1:
+               use_milp = 1
+               timeout = timeout_milp
+            else:
+               use_milp = 0
+               timeout = timeout_lp
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+            print("resl ", resl, "resu ", resu)
+            nlb.pop()
+            nub.pop()
+            nlb.append(resl)
+            nub.append(resu)
+            lbi = nlb[layerno]
+            ubi = nub[layerno]
+            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+            for i in range(len(indices)):
+                j = indices[i]
+                update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+
+
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
         return element
@@ -337,8 +388,8 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
             """
         DeeppolySigmoidNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.sigmoid_present = sigmoid_present
-            
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -372,8 +423,8 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
             """
         DeeppolyTanhNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.tanh_present = tanh_present
-            
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -394,7 +445,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
 
 
 class DeeppolyConv2dNodeIntermediate:
-    def __init__(self, filters, strides, padding, bias, image_shape, input_names, output_name, output_shape):
+    def __init__(self, filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu):
         """
         collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
         
@@ -414,8 +465,9 @@ class DeeppolyConv2dNodeIntermediate:
         self.strides     = np.ascontiguousarray(strides, dtype=np.uintp)
         self.bias        = np.ascontiguousarray(bias, dtype=np.double)
         self.padding    =  padding
+        self.has_relu    = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
-    
+
     def get_arguments(self):
         """
         facilitates putting together all the arguments for the transformers in the child classes
@@ -434,9 +486,9 @@ class DeeppolyConv2dNodeIntermediate:
         numfilters  = self.filters.shape[3]
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
         return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.padding == "VALID", True, self.predecessors
-        
-            
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
         transformer for a convolutional layer, if that layer is an intermediate of the network
         
@@ -452,21 +504,46 @@ class DeeppolyConv2dNodeIntermediate:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        #print("predecessors ", self, self.predecessors) 
-        conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
-        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        if(self.has_relu):
+            conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        else:
+            conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        layerno = nn.ffn_counter + nn.conv_counter
+        bounds = box_for_layer(man, element, layerno)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
         ubi = []
+        candidate_vars = []
         for i in range(num_neurons):
             inf = bounds[i].contents.inf
             sup = bounds[i].contents.sup
             lbi.append(inf.contents.val.dbl)
             ubi.append(sup.contents.val.dbl)
-    
+            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
+                candidate_vars.append(i)
         nlb.append(lbi)
-        nub.append(ubi) 
-        
+        nub.append(ubi)
+
+        if(refine):
+        #TODO handle residual layers here
+            if layerno<=1:
+               use_milp = 1
+               timeout = timeout_milp
+            else:
+               use_milp = 0
+               timeout = timeout_lp
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+            nlb.pop()
+            nub.pop()
+            nlb.append(resl)
+            nub.append(resu)
+            lbi = nlb[layerno]
+            ubi = nub[layerno]
+            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+
+            for i in range(len(indices)):
+                j = indices[i]
+                update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
         elina_interval_array_free(bounds,num_neurons)
         nn.conv_counter+=1
         return element
@@ -474,8 +551,8 @@ class DeeppolyConv2dNodeIntermediate:
 
 
 
-class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):    
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
         transformer for a convolutional layer, if that layer is the first of the network
         
@@ -490,24 +567,44 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
         ------
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
-        """    
+        """
         conv_handle_first_layer(man, element, *self.get_arguments())
-        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
-        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        layerno = nn.ffn_counter + nn.conv_counter
+        bounds = box_for_layer(man, element, layerno)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
         ubi = []
+        candidate_vars = []
         for i in range(num_neurons):
             inf = bounds[i].contents.inf
             sup = bounds[i].contents.sup
             lbi.append(inf.contents.val.dbl)
             ubi.append(sup.contents.val.dbl)
-    
+            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
+                candidate_vars.append(i)
         nlb.append(lbi)
-        nub.append(ubi) 
-        
+        nub.append(ubi)
+        if(refine):
+        #TODO handle residual layers here
+            if layerno<=1:
+               use_milp = 1
+               timeout = timeout_milp
+            else:
+               use_milp = 0
+               timeout = timeout_lp
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+            nlb.pop()
+            nub.pop()
+            nlb.append(resl)
+            nub.append(resu)
+
+            for i in range(len(indices)):
+                j = indices[i]
+                update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+
         elina_interval_array_free(bounds,num_neurons)
-        nn.ffn_counter+=1
-        return element    
+        nn.conv_counter+=1
+        return element
 
 
 
@@ -530,8 +627,8 @@ class DeeppolyMaxpool:
         self.window_size = np.ascontiguousarray([window_size[0], window_size[1], 1], dtype=np.uintp)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
         transformer for a maxpool layer, this can't be the first layer of a network
         
@@ -552,7 +649,7 @@ class DeeppolyMaxpool:
 
 
 class DeeppolyResadd:
-    def __init__(self, input_names, output_name, output_shape):
+    def __init__(self, input_names, output_name, output_shape, has_relu):
         """
         Arguments
         ---------
@@ -563,8 +660,12 @@ class DeeppolyResadd:
         output_shape : iterable
             iterable of ints with the shape of the output of this node
         """
+        self.has_relu = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
-        handle_residual_layer(man,element,self.output_length,self.predecessors)
+        if(self.has_relu):
+             handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
+        else:
+             handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         return element

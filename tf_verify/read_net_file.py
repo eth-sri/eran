@@ -86,6 +86,8 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
             x = z1
         elif 'ParSumComplete' in curr_line:
             x = tf.add(z2,x)
+        elif 'ParSumReLU' in curr_line:
+            x = tf.nn.relu(tf.add(z2,x))
         elif 'SkipNet1' in curr_line:
             y = x
             print("skip net1")
@@ -98,10 +100,10 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
         elif 'SkipCat' in curr_line:
             print("skip concatenation ",x.shape[0],x.shape[1],y.shape[0],y.shape[1])
             x = tf.concat([y,x],1)
-        elif ((curr_line == "ReLU") or (curr_line == "Sigmoid") or (curr_line == "Tanh") or (curr_line == "Affine")):
+        elif curr_line in ["ReLU", "Sigmoid", "Tanh", "Affine"]:
             print(curr_line)
             W = None
-            if last_layer == "Conv2D" and is_trained_with_pytorch:
+            if (last_layer in ["Conv2D", "ParSumComplete", "ParSumReLU"]) and is_trained_with_pytorch:
                 W = myConst(permutation(parseVec(net), h, w, c).transpose())
             else:
                 W = myConst(parseVec(net).transpose())
@@ -136,7 +138,7 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
                 padding_arg = "VALID"
             ksize =  [1] + args['pool_size'] + [1]
             print("MaxPool", args)
-            
+
             x = tf.nn.max_pool(tf.reshape(x, [1] + args["input_shape"]), padding=padding_arg, strides=stride, ksize=ksize)
             print("\tOutShape: ", x.shape)
         elif curr_line == "Conv2D":
@@ -151,11 +153,13 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
                 start = 8
             elif("Tanh" in line):
                 start = 5
+            elif("Affine" in line):
+                start = 7
             if 'padding' in line:
                 args =  runRepl(line[start:-1], ["filters", "input_shape", "kernel_size", "stride", "padding"])
             else:
                 args = runRepl(line[start:-1], ["filters", "input_shape", "kernel_size"])
-            
+
             W = myConst(parseVec(net))
             print("W shape", W.shape)
             #W = myConst(permutation(parseVec(net), h, w, c).transpose())
@@ -169,12 +173,12 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
                 padding_arg = "VALID"
 
             if("stride" in line):
-                stride_arg = [1] + args["stride"] + [1] 
+                stride_arg = [1] + args["stride"] + [1]
             else:
                 stride_arg = [1,1,1,1]
-                
+
             x = tf.nn.conv2d(tf.reshape(x, [1] + args["input_shape"]), filter=W, strides=stride_arg, padding=padding_arg)
-               
+
             b = myConst(parseVec(net))
             h, w, c = [int(i) for i in x.shape ][1:]
             print("Conv2D", args, "W.shape:",W.shape, "b.shape:", b.shape)
@@ -185,6 +189,8 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
                 x = tf.nn.sigmoid(tf.nn.bias_add(x, b))
             elif("Tanh" in line):
                 x = tf.nn.tanh(tf.nn.bias_add(x, b))
+            elif("Affine" in line):
+                x = tf.nn.bias_add(x, b)
             else:
                 raise Exception("Unsupported activation: ", curr_line)
         elif curr_line == "":
@@ -195,15 +201,3 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
 
     model = x
     return model,  is_conv, mean, std
-
-
-
-
-
-
-
-
-
-
-
-

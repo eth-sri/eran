@@ -48,7 +48,7 @@ class ERAN:
         specUB : numpy.ndarray
             ndarray with the upper bound of the input box
         domain : str
-            either 'deepzono', 'refinezono' or 'deeppoly', decides which set of abstract transformers is used.
+            either 'deepzono', 'refinezono', 'deeppoly', or 'refinepoly', decides which set of abstract transformers is used.
             
         Return
         ------
@@ -56,7 +56,7 @@ class ERAN:
             if the analysis is succesfull (it could prove robustness for this box) then the index of the class that dominates is returned
             if the analysis couldn't prove robustness then -1 is returned
         """
-        assert domain in ['deepzono', 'refinezono', 'deeppoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
+        assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
         specLB = np.reshape(specLB, (-1,))
         specUB = np.reshape(specUB, (-1,))
         nn = layers()
@@ -65,8 +65,8 @@ class ERAN:
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list   = self.optimizer.get_deepzono(nn,specLB, specUB)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
-        elif domain == 'deeppoly':
-            execute_list   = self.optimizer.get_deeppoly(specLB, specUB)
+        elif domain == 'deeppoly' or domain == 'refinepoly':
+            execute_list   = self.optimizer.get_deeppoly(nn, specLB, specUB)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         dominant_class, nlb, nub = analyzer.analyze()
         return dominant_class, nn, nlb, nub
@@ -91,7 +91,7 @@ class ERAN:
             if the analysis is succesfull (it could prove robustness for this box) then the index of the class that dominates is returned
             if the analysis couldn't prove robustness then -1 is returned
         """
-        assert domain in ['deepzono', 'refinezono', 'deeppoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
+        assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
         original = np.reshape(original, (-1,))
         zonotope = np.reshape(zonotope, (-1,))
         nn = layers()
@@ -100,9 +100,10 @@ class ERAN:
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list   = self.optimizer.get_deepzono(nn, original, zonotope, True)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
-        elif domain == 'deeppoly':
+        elif domain == 'deeppoly' or domain == 'refinepoly':
+            assert 0
             execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         dominant_class, nlb, nub = analyzer.analyze()
         return dominant_class, nn, nlb, nub
-        
+

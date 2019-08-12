@@ -76,7 +76,7 @@ class Optimizer:
                     nn.strides.append([strides[0],strides[1]])
                     nn.padding.append(padding=="VALID")
                     nn.filters.append(filters)
-           
+
                     nn.biases.append(bias)
                     nn.layertypes.append('Conv2D')
                     nn.numlayer+=1
@@ -113,12 +113,12 @@ class Optimizer:
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
-        
+
         use_dict = self.deepzono_get_dict(output)
         output   = self.deepzono_forward_pass(output, use_dict)
         return output
-    
-    
+
+
     def deepzono_get_dict(self, ir_list):
         """
         Returns a dict mapping output-names to the number of times that output is used by the nodes in the ir_list.
@@ -140,8 +140,8 @@ class Optimizer:
                 use_dict[input_name] += 1
             use_dict[node.output_name] = 0
         return use_dict
-    
-    
+
+
     def deepzono_forward_pass(self, ir_list, use_dict):
         """
         This function plans which Deepzono-Node-output occupies which section of an abstract element. If a DeepzonoDuplicate-Node should be needed, then this function will add it.
@@ -165,13 +165,13 @@ class Optimizer:
                 index = index + active_abstracts[index:].index(in_name)
                 if not index in index_store:
                     break
-                index += 1 
+                index += 1
             return index
-            
-        
+
+
         active_abstracts = []
         abstract_length  = []
-        
+
         i = 0
         while i < len(ir_list):
             node        = ir_list[i]
@@ -183,7 +183,7 @@ class Optimizer:
                 offset = reduce(lambda x,y: x+y, abstract_length[:index], 0)
                 node.abstract_information += [offset, length]
                 index_store.append(index)
-                
+
             if len(index_store) != 0:
                 active_abstracts[index_store[0]] = node.output_name
                 abstract_length[index_store[0]]  = node.output_length
@@ -195,22 +195,22 @@ class Optimizer:
                 active_abstracts.append(node.output_name)
                 abstract_length.append(node.output_length)
                 node.abstract_information = [0, node.output_length]
-            
+
             i += 1
-            
+
             if use_dict[node.output_name] > 1:
                 for j in range(1, use_dict[node.output_name]):
                     ir_list.insert(i, DeepzonoDuplicate(node.abstract_information[0], node.output_length))
                     active_abstracts.append(node.output_name)
                     abstract_length.append(node.output_length)
                     i += 1
-        
+
         return ir_list
-                
-            
 
 
-    def get_deeppoly(self, specLB, specUB):
+
+
+    def get_deeppoly(self, nn, specLB, specUB):
         """
         This function will go through self.operations and self.resources and create a list of Deeppoly-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deeppoly'] holds the resources for an operation of type self.operations[i].
@@ -234,7 +234,7 @@ class Optimizer:
         """
         output = []
         domain = 'deeppoly'
-        
+
         i = 0
         while i < len(self.operations):
             #print(self.operations[i])
@@ -243,43 +243,63 @@ class Optimizer:
                 output.append(DeeppolyInput(specLB, specUB, input_names, output_name, output_shape))
                 i += 1
             elif i == 1 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                                matrix,input_names,_,_ = self.resources[i][domain]
-                                bias,_,_,_   = self.resources[i+1][domain]
-                                _,output_name,output_shape = self.resources[i+2][domain]
-                                if(self.operations[i+2] == "Relu"):
-                                    output.append(DeeppolyReluNodeFirst(matrix, bias, input_names, output_name, output_shape))
-                                elif(self.operations[i+2] == "Sigmoid"):
-                                    output.append(DeeppolySigmoidNodeFirst(matrix, bias, input_names, output_name, output_shape))
-                                elif(self.operations[i+2] == "Tanh"):
-                                    output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
-                                i += 3
+                matrix,input_names,_,_ = self.resources[i][domain]
+                bias,_,_,_   = self.resources[i+1][domain]
+                _,output_name,output_shape = self.resources[i+2][domain]
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                if(self.operations[i+2] == "Relu"):
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
+                    output.append(DeeppolyReluNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+2] == "Sigmoid"):
+                    output.append(DeeppolySigmoidNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+2] == "Tanh"):
+                    output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                i += 3
             elif i == len(self.operations)-3 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                                matrix, input_names,_,_ = self.resources[i][domain]
-                                bias,_, _, _   = self.resources[i+1][domain]
-                                _,output_name,output_shape = self.resources[i+2][domain]
-                                if(self.operations[i+2] == "Relu"):
-                                    output.append(DeeppolyReluNodeLast(matrix, bias, True, input_names, output_name, output_shape))
-                                elif(self.operations[i+2] == "Sigmoid"):
-                                    output.append(DeeppolySigmoidNodeLast(matrix, bias, True, input_names, output_name, output_shape))
-                                elif(self.operations[i+2] == "Tanh"):
-                                    output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
-                                i += 3
+                matrix, input_names,_,_ = self.resources[i][domain]
+                bias,_, _, _   = self.resources[i+1][domain]
+                _,output_name,output_shape = self.resources[i+2][domain]
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                if(self.operations[i+2] == "Relu"):
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
+                    output.append(DeeppolyReluNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                elif(self.operations[i+2] == "Sigmoid"):
+                    output.append(DeeppolySigmoidNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                elif(self.operations[i+2] == "Tanh"):
+                    output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                i += 3
             elif i == len(self.operations)-2 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                 matrix, input_names, _, _ = self.resources[i][domain]
                 bias,_, output_name, output_shape   = self.resources[i+1][domain]
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
                 output.append(DeeppolyReluNodeLast(matrix, bias, False, input_names, output_name, output_shape))
                 i += 2
             elif self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
-                                matrix, input_names, _,_ = self.resources[i][domain]
-                                bias,_, _, _   = self.resources[i+1][domain]
-                                _,output_name,output_shape = self.resources[i+2][domain]
-                                if(self.operations[i+2] == "Relu"):
-                                    output.append(DeeppolyReluNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
-                                elif(self.operations[i+2] == "Sigmoid"):
-                                    output.append(DeeppolySigmoidNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
-                                elif(self.operations[i+2]=="Tanh"):
-                                    output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
-                                i += 3
+                matrix, input_names, _,_ = self.resources[i][domain]
+                bias,_, _, _   = self.resources[i+1][domain]
+                _,output_name,output_shape = self.resources[i+2][domain]
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                if(self.operations[i+2] == "Relu"):
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
+                    output.append(DeeppolyReluNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+2] == "Sigmoid"):
+                    output.append(DeeppolySigmoidNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+2]=="Tanh"):
+                    output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                i += 3
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, out_shape, input_names, output_name, output_shape = self.resources[i][domain]
                 output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
@@ -289,13 +309,25 @@ class Optimizer:
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,output_name, output_shape = self.resources[i+1][domain]
                 _,output_name,output_shape = self.resources[i+2][domain]
+                nn.layertypes.append('Conv2D')
+                nn.numlayer+=1
                 output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
                 i += 3
             elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd" and self.operations[i+2] == "Relu":
-                
+
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,_,_ = self.resources[i+1][domain]
                 _,output_name,output_shape = self.resources[i+2][domain]
+                nn.numfilters.append(filters.shape[3])
+                nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.padding.append(padding=="VALID")
+                nn.filters.append(filters)
+
+                nn.biases.append(bias)
+                nn.layertypes.append('Conv2D')
+                nn.numlayer+=1
                 output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
                 i += 3
             elif self.operations[i] == "Resadd":
@@ -304,7 +336,7 @@ class Optimizer:
                 i += 1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support this network"
-        #index_store = {} 
+        #index_store = {}
         #unique_input = []
         output_index_store = {}
         #index = 0
@@ -320,7 +352,7 @@ class Optimizer:
             #       index_store[input_name] = index
             #       print("index ",index)
             #       unique_input.append(input_name)
-            #       index+=1   
+            #       index+=1
             #print("input names ",node.input_names, "output name",node.output_name)
         for node in output:
             predecessors = (c_size_t *len(node.input_names))()

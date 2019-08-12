@@ -47,13 +47,13 @@ class Analyzer:
         self.ir_list = ir_list
         self.is_greater = is_greater_zono
         self.refine = False
-        if domain == 'deeppoly':
+        if domain == 'deeppoly' or domain == 'refinepoly':
             self.man = fppoly_manager_alloc()
             self.is_greater = is_greater
         elif domain == 'deepzono' or domain == 'refinezono':
             self.man = zonoml_manager_alloc()
             self.is_greater = is_greater_zono
-        if domain == 'refinezono':
+        if domain == 'refinezono' or domain == 'refinepoly':
             self.refine = True
         self.domain = domain
         self.nn = nn
@@ -78,7 +78,7 @@ class Analyzer:
             if self.domain == 'deepzono' or self.domain == 'refinezono':
                 element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
             else:
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.use_area_heuristic)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic)
         return element, nlb, nub
     
     
