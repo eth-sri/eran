@@ -14,11 +14,8 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfil
     num_out_neurons = o1*o2*o3
     num_in_neurons = input_shape[0]*input_shape[1]*input_shape[2]
 
-    pad_along_height=0
-    pad_along_width=0
     pad_top=0
     pad_left=0
-    tmp=0
     
     if(padding==False):
         if (input_shape[0] % strides[0] == 0):
@@ -33,8 +30,8 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfil
             pad_along_width = np.max(tmp, 0)
 		
         else:
-            tmp = filter_size[1] - (input_shape[1] % strides[1]);
-            pad_along_width = np.max(tmp, 0);
+            tmp = filter_size[1] - (input_shape[1] % strides[1])
+            pad_along_width = np.max(tmp, 0)
 		
         pad_top = int(np.ceil(pad_along_height / 2))
 		
@@ -50,7 +47,7 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfil
     for out_x in range(o1):
         for out_y in range(o2):
             for out_z in range(o3):
-                dst_ind = out_x*o2*o3 + out_y*o3 + out_z;
+                dst_ind = out_x*o2*o3 + out_y*o3 + out_z
                 expr = LinExpr()
                 expr += -1*var_list[start+dst_ind]
                 for inp_z in range(input_shape[2]):
@@ -78,7 +75,7 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfil
     return start
 			     
 
-def handle_maxpool(model,var_list,layerno,src_counter, pool_size, input_shape, lbi,ubi,lbi_prev, ubi_prev,use_milp):
+def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, lbi, ubi, lbi_prev, ubi_prev, use_milp):
    
     start = len(var_list)
     num_neurons = input_shape[0]*input_shape[1]*input_shape[2]
@@ -118,12 +115,11 @@ def handle_maxpool(model,var_list,layerno,src_counter, pool_size, input_shape, l
                         x_val = out_x*2 + x_shift
                         y_val = out_y*2 + y_shift  
                         mat_offset = x_val*input_shape[1]*input_shape[2] + y_val*input_shape[2] + out_z
-                        pool_cur_dim = src_counter + mat_offset
                         pool_map.append(mat_offset)
                         inf.append(lbi_prev[mat_offset])				
                         sup.append(ubi_prev[mat_offset])
-                        sum_u = sum_u + sup[l];
-                        sum_l = sum_l + inf[l];
+                        sum_u = sum_u + sup[l]
+                        sum_l = sum_l + inf[l]
                         if(sup[l]>max_u):
                            max_u = sup[l]
                         if(inf[l] > max_l):
@@ -204,7 +200,30 @@ def handle_affine(model,var_list,counter,weights,biases, lbi, ubi):
         expr.addConstant(biases[j])
         model.addConstr(expr, GRB.EQUAL, 0)
     return start
-    
+
+
+def handle_residual(model, var_list, branch1_counter, branch2_counter, lbi, ubi):
+    num_neurons_affine = len(lbi)
+    start = len(var_list)
+
+    # output of matmult
+    for j in range(num_neurons_affine):
+        var_name = "x" + str(start + j)
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub=ubi[j], name=var_name)
+        var_list.append(var)
+
+    for j in range(num_neurons_affine):
+        # num_in_neurons = len(weights[j])
+
+        expr = LinExpr()
+        expr += -1 * var_list[start + j]
+        # matmult constraints
+        # for k in range(num_in_neurons):
+        expr += var_list[branch1_counter + j]
+        expr += var_list[branch2_counter + j]
+        expr.addConstant(0)
+        model.addConstr(expr, GRB.EQUAL, 0)
+    return start
 
 
 def handle_relu(model,var_list,layerno,affine_counter,num_neurons,lbi,ubi,use_milp):
@@ -284,10 +303,12 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
     #output_counter = num_pixels
     ffn_counter = nn.ffn_counter 
     conv_counter = nn.conv_counter
+    residual_counter = nn.residual_counter
     maxpool_counter = nn.maxpool_counter
     
     nn.ffn_counter = 0
     nn.conv_counter = 0
+    nn.residual_couter = 0
     nn.maxpool_counter = 0 
     var_list = []
     
@@ -298,38 +319,43 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
     counter = 0
     start = 0
-    for i in range(numlayer):
-        if(nn.layertypes[i]=='SkipNet1'):
-            start = i+1
+    #for i in range(numlayer):
+    #    if(nn.layertypes[i]=='SkipNet1'):
+    #        start = i+1
             #break
-        elif(nn.layertypes[i]=='SkipNet2'):
-            start = i+1
+    #    elif(nn.layertypes[i]=='SkipNet2'):
+    #        start = i+1
             #break
 
-    for i in range(start):
-        if(nn.layertypes[i] in ['ReLU','Affine']):
-            nn.ffn_counter+=1          
-        elif(nn.layertypes[i]=='Conv2D'):
-            nn.conv_counter+=1
-        elif(nn.layertypes[i]=='MaxPooling2D'):
-            nn.maxpool_counter+=1
+    #for i in range(start):
+    #    if(nn.layertypes[i] in ['ReLU','Affine']):
+    #        nn.ffn_counter+=1
+    #    elif(nn.layertypes[i]=='Conv2D'):
+    #        nn.conv_counter+=1
+    #    elif(nn.layertypes[i]=='MaxPooling2D'):
+    #        nn.maxpool_counter+=1
        
-     
-    for i in range(start,numlayer):
+    start_counter = []
+    start_counter.append(0)
+    for i in range(numlayer):
         if(nn.layertypes[i] in ['SkipCat']):
             continue 
-        elif(nn.layertypes[i] in ['ReLU','Affine']):
+        elif nn.layertypes[i] in ['ReLU','Affine']:
             weights = nn.weights[nn.ffn_counter]
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
-            counter = handle_affine(model,var_list,counter,weights,biases,nlb[i-start],nub[i-start])
+            index = nn.predecessors[i+1][0]
+            counter = start_counter[index]
+            counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
+
             
             if(nn.layertypes[i]=='ReLU' and relu_needed[i]):
-                counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i-start],nub[i-start],use_milp)
-            
+                counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i],use_milp)
+
+            start_counter.append(counter)
             nn.ffn_counter+=1
 
 
-        elif(nn.layertypes[i]=='Conv2D'):
+        elif nn.layertypes[i] in ['Conv2D', 'Conv2DNoReLU']:
             filters = nn.filters[nn.conv_counter]
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             filter_size = nn.filter_size[nn.conv_counter]
@@ -345,9 +371,16 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
                o2 = int(np.ceil(input_shape[1] / strides[1]))
             o3 = numfilters
             num_neurons = o1*o2*o3
-            counter = handle_conv(model,var_list, counter, filters,biases,filter_size,numfilters,input_shape,strides, padding, nlb[i-start],nub[i-start],use_milp)
-            if(relu_needed[i]):
-               counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i-start],nub[i-start],use_milp)
+
+            index = nn.predecessors[i+1][0]
+            counter = start_counter[index]
+
+            counter = handle_conv(model, var_list, counter, filters,biases, filter_size, numfilters, input_shape, strides, padding, nlb[i],nub[i],use_milp)
+
+            if(relu_needed[i] and nn.layertypes[i]=='Conv2D'):
+               counter = handle_relu(model, var_list, i, counter, num_neurons, nlb[i], nub[i], use_milp)
+            start_counter.append(counter)
+
             nn.conv_counter+=1
 
 
@@ -356,8 +389,19 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             input_shape = nn.input_shape[nn.conv_counter + nn.maxpool_counter]
             maxpool_lb = nn.maxpool_lb[nn.maxpool_counter]
             maxpool_ub = nn.maxpool_ub[nn.maxpool_counter]
-            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, nlb[i-start],nub[i-start],maxpool_lb,maxpool_ub,use_milp)
+            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, nlb[i],nub[i],maxpool_lb,maxpool_ub,use_milp)
             nn.maxpool_counter+=1
+
+        elif nn.layertypes[i] in ['Resadd', 'Resaddnorelu']:
+            index1 = nn.predecessors[i+1][0]
+            index2 = nn.predecessors[i+1][1]
+            counter1 = start_counter[index1]
+            counter2 = start_counter[index2]
+            counter = handle_residual(model,var_list,counter1,counter2,nlb[i],nub[i])
+            if(relu_needed[i] and nn.layertypes[i]=='Resadd'):
+               counter = handle_relu(model, var_list, i, counter, num_neurons, nlb[i], nub[i], use_milp)
+            start_counter.append(counter)
+            nn.residual_counter +=1
 
 
         else:
@@ -365,6 +409,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             return
     nn.ffn_counter = ffn_counter
     nn.conv_counter = conv_counter
+    nn.residual_counter = residual_counter
     nn.maxpool_counter = maxpool_counter
     return counter, var_list, model
 
@@ -389,7 +434,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     candidate_length = len(candidate_vars)
     widths = np.zeros(candidate_length)
     avg_weight = np.zeros(candidate_length)
-    next_layer = nn.ffn_counter +  nn.conv_counter + nn.maxpool_counter + 1
+    next_layer = nn.ffn_counter +  nn.conv_counter + nn.residual_counter + nn.maxpool_counter + 1
   
     for i in range(candidate_length):
         ind = candidate_vars[i]
@@ -556,6 +601,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub, is_max=True):
     nn.ffn_counter = 0
     nn.conv_counter = 0
+    nn.residual_counter = 0
     nn.maxpool_counter = 0
     use_milp = []
     relu_needed = []

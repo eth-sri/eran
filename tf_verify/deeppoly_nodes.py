@@ -135,8 +135,9 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_first_relu_layer(man, element, *self.get_arguments())
-        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
-        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
+        bounds = box_for_layer(man, element, layerno)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
         ubi = []
         for i in range(num_neurons):
@@ -216,7 +217,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(),  use_area_heuristic)
-        layerno = nn.ffn_counter + nn.conv_counter
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
@@ -232,9 +233,8 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         nlb.append(lbi)
         nub.append(ubi)
         #print("lbi ", timeout_milp, "ubi ", timeout_lp)
-        if(refine):
-        #TODO handle residual layers here
-            if layerno<=1:
+        if refine:
+            if layerno <= 1:
                use_milp = 1
                timeout = timeout_milp
             else:
@@ -348,7 +348,6 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         nub.append(ubi)
         #print("lbi ", lbi, "ubi ", ubi)
         if(refine):
-        #TODO handle residual layers here
             if layerno<=1:
                use_milp = 1
                timeout = timeout_milp
@@ -508,7 +507,7 @@ class DeeppolyConv2dNodeIntermediate:
             conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         else:
             conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno = nn.ffn_counter + nn.conv_counter
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
@@ -569,7 +568,7 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
             abstract element after the transformer 
         """
         conv_handle_first_layer(man, element, *self.get_arguments())
-        layerno = nn.ffn_counter + nn.conv_counter
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
         lbi = []
@@ -663,9 +662,31 @@ class DeeppolyResadd:
         self.has_relu = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, use_area_heuristic):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         if(self.has_relu):
              handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         else:
              handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
+        bounds = box_for_layer(man, element, layerno)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
+        lbi = []
+        ubi = []
+        candidate_vars = []
+        for i in range(num_neurons):
+            inf = bounds[i].contents.inf
+            sup = bounds[i].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+            if ((lbi[i] < 0 and ubi[i] > 0) or (lbi[i] > 0)):
+                candidate_vars.append(i)
+        nlb.append(lbi)
+        nub.append(ubi)
+        # print("Residual ", nn.layertypes[layerno],layerno)
+        nn.residual_counter = nn.residual_counter + 1
+        #if (refine):
+            # handle residual layers here
+            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+        elina_interval_array_free(bounds, num_neurons)
+
         return element

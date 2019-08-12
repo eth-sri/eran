@@ -361,6 +361,7 @@ class Optimizer:
                 predecessors[i] = output_index_store[input_name]
                 i+=1
             node.predecessors = predecessors
+            nn.predecessors.append(predecessors)
             #print("node ",node,output_index_store[node.output_name])
             #if(len(predecessors)==1):
                 #print("predecessors ", predecessors[0])

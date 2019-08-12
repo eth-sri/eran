@@ -25,6 +25,7 @@ class layers:
         self.numlayer = 0
         self.ffn_counter = 0
         self.conv_counter = 0
+        self.residual_counter = 0
         self.maxpool_counter = 0
         self.maxpool_lb = []
         self.maxpool_ub = []
@@ -32,6 +33,7 @@ class layers:
         self.specUB = []
         self.original = []
         self.zonotope = []
+        self.predecessors = []
         self.lastlayer = None
 
 class Analyzer:
