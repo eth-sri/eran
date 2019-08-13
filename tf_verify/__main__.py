@@ -266,11 +266,17 @@ else:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
 
-        label, nn, nlb, nub = None, None, None, None
-        if zonotope_bool:
-            label,nn,nlb,nub = eran.analyze_zonotope(specLB, zonotope, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+        if domain=='refinezono':
+            init_domain = 'deepzono'
+        elif domain=='refinepoly':
+            init_domain = 'deeppoly'
         else:
-            label,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+            init_domain = domain
+
+        if zonotope_bool:
+            label,nn,nlb,nub = eran.analyze_zonotope(specLB, np.zeros_like(zonotope), init_domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+        else:
+            label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
