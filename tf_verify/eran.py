@@ -3,12 +3,13 @@
 '''
 
 from tensorflow_translator import *
+from onnx_translator import *
 from optimizer import *
 from analyzer import *
 
 
 class ERAN:
-    def __init__(self, model, session=None):
+    def __init__(self, model, session=None, is_onnx = False):
         """
         This constructor takes a reference to a TensorFlow Operation, TensorFlow Tensor, or Keras model. The two TensorFlow functions graph_util.convert_variables_to_constants and 
         graph_util.remove_training_nodes will be applied to the graph to cleanse it of any nodes that are linked to training.
@@ -32,7 +33,10 @@ class ERAN:
             session which contains the information about the trained variables. If session is None the code will take the Session from tf.get_default_session(). If you pass a keras model you don't 
             have to provide a session, this function will automatically get it.
         """
-        translator = TFTranslator(model, session)
+        if is_onnx:
+            translator = ONNXTranslator(model)
+        else:
+            translator = TFTranslator(model, session)
         operations, resources = translator.translate()
         self.optimizer  = Optimizer(operations, resources)
     
@@ -72,7 +76,7 @@ class ERAN:
         return dominant_class, nn, nlb, nub
 
 
-    def analyze_zonotope(self, original, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0):
+    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
 
@@ -92,7 +96,6 @@ class ERAN:
             if the analysis couldn't prove robustness then -1 is returned
         """
         assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
-        original = np.reshape(original, (-1,))
         zonotope = np.reshape(zonotope, (-1,))
         nn = layers()
         nn.original = original
@@ -102,8 +105,8 @@ class ERAN:
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0
-            execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+            #execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)
+            #analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         dominant_class, nlb, nub = analyzer.analyze()
         return dominant_class, nn, nlb, nub
 

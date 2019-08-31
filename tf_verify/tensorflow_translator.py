@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.keras.engine.sequential import Sequential
 from tensorflow.python.framework import graph_util
+import onnx
 
 
 
@@ -65,6 +66,8 @@ class TFTranslator:
 			session      = tf.keras.backend.get_session()
 			output_names = [model.layers[-1].output.op.inputs[0].op.name]
 			model        = model.layers[-1].output.op
+		elif issubclass(model.__class__, onnx.ModelProto):
+			assert 0, 'not tensorflow model'
 		else:
 			import keras
 			if issubclass(model.__class__, keras.engine.sequential.Sequential):

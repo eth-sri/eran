@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import re
+import onnx
 
 def product(it):
     product = 1
@@ -62,7 +63,7 @@ tf.InteractiveSession().as_default()
 
 
 
-def read_net(net_file, in_len, is_trained_with_pytorch):
+def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
     mean = 0.0
     std = 0.0
     net = open(net_file,'r')
@@ -201,3 +202,20 @@ def read_net(net_file, in_len, is_trained_with_pytorch):
 
     model = x
     return model,  is_conv, mean, std
+
+
+def read_onnx_net(net_file):
+    mean = 0.0
+    std = 0.0
+    onnx_model = onnx.load(net_file)
+    onnx.checker.check_model(onnx_model)
+    is_conv = False
+
+    for i in range(len(onnx_model.graph.node)):
+        if onnx_model.graph.node[i].op_type == 'Conv':
+            is_conv = True
+            break
+
+    # TODO mean std
+
+    return onnx_model,  is_conv, mean, std

@@ -6,6 +6,8 @@ from deeppoly_nodes import *
 from functools import reduce
 
 
+# TODO replace all strings with constants
+
 
 class Optimizer:
     def __init__(self, operations, resources):
@@ -242,6 +244,8 @@ class Optimizer:
                 input_names, output_name, output_shape = self.resources[i][domain]
                 output.append(DeeppolyInput(specLB, specUB, input_names, output_name, output_shape))
                 i += 1
+
+            # Tensorflow operation
             elif i == 1 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                 matrix,input_names,_,_ = self.resources[i][domain]
                 bias,_,_,_   = self.resources[i+1][domain]
@@ -259,6 +263,8 @@ class Optimizer:
                 elif(self.operations[i+2] == "Tanh"):
                     output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
                 i += 3
+
+            # Tensorflow operation
             elif i == len(self.operations)-3 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                 matrix, input_names,_,_ = self.resources[i][domain]
                 bias,_, _, _   = self.resources[i+1][domain]
@@ -276,6 +282,8 @@ class Optimizer:
                 elif(self.operations[i+2] == "Tanh"):
                     output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                 i += 3
+
+            # Tensorflow operation
             elif i == len(self.operations)-2 and self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                 matrix, input_names, _, _ = self.resources[i][domain]
                 bias,_, output_name, output_shape   = self.resources[i+1][domain]
@@ -283,6 +291,8 @@ class Optimizer:
                 nn.numlayer+= 1
                 output.append(DeeppolyReluNodeLast(matrix, bias, False, input_names, output_name, output_shape))
                 i += 2
+
+            # Tensorflow operation
             elif self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                 matrix, input_names, _,_ = self.resources[i][domain]
                 bias,_, _, _   = self.resources[i+1][domain]
@@ -300,20 +310,90 @@ class Optimizer:
                 elif(self.operations[i+2]=="Tanh"):
                     output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                 i += 3
+
+            # ONNX operation
+            elif i == 1 and self.operations[i] == "Gemm":
+                matrix, bias,input_names,_,_ = self.resources[i][domain]
+                _,output_name,output_shape = self.resources[i+1][domain]
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                if(self.operations[i+1] == "Relu"):
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
+                    output.append(DeeppolyReluNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+1] == "Sigmoid"):
+                    output.append(DeeppolySigmoidNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+1] == "Tanh"):
+                    output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                i += 2
+
+            # ONNX operation
+            elif i == len(self.operations)-2 and self.operations[i] == "Gemm":
+                matrix, bias, input_names,_,_ = self.resources[i][domain]
+                _,output_name,output_shape = self.resources[i+1][domain]
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                if(self.operations[i+1] == "Relu"):
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
+                    output.append(DeeppolyReluNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                elif(self.operations[i+1] == "Sigmoid"):
+                    output.append(DeeppolySigmoidNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                elif(self.operations[i+1] == "Tanh"):
+                    output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                i += 2
+
+            # ONNX operation
+            elif i == len(self.operations)-1 and self.operations[i] == "Gemm":
+                matrix, bias, input_names, _, _ = self.resources[i][domain]
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                output.append(DeeppolyReluNodeLast(matrix, bias, False, input_names, output_name, output_shape))
+                i += 1
+
+            # ONNX operation
+            elif self.operations[i] == "Gemm":
+                matrix, bias, input_names, _,_ = self.resources[i][domain]
+                _,output_name,output_shape = self.resources[i+1][domain]
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                if(self.operations[i+1] == "Relu"):
+                    nn.layertypes.pop()
+                    nn.layertypes.append('ReLU')
+                    output.append(DeeppolyReluNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+1] == "Sigmoid"):
+                    output.append(DeeppolySigmoidNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                elif(self.operations[i+1]=="Tanh"):
+                    output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                i += 2
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, out_shape, input_names, output_name, output_shape = self.resources[i][domain]
                 output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
                 i += 1
-            elif i == 1 and self.operations[1] == "Conv2D" and self.operations[2] == "BiasAdd" and self.operations[3] == "Relu":
+
+            # Tensorflow operation
+            elif i == 1 and self.operations[1] == "Conv2D" and self.operations[2] == "BiasAdd":
                 #print("resources ", self.resources[i][domain])
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,output_name, output_shape = self.resources[i+1][domain]
                 _,output_name,output_shape = self.resources[i+2][domain]
-                nn.layertypes.append('Conv2D')
+                has_relu = self.operations[i+2] == "Relu"
+                if has_relu:
+                    nn.layertypes.append('Conv2D')
+                else:
+                    nn.layertypes.append('Conv2DNoReLu')
                 nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
+                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
                 i += 3
-            elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd" and self.operations[i+2] == "Relu":
+
+            # Tensorflow operation
+            elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd":
 
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,_,_ = self.resources[i+1][domain]
@@ -326,23 +406,73 @@ class Optimizer:
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
-                nn.layertypes.append('Conv2D')
+                has_relu = self.operations[i+2] == "Relu"
+                if has_relu:
+                    nn.layertypes.append('Conv2D')
+                else:
+                    nn.layertypes.append('Conv2DNoReLu')
                 nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape))
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
                 i += 3
+
+            # ONNX operation
+            elif i == 1 and self.operations[1] == "Conv":
+                #print("resources ", self.resources[i][domain])
+                filters, bias, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
+                _,output_name,output_shape = self.resources[i+1][domain]
+                has_relu = self.operations[i+1] == "Relu"
+                if has_relu:
+                    nn.layertypes.append('Conv')
+                else:
+                    nn.layertypes.append('ConvNoReLu')
+                nn.numlayer+=1
+                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
+                i += 2
+
+            # ONNX operation
+            elif self.operations[i] == "Conv":
+                filters, bias, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
+                _,output_name,output_shape = self.resources[i+1][domain]
+                print(bias)
+                nn.numfilters.append(filters.shape[3])
+                nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.padding.append(padding=="VALID")
+                nn.filters.append(filters)
+
+                nn.biases.append(bias)
+                has_relu = self.operations[i+1] == "Relu"
+                if has_relu:
+                    nn.layertypes.append('Conv2D')
+                else:
+                    nn.layertypes.append('Conv2DNoReLu')
+                nn.numlayer+=1
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
+                i += 2
+
+            # Residual layer
             elif self.operations[i] == "Resadd":
-                #self.resources[i][domain].append(refine)
-                output.append(DeeppolyResadd(*self.resources[i][domain]))
-                i += 1
+                if self.operations[i+1] == "Relu":
+                    input_names,_,_ = self.resources[i][domain]
+                    _,output_name,output_shape = self.resources[i+1][domain]
+                    output.append(DeeppolyResadd(input_names,output_name,output_shape, True))
+                    nn.layertypes.append('Resadd')
+                    i += 2
+                else:
+                    input_names,output_name,output_shape = self.resources[i][domain]
+                    output.append(DeeppolyResadd(input_names,output_name,output_shape, False))
+                    nn.layertypes.append('Resaddnorelu')
+                    i += 1
+                nn.numlayer+=1
             else:
-                assert 0, "the Deeppoly analyzer doesn't support this network"
+                assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
         #index_store = {}
         #unique_input = []
         output_index_store = {}
         #index = 0
         index_o = 0
         for node in output:
-            #print("node ",node)
             output_index_store[node.output_name] = index_o
             #print("output index ",index_o)
             index_o+=1

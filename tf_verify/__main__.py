@@ -8,7 +8,7 @@ from read_zonotope_file import read_zonotope
 import tensorflow as tf
 import csv
 import time
-from deepzono_milp import * 
+from deepzono_milp import *
 import argparse
 
 ZONOTOPE_EXTENSION = '.zt'
@@ -31,7 +31,7 @@ def parse_acasxu_spec(text):
         if line!="":
            [lb,ub] = line.split(",")
            low.append(np.double(lb))
-           high.append(np.double(ub))       
+           high.append(np.double(ub))
     return low,high
 
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -55,16 +55,11 @@ args = parser.parse_args()
 netname = args.netname
 filename, file_extension = os.path.splitext(netname)
 
-is_trained_with_pytorch = False
-is_saved_tf_model = False
-
-if(file_extension==".pyt"):
-    is_trained_with_pytorch = True
-elif(file_extension==".meta"):
-    is_saved_tf_model = True
-elif(file_extension!= ".tf"):
-    print("file extension not supported")
-    exit(1)
+is_trained_with_pytorch = file_extension==".pyt"
+is_saved_tf_model = file_extension==".meta"
+is_tensorflow = file_extension== ".tf"
+is_onnx = file_extension == ".onnx"
+assert is_trained_with_pytorch or is_saved_tf_model or is_tensorflow or is_onnx, "file extension not supported"
 
 epsilon = args.epsilon
 assert (epsilon >= 0) and (epsilon <= 1), "epsilon can only be between 0 and 1"
@@ -116,8 +111,11 @@ else:
         num_pixels = 3072
     else:
         num_pixels = 5
-    model, is_conv, means, stds = read_net(netname, num_pixels, is_trained_with_pytorch)
-    eran = ERAN(model)
+    if is_onnx:
+        model, is_conv, means, stds = read_onnx_net(netname)
+    else:
+        model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
+    eran = ERAN(model, is_onnx=is_onnx)
 
 correctly_classified_images = 0
 verified_images = 0
@@ -179,6 +177,13 @@ def denormalize(image, means, stds):
                 image[i+2048] = tmp[count]
                 count = count+1
 
+def init_domain(d):
+    if d == 'refinezono':
+        return 'deepzono'
+    elif d == 'refinepoly':
+        return 'deeppoly'
+    else:
+        return d
 
 if(dataset=='mnist'):
     csvfile = open('../data/mnist_test.csv', 'r')
@@ -209,7 +214,7 @@ if dataset=='acasxu':
     start_val = np.copy(specLB)
     end_val = np.copy(specUB)
     flag = True
-    _,nn,_,_ = eran.analyze_box(specLB, specUB, 'deepzono', args.timeout_lp, args.timeout_milp, args.use_area_heuristic, specnumber)
+    _,nn,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), args.timeout_lp, args.timeout_milp, args.use_area_heuristic, specnumber)
     start = time.time()
     for i in range(num_splits[0]):
         specLB[0] = start_val[0] + i*step_size[0]
@@ -266,17 +271,11 @@ else:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
 
-        if domain=='refinezono':
-            init_domain = 'deepzono'
-        elif domain=='refinepoly':
-            init_domain = 'deeppoly'
-        else:
-            init_domain = domain
-
         if zonotope_bool:
-            label,nn,nlb,nub = eran.analyze_zonotope(specLB, np.zeros_like(zonotope), init_domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+            # Assume original is classified correctly by neural network
+            label = int(test[0])
         else:
-            label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+            label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
@@ -289,7 +288,7 @@ else:
         if(label == int(test[0])):
             perturbed_label = None
             if zonotope_bool:
-                perturbed_label, _, nlb, nub = eran.analyze_zonotope(specLB, zonotope, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+                perturbed_label, _, nlb, nub = eran.analyze_zonotope(zonotope, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
             else:
                 if(dataset=='mnist'):
                     specLB = np.clip(image - epsilon,0,1)
@@ -314,7 +313,7 @@ else:
                 if complete==True:
                     verified_flag, adv_image = None, None
                     if zonotope_bool:
-                        verified_flag,adv_image = verify_network_with_milp_zonotope(nn, specLB, zonotope, label, nlb, nub)
+                        verified_flag,adv_image = verify_network_with_milp_zonotope(nn, zonotope, label, nlb, nub)
                     else:
                         verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, label, nlb, nub)
                     if(verified_flag==True):
