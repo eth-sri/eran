@@ -382,38 +382,41 @@ class Optimizer:
                 #print("resources ", self.resources[i][domain])
                 filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 bias,_,output_name, output_shape = self.resources[i+1][domain]
-                _,output_name,output_shape = self.resources[i+2][domain]
                 has_relu = self.operations[i+2] == "Relu"
                 if has_relu:
                     nn.layertypes.append('Conv2D')
+                    _,output_name,output_shape = self.resources[i+2][domain]
+                    i += 3
                 else:
                     nn.layertypes.append('Conv2DNoReLu')
+                    i+=2
                 nn.numlayer+=1
                 output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
-                i += 3
 
-            # Tensorflow operation
-            elif self.operations[i] == "Conv2D" and self.operations[i+1] == "BiasAdd":
+                # Tensorflow operation
+            elif self.operations[i] == "Conv2D" and self.operations[i + 1] == "BiasAdd":
 
-                filters, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
-                bias,_,_,_ = self.resources[i+1][domain]
-                _,output_name,output_shape = self.resources[i+2][domain]
+                filters, image_shape, strides, padding, input_names, _, _ = self.resources[i][domain]
+                bias, _, output_name, output_shape = self.resources[i + 1][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
-                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
-                nn.strides.append([strides[0],strides[1]])
-                nn.padding.append(padding=="VALID")
+                nn.input_shape.append([image_shape[0], image_shape[1], image_shape[2]])
+                nn.strides.append([strides[0], strides[1]])
+                nn.padding.append(padding == "VALID")
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
-                has_relu = self.operations[i+2] == "Relu"
+                has_relu = self.operations[i + 2] == "Relu"
                 if has_relu:
                     nn.layertypes.append('Conv2D')
+                    _, output_name, output_shape = self.resources[i + 2][domain]
+                    i+=3
                 else:
                     nn.layertypes.append('Conv2DNoReLu')
-                nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
-                i += 3
+                    i+=2
+                nn.numlayer += 1
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names,
+                                                             output_name, output_shape, has_relu))
 
             # ONNX operation
             elif i == 1 and self.operations[1] == "Conv":
@@ -433,7 +436,6 @@ class Optimizer:
             elif self.operations[i] == "Conv":
                 filters, bias, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
                 _,output_name,output_shape = self.resources[i+1][domain]
-                print(bias)
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
@@ -444,9 +446,9 @@ class Optimizer:
                 nn.biases.append(bias)
                 has_relu = self.operations[i+1] == "Relu"
                 if has_relu:
-                    nn.layertypes.append('Conv2D')
+                    nn.layertypes.append('Conv')
                 else:
-                    nn.layertypes.append('Conv2DNoReLu')
+                    nn.layertypes.append('ConvNoReLu')
                 nn.numlayer+=1
                 output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
                 i += 2

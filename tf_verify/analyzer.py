@@ -73,9 +73,7 @@ class Analyzer:
         """
         processes self.ir_list and returns the resulting abstract element
         """
-        print(10)
         element = self.ir_list[0].transformer(self.man)
-        print(11)
         nlb = []
         nub = []
         for i in range(1, len(self.ir_list)):
