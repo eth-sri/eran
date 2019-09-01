@@ -204,12 +204,10 @@ class ONNXTranslator:
 		output : tuple
 		    tuple with the matrix (of type numpy.ndarray) as its only item
 		"""
-		print(op)
 		inputs = op.input
 		left   = inputs[0]
 		right  = inputs[1]
 		bias  = self.constants_map[inputs[2]]
-		print(op)
 
 		transA = False
 		transB = False
