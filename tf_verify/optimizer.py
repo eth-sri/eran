@@ -68,6 +68,16 @@ class Optimizer:
                     #self.resources[i][domain].append(refine)
                     output.append(DeepzonoMatmul(*self.resources[i][domain]))
                     i += 1
+            elif self.operations[i] == "Gemm":
+                if i != nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
+                    matrix, bias, m_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+
+                    nn.weights.append(matrix)
+                    nn.biases.append(bias)
+                    nn.layertypes.append('Affine')
+                    nn.numlayer+= 1
+                    output.append(DeepzonoAffine(matrix, bias, m_input_names, b_output_name, b_output_shape))
+                    i += 1
             elif self.operations[i] == "Conv2D":
                 if i != nbr_op-1 and self.operations[i+1] == "BiasAdd":
                     filters, image_shape, strides, padding, c_input_names, _, _ = self.resources[i][domain]
@@ -88,6 +98,20 @@ class Optimizer:
                     filters, image_shape, strides, padding, input_names, output_name, output_shape = self.resources[i][domain]
                     output.append(DeepzonoConv(image_shape, filters, strides, padding, input_names, output_name, output_shape))
                     i += 1
+            elif self.operations[i] == "Conv":
+                filters, bias, image_shape, strides, padding, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                nn.numfilters.append(filters.shape[3])
+                nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.padding.append(padding=="VALID")
+                nn.filters.append(filters)
+
+                nn.biases.append(bias)
+                nn.layertypes.append('Conv')
+                nn.numlayer+=1
+                output.append(DeepzonoConvbias(image_shape, filters, bias, strides, padding, c_input_names, b_output_name, b_output_shape))
+                i += 1
             elif self.operations[i] == "Add":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
@@ -118,6 +142,7 @@ class Optimizer:
 
         use_dict = self.deepzono_get_dict(output)
         output   = self.deepzono_forward_pass(output, use_dict)
+        self.set_predecessors(nn, output)
         return output
 
 
@@ -469,36 +494,22 @@ class Optimizer:
                 nn.numlayer+=1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
-        #index_store = {}
-        #unique_input = []
+
+        self.set_predecessors(nn, output)
+        return output
+
+    def set_predecessors(self, nn, output):
         output_index_store = {}
-        #index = 0
         index_o = 0
         for node in output:
             output_index_store[node.output_name] = index_o
-            #print("output index ",index_o)
-            index_o+=1
-            #for input_name in node.input_names:
-            #    print("input names ",node.input_names,node.output_name)
-            #    if not input_name in unique_input:
-            #       index_store[input_name] = index
-            #       print("index ",index)
-            #       unique_input.append(input_name)
-            #       index+=1
-            #print("input names ",node.input_names, "output name",node.output_name)
+            index_o += 1
         for node in output:
-            predecessors = (c_size_t *len(node.input_names))()
+            predecessors = (c_size_t * len(node.input_names))()
             i = 0
             for input_name in node.input_names:
                 predecessors[i] = output_index_store[input_name]
-                i+=1
+                i += 1
             node.predecessors = predecessors
             nn.predecessors.append(predecessors)
-            #print("node ",node,output_index_store[node.output_name])
-            #if(len(predecessors)==1):
-                #print("predecessors ", predecessors[0])
-            #if(len(predecessors)==2):
-                #print("predecessors ", predecessors[0],predecessors[1])
-                #print("input name ", input_name, "index ", index_store[input_name])
-        return output
 
