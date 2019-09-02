@@ -69,15 +69,14 @@ class Optimizer:
                     output.append(DeepzonoMatmul(*self.resources[i][domain]))
                     i += 1
             elif self.operations[i] == "Gemm":
-                if i != nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
-                    matrix, bias, m_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                matrix, bias, m_input_names, b_output_name, b_output_shape = self.resources[i][domain]
 
-                    nn.weights.append(matrix)
-                    nn.biases.append(bias)
-                    nn.layertypes.append('Affine')
-                    nn.numlayer+= 1
-                    output.append(DeepzonoAffine(matrix, bias, m_input_names, b_output_name, b_output_shape))
-                    i += 1
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('Affine')
+                nn.numlayer+= 1
+                output.append(DeepzonoAffine(matrix, bias, m_input_names, b_output_name, b_output_shape))
+                i += 1
             elif self.operations[i] == "Conv2D":
                 if i != nbr_op-1 and self.operations[i+1] == "BiasAdd":
                     filters, image_shape, strides, padding, c_input_names, _, _ = self.resources[i][domain]
