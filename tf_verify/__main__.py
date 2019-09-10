@@ -57,9 +57,10 @@ filename, file_extension = os.path.splitext(netname)
 
 is_trained_with_pytorch = file_extension==".pyt"
 is_saved_tf_model = file_extension==".meta"
+is_pb_file = file_extension==".pb"
 is_tensorflow = file_extension== ".tf"
 is_onnx = file_extension == ".onnx"
-assert is_trained_with_pytorch or is_saved_tf_model or is_tensorflow or is_onnx, "file extension not supported"
+assert is_trained_with_pytorch or is_saved_tf_model or is_pb_file or is_tensorflow or is_onnx, "file extension not supported"
 
 epsilon = args.epsilon
 assert (epsilon >= 0) and (epsilon <= 1), "epsilon can only be between 0 and 1"
@@ -94,14 +95,22 @@ if(dataset=='acasxu'):
     print("netname ", netname, " specnumber ", specnumber, " domain ", domain, " dataset ", dataset, "args complete ", args.complete, " complete ",complete, " timeout_lp ",args.timeout_lp)
 else:
     print("netname ", netname, " epsilon ", epsilon, " domain ", domain, " dataset ", dataset, "args complete ", args.complete, " complete ",complete, " timeout_lp ",args.timeout_lp)
-if(is_saved_tf_model):
+
+if is_saved_tf_model or is_pb_file:
     netfolder = os.path.dirname(netname)
 
     tf.logging.set_verbosity(tf.logging.ERROR)
 
     sess = tf.Session()
-    saver = tf.train.import_meta_graph(netname)
-    saver.restore(sess, tf.train.latest_checkpoint(netfolder+'/'))
+    if is_saved_tf_model:
+        saver = tf.train.import_meta_graph(netname)
+        saver.restore(sess, tf.train.latest_checkpoint(netfolder+'/'))
+    else:
+        with tf.gfile.GFile(netname, "rb") as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
+            sess.graph.as_default()
+            tf.graph_util.import_graph_def(graph_def, name='')
     eran = ERAN(sess.graph.get_tensor_by_name('logits:0'), sess)
 
 else:
