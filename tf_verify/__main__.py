@@ -111,7 +111,8 @@ if is_saved_tf_model or is_pb_file:
             graph_def.ParseFromString(f.read())
             sess.graph.as_default()
             tf.graph_util.import_graph_def(graph_def, name='')
-    eran = ERAN(sess.graph.get_tensor_by_name('logits:0'), sess)
+    ops = sess.graph.get_operations()
+    eran = ERAN(sess.graph.get_tensor_by_name(ops[-1].name + ':0'), sess)
 
 else:
     if(dataset=='mnist'):
