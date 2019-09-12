@@ -201,7 +201,7 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
         last_layer = curr_line
 
     model = x
-    return model,  is_conv, mean, std
+    return model, is_conv, mean, std
 
 
 def read_onnx_net(net_file):
@@ -211,11 +211,11 @@ def read_onnx_net(net_file):
     onnx.checker.check_model(onnx_model)
     is_conv = False
 
-    for i in range(len(onnx_model.graph.node)):
-        if onnx_model.graph.node[i].op_type == 'Conv':
+    for node in onnx_model.graph.node:
+        if node.op_type == 'Conv':
             is_conv = True
             break
 
     # TODO mean std
 
-    return onnx_model,  is_conv, mean, std
+    return onnx_model, is_conv, mean, std

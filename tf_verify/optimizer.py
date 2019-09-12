@@ -23,7 +23,7 @@ class Optimizer:
         self.resources  = resources
     
     
-    def get_deepzono(self, nn, specLB, specUB, zonotope_bool = False):
+    def get_deepzono(self, nn, specLB, specUB = False):
         """
         This function will go through self.operations and self.resources and creates a list of Deepzono-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deepzono'] holds the resources for the operation of type self.operations[i]                
@@ -48,8 +48,8 @@ class Optimizer:
         while i < nbr_op:
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
-                if zonotope_bool:
-                    output.append(DeepzonoInputZonotope(specLB, specUB, input_names, output_name, output_shape))
+                if not specUB:
+                    output.append(DeepzonoInputZonotope(specLB, input_names, output_name, output_shape))
                 else:
                     output.append(DeepzonoInput(specLB, specUB, input_names, output_name, output_shape))
                 i += 1
@@ -107,7 +107,7 @@ class Optimizer:
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
-                nn.layertypes.append('Conv')
+                nn.layertypes.append('Conv2D')
                 nn.numlayer+=1
                 output.append(DeepzonoConvbias(image_shape, filters, bias, strides, padding, c_input_names, b_output_name, b_output_shape))
                 i += 1
@@ -449,9 +449,9 @@ class Optimizer:
                 _,output_name,output_shape = self.resources[i+1][domain]
                 has_relu = self.operations[i+1] == "Relu"
                 if has_relu:
-                    nn.layertypes.append('Conv')
+                    nn.layertypes.append('Conv2D')
                 else:
-                    nn.layertypes.append('ConvNoReLu')
+                    nn.layertypes.append('Conv2DNoReLu')
                 nn.numlayer+=1
                 output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
                 i += 2
@@ -470,9 +470,9 @@ class Optimizer:
                 nn.biases.append(bias)
                 has_relu = self.operations[i+1] == "Relu"
                 if has_relu:
-                    nn.layertypes.append('Conv')
+                    nn.layertypes.append('Conv2D')
                 else:
-                    nn.layertypes.append('ConvNoReLu')
+                    nn.layertypes.append('Conv2DNoReLu')
                 nn.numlayer+=1
                 output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
                 i += 2

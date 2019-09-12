@@ -98,10 +98,9 @@ class ERAN:
         assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
         zonotope = np.reshape(zonotope, (-1,))
         nn = layers()
-        nn.original = original
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
-            execute_list   = self.optimizer.get_deepzono(nn, original, zonotope, True)
+            execute_list   = self.optimizer.get_deepzono(nn, zonotope)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0

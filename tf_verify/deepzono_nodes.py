@@ -225,7 +225,7 @@ class DeepzonoInput:
 
 
 class DeepzonoInputZonotope:
-    def __init__(self, original, zonotope, input_names, output_name, output_shape):
+    def __init__(self, zonotope, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -239,7 +239,6 @@ class DeepzonoInputZonotope:
             iterable of ints with the shape of the output of this node
         """
         add_input_output_information(self, input_names, output_name, output_shape)
-        self.original = np.ascontiguousarray(original, dtype=np.double)
         self.zonotope = np.ascontiguousarray(zonotope, dtype=np.double)
 
     def transformer(self, man):
@@ -254,9 +253,8 @@ class DeepzonoInputZonotope:
         Return
         ------
         output : ElinaAbstract0Ptr
-            TODO: is this transformer needed for zonotope or can we return zonotope?
         """
-        return zonotope_from_network_input_zonotope(man, 0, len(self.original), self.original, self.zonotope)
+        return zonotope_from_network_input_zonotope(man, 0, len(self.zonotope), self.zonotope)
 
 
 
