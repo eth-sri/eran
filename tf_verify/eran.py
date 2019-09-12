@@ -100,7 +100,7 @@ class ERAN:
         nn = layers()
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
-            execute_list   = self.optimizer.get_deepzono(nn, zonotope)
+            execute_list   = self.optimizer.get_deepzono(nn, zonotope, None, True)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0

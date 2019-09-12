@@ -23,7 +23,7 @@ class Optimizer:
         self.resources  = resources
     
     
-    def get_deepzono(self, nn, specLB, specUB = False):
+    def get_deepzono(self, nn, specLB, specUB, zonotope_bool = False):
         """
         This function will go through self.operations and self.resources and creates a list of Deepzono-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deepzono'] holds the resources for the operation of type self.operations[i]                
@@ -48,7 +48,7 @@ class Optimizer:
         while i < nbr_op:
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
-                if not specUB:
+                if zonotope_bool:
                     output.append(DeepzonoInputZonotope(specLB, input_names, output_name, output_shape))
                 else:
                     output.append(DeepzonoInput(specLB, specUB, input_names, output_name, output_shape))
@@ -142,6 +142,7 @@ class Optimizer:
         use_dict = self.deepzono_get_dict(output)
         output   = self.deepzono_forward_pass(output, use_dict)
         self.set_predecessors(nn, output)
+
         return output
 
 
