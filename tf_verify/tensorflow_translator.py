@@ -165,6 +165,7 @@ class TFTranslator:
 						deepzono_res = (image_shape, window_size, strides, padding) + in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "Placeholder":
+						print(in_out_info)
 						deeppoly_res = in_out_info
 						deepzono_res = in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})

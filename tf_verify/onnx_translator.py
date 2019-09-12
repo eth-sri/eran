@@ -21,9 +21,30 @@ def onnxshape_to_intlist(onnxshape):
 	    list of ints corresponding to onnxshape
 	"""
 	result = list(map(lambda j: 1 if j.dim_value is None else int(j.dim_value), onnxshape.dim))
+
+	# No shape means a single value
 	if not result:
 		return [1]
+
+	# convert NCHW to NHWC
+	if len(result) == 4:
+		return [result[0], result[2], result[3], result[1]]
+
 	return result
+
+
+def nchw_to_nhwc(array):
+	"""
+	ONNX uses NCHW. ELINA expects NHWC
+
+	:param array: array to be converted
+
+	:return: converted array
+	"""
+	if array.ndim == 4:
+		return array.transpose(0, 2, 3, 1)
+
+	return array
 
 
 
@@ -58,7 +79,7 @@ class ONNXTranslator:
 
 			constants_map = {}
 			for initial in self.model.graph.initializer:
-				constants_map[initial.name] = numpy_helper.to_array(initial)
+				constants_map[initial.name] = nchw_to_nhwc(numpy_helper.to_array(initial))
 			self.constants_map = constants_map
 
 			value_info_map = {}
@@ -153,7 +174,7 @@ class ONNXTranslator:
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool":
-				image_shape, kernel_shape, strides, padding, dilations, auto_pad, ceil_mode, storage_order = self.maxpool_resources(node)
+				image_shape, kernel_shape, strides, padding, dilations, pads, ceil_mode, storage_order = self.maxpool_resources(node)
 				deeppoly_res =  (image_shape, kernel_shape, in_out_info[2]) + in_out_info
 				# TODO padding is expected to be string in tf. dilations, auto_pad, ceil_mode, storage_order are unused at the moment
 				deepzono_res = (image_shape, kernel_shape, strides, padding) + in_out_info
@@ -189,6 +210,33 @@ class ONNXTranslator:
 		return kind
 
 
+	def matmul_resources(self, op):
+		"""
+		checks which one of the direct ancestor tf.Operations is a constant and returns the underlying onnx as a numpy.ndarray inside a tuple. The matrix is manipulated in a way that it can be
+		used as the left multiplier in the matrix multiplication.
+
+		Arguments
+		---------
+		op : ONNX.Node
+		    must have op_type "MatMul"
+
+		Return
+		------
+		output : tuple
+		    tuple with the matrix (of type numpy.ndarray) as its only item
+		"""
+		inputs = op.input
+		left   = inputs[0]
+		right  = inputs[1]
+
+
+		if left in self.constants_map:
+			matrix = self.constants_map[left]
+		else:
+			matrix = self.constants_map[right].transpose()
+		return matrix,
+
+
 	def gemm_resources(self, op):
 		"""
 		checks which one of the direct ancestor tf.Operations is a constant and returns the underlying onnx as a numpy.ndarray inside a tuple. The matrix is manipulated in a way that it can be
@@ -202,7 +250,7 @@ class ONNXTranslator:
 		Return
 		------
 		output : tuple
-		    tuple with the matrix (of type numpy.ndarray) as its only item
+		    tuple with the matrix and bias (of type numpy.ndarray)
 		"""
 		inputs = op.input
 		left   = inputs[0]
@@ -229,7 +277,7 @@ class ONNXTranslator:
 		if left in self.constants_map:
 			matrix = self.constants_map[left] if not transA else self.constants_map[left].transpose()
 		else:
-			matrix = self.constants_map[right] if not transB else self.constants_map[right].transpose()
+			matrix = self.constants_map[right].transpose() if not transB else self.constants_map[right]
 		return matrix * alpha, bias * beta
 	
 	
@@ -274,10 +322,10 @@ class ONNXTranslator:
 		"""
 		inputs  = op.input
 		image   = inputs[0]
-		filters = self.constants_map[op.input[1]]
+		filters = self.constants_map[op.input[1]].transpose(1,2,3,0)
 		bias = self.constants_map[op.input[2]]
 
-		image_shape = onnxshape_to_intlist(self.value_info_map[image].shape)
+		image_shape = onnxshape_to_intlist(self.value_info_map[image].shape)[1:]
 		for attribute in op.attribute:
 			if attribute.name == 'strides':
 				strides = attribute.ints
@@ -304,9 +352,11 @@ class ONNXTranslator:
 		
 		image_shape = onnxshape_to_intlist(image.shape)
 
-		auto_pad = None
+		padding = 'NOTSET'
 		ceil_mode = 0
 		storage_order = 0
+		pads = None
+		dilations = None
 
 		for attribute in op.attribute:
 			if attribute.name == 'kernel_shape':
@@ -314,16 +364,16 @@ class ONNXTranslator:
 			if attribute.name == 'strides':
 				strides = attribute.ints
 			elif attribute.name == 'pads':
-				padding = attribute.ints
+				pads = attribute.ints
 			elif attribute.name == 'dilations':
 				dilations = attribute.ints
 			elif attribute.name == 'auto_pad':
-				auto_pad = attribute.s
+				padding = attribute.s
 			elif attribute.name == 'ceil_mode':
 				ceil_mode = attribute.i
 			elif attribute.name == 'storage_order':
 				storage_order = attribute.i
-		return image_shape, kernel_shape, strides, padding, dilations, auto_pad, ceil_mode, storage_order
+		return image_shape, kernel_shape, strides, padding, dilations, pads, ceil_mode, storage_order
 	
 	
 	def nonlinearity_resources(self, op):

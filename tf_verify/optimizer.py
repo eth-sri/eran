@@ -23,7 +23,7 @@ class Optimizer:
         self.resources  = resources
     
     
-    def get_deepzono(self, nn, specLB, specUB, zonotope_bool = False):
+    def get_deepzono(self, nn, specLB, specUB = None):
         """
         This function will go through self.operations and self.resources and creates a list of Deepzono-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deepzono'] holds the resources for the operation of type self.operations[i]                
@@ -48,7 +48,7 @@ class Optimizer:
         while i < nbr_op:
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
-                if zonotope_bool:
+                if specUB is None:
                     output.append(DeepzonoInputZonotope(specLB, input_names, output_name, output_shape))
                 else:
                     output.append(DeepzonoInput(specLB, specUB, input_names, output_name, output_shape))
@@ -135,6 +135,9 @@ class Optimizer:
                 i += 1
             elif self.operations[i] == "Tanh":
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
+                i += 1
+            elif self.operations[i] == "Gather":
+                output.append(DeepzonoGather(*self.resources[i][domain]))
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
@@ -491,6 +494,11 @@ class Optimizer:
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, False))
                     nn.layertypes.append('Resaddnorelu')
                     i += 1
+                nn.numlayer+=1
+
+            # Gather
+            elif self.operations[i] == "Gather":
+                output.append(DeepzonoGather(*self.resources[i][domain]))
                 nn.numlayer+=1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
