@@ -96,6 +96,8 @@ if(dataset=='acasxu'):
 else:
     print("netname ", netname, " epsilon ", epsilon, " domain ", domain, " dataset ", dataset, "args complete ", args.complete, " complete ",complete, " timeout_lp ",args.timeout_lp)
 
+non_layer_operation_types = ['NoOp', 'Assign', 'Const', 'RestoreV2', 'SaveV2', 'PlaceholderWithDefault', 'IsVariableInitialized', 'Placeholder', 'Identity']
+
 if is_saved_tf_model or is_pb_file:
     netfolder = os.path.dirname(netname)
 
@@ -112,7 +114,10 @@ if is_saved_tf_model or is_pb_file:
             sess.graph.as_default()
             tf.graph_util.import_graph_def(graph_def, name='')
     ops = sess.graph.get_operations()
-    eran = ERAN(sess.graph.get_tensor_by_name(ops[-1].name + ':0'), sess)
+    last_layer_index = -1
+    while ops[last_layer_index].type in non_layer_operation_types:
+        last_layer_index -= 1
+    eran = ERAN(sess.graph.get_tensor_by_name(ops[last_layer_index].name + ':0'), sess)
 
 else:
     if(dataset=='mnist'):

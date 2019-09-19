@@ -101,13 +101,14 @@ class TFTranslator:
 		operation_resources = []
 		reshape_map = {}
 		operations_to_be_ignored = ["Reshape", "Pack", "Shape", "StridedSlice", "Prod", "ConcatV2"]
-		
+		operations_to_be_ignored_without_reshape = ["NoOp", "Assign", "Const", "RestoreV2", "SaveV2", "IsVariableInitialized", "Identity"]
+
 		with tf.Graph().as_default() as graph:
 			with tf.Session() as sess:
 				self.sess = sess
 				tf.import_graph_def(self.graph_def)
 				for op in graph.get_operations():
-					if op.type == "Const":
+					if op.type in operations_to_be_ignored_without_reshape:
 						continue
 					elif op.type in operations_to_be_ignored:
 						input_name  = op.inputs[0].name
@@ -164,11 +165,11 @@ class TFTranslator:
 						deeppoly_res =  (image_shape, window_size, in_out_info[2]) + in_out_info
 						deepzono_res = (image_shape, window_size, strides, padding) + in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-					elif op.type == "Placeholder":
+					elif op.type in ["Placeholder", "PlaceholderWithDefault"]:
 						deeppoly_res = in_out_info
 						deepzono_res = in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-					elif op.type in ["Relu", "Sigmoid", "Tanh"]:
+					elif op.type in ["Relu", "Sigmoid", "Tanh", "Softmax"]:
 						deeppoly_res = self.nonlinearity_resources(op) + in_out_info
 						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
