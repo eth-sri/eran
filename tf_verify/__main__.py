@@ -11,7 +11,7 @@ import time
 from deepzono_milp import *
 import argparse
 
-ZONOTOPE_EXTENSION = '.zt'
+#ZONOTOPE_EXTENSION = '.zt'
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -37,7 +37,7 @@ def parse_acasxu_spec(text):
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--netname', type=str, default=None, help='the network name, the extension can be only .pyt, .tf and .meta')
 parser.add_argument('--epsilon', type=float, default=0, help='the epsilon for L_infinity perturbation')
-parser.add_argument('--zonotope', type=str2bool, default=False, help='whether to use zonotope matrix, same name as network name with extension ' + ZONOTOPE_EXTENSION)
+parser.add_argument('--zonotope', type=str, default="", help='file to specify the zonotope matrix')
 #parser.add_argument('--specnumber', type=int, default=9, help='the property number for the acasxu networks')
 parser.add_argument('--domain', type=str, default=None, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
 parser.add_argument('--dataset', type=str, default=None, help='the dataset, can be either mnist, cifar10, or acasxu')
@@ -65,9 +65,11 @@ assert is_trained_with_pytorch or is_saved_tf_model or is_pb_file or is_tensorfl
 epsilon = args.epsilon
 assert (epsilon >= 0) and (epsilon <= 1), "epsilon can only be between 0 and 1"
 
-zonotope_bool = args.zonotope
+zonotope_file = args.zonotope
+zonotope = None
+zonotope_bool = (zonotope_file!="")
 if zonotope_bool:
-    zonotope = read_zonotope(filename + ZONOTOPE_EXTENSION)
+    zonotope = read_zonotope(zonotope_file)
 
 domain = args.domain
 
@@ -124,8 +126,10 @@ else:
         num_pixels = 784
     elif (dataset=='cifar10'):
         num_pixels = 3072
-    else:
+    elif(dataset=='acasxu'):
         num_pixels = 5
+    elif(zonotope_bool==True):
+        num_pixels = len(zonotope)
     if is_onnx:
         model, is_conv, means, stds = read_onnx_net(netname)
     else:
