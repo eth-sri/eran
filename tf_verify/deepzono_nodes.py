@@ -254,7 +254,8 @@ class DeepzonoInputZonotope:
         ------
         output : ElinaAbstract0Ptr
         """
-        return zonotope_from_network_input_zonotope(man, 0, len(self.zonotope), self.zonotope)
+        zonotope_shape = self.zonotope.shape
+        return elina_abstract0_from_zonotope(man, 0, zonotope_shape[0], zonotope_shape[1], self.zonotope)
 
 
 
