@@ -11,6 +11,7 @@ from elina_abstract0 import *
 from elina_manager import *
 from deepzono_milp import *
 from functools import reduce
+import config
 
 def add_input_output_information_deeppoly(self, input_names, output_name, output_shape):
     """
@@ -138,18 +139,13 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
         layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        lbi = []
-        ubi = []
-        for i in range(num_neurons):
-            inf = bounds[i].contents.inf
-            sup = bounds[i].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
+
+        itv = [bounds[i] for i in range(num_neurons)]
+        lbi = [x.contents.inf.contents.val.dbl for x in itv]
+        ubi = [x.contents.sup.contents.val.dbl for x in itv]
 
         nlb.append(lbi)
         nub.append(ubi)
-
-        #encode_2reLu_cons(nn, man, element, 0, 0, num_neurons, lbi, ubi, relu3vars_list, relu2vars_list, relu1var_list, False, 'refinepoly')
 
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
@@ -220,34 +216,31 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        lbi = []
-        ubi = []
-        candidate_vars = []
-        for i in range(num_neurons):
-            inf = bounds[i].contents.inf
-            sup = bounds[i].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
-                candidate_vars.append(i)
+
+        itv = [bounds[i] for i in range(num_neurons)]
+        lbi = [x.contents.inf.contents.val.dbl for x in itv]
+        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+        candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
+
         nlb.append(lbi)
         nub.append(ubi)
         #print("lbi ", timeout_milp, "ubi ", timeout_lp)
         if refine:
             if layerno <= 1:
-               use_milp = 1
-               timeout = timeout_milp
+                use_milp = config.use_milp
             else:
-               use_milp = 0
-               timeout = timeout_lp
+                use_milp = 0
+
+            if use_milp:
+                timeout = timeout_milp
+            else:
+                timeout = timeout_lp
             resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
-            nlb.pop()
-            nub.pop()
-            nlb.append(resl)
-            nub.append(resu)
-            lbi = nlb[layerno]
-            ubi = nub[layerno]
-            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+
+            nlb[-1] = resl
+            nub[-1] = resu
+
+
             for i in range(len(indices)):
                 j = indices[i]
                 update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
@@ -334,26 +327,25 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         layerno = nn.ffn_counter + nn.conv_counter
         bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
         num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
-        lbi = []
-        ubi = []
-        candidate_vars = []
-        for i in range(num_neurons):
-            inf = bounds[i].contents.inf
-            sup = bounds[i].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
-                candidate_vars.append(i)
+
+        itv = [bounds[i] for i in range(num_neurons)]
+        lbi = [x.contents.inf.contents.val.dbl for x in itv]
+        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+        candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
+
         nlb.append(lbi)
         nub.append(ubi)
-        #print("lbi ", lbi, "ubi ", ubi)
+
         if(refine):
             if layerno<=1:
-               use_milp = 1
-               timeout = timeout_milp
+                use_milp = 1
             else:
-               use_milp = 0
-               timeout = timeout_lp
+                use_milp = 0
+
+            if use_milp:
+                timeout = timeout_milp
+            else:
+                timeout = timeout_lp
             resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
             print("resl ", resl, "resu ", resu)
             nlb.pop()
@@ -510,39 +502,32 @@ class DeeppolyConv2dNodeIntermediate:
         layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        lbi = []
-        ubi = []
-        candidate_vars = []
-        for i in range(num_neurons):
-            inf = bounds[i].contents.inf
-            sup = bounds[i].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
-                candidate_vars.append(i)
+
+        itv = [bounds[i] for i in range(num_neurons)]
+        lbi = [x.contents.inf.contents.val.dbl for x in itv]
+        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+        candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
+
         nlb.append(lbi)
         nub.append(ubi)
 
         if(refine):
-        #TODO handle residual layers here
-            if layerno<=1:
-               use_milp = 1
-               timeout = timeout_milp
+            use_milp = config.use_milp
+            if use_milp:
+                timeout = timeout_milp
             else:
-               use_milp = 0
-               timeout = timeout_lp
-            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
-            nlb.pop()
-            nub.pop()
-            nlb.append(resl)
-            nub.append(resu)
-            lbi = nlb[layerno]
-            ubi = nub[layerno]
-            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+                timeout = timeout_lp
+            numconvslayers = sum('Conv2D' in l for l in nn.layertypes)
+            if numconvslayers-nn.conv_counter <= 1:
 
-            for i in range(len(indices)):
-                j = indices[i]
-                update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+                resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+
+                nlb[-1] = resl
+                nub[-1] = resu
+
+                for j in indices:
+                    update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+
         elina_interval_array_free(bounds,num_neurons)
         nn.conv_counter+=1
         return element
@@ -571,35 +556,13 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
         layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        lbi = []
-        ubi = []
-        candidate_vars = []
-        for i in range(num_neurons):
-            inf = bounds[i].contents.inf
-            sup = bounds[i].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-            if((lbi[i]<0 and ubi[i]>0)or(lbi[i]>0)):
-                candidate_vars.append(i)
+
+        itv = [bounds[i] for i in range(num_neurons)]
+        lbi = [x.contents.inf.contents.val.dbl for x in itv]
+        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+
         nlb.append(lbi)
         nub.append(ubi)
-        if(refine):
-        #TODO handle residual layers here
-            if layerno<=1:
-               use_milp = 1
-               timeout = timeout_milp
-            else:
-               use_milp = 0
-               timeout = timeout_lp
-            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
-            nlb.pop()
-            nub.pop()
-            nlb.append(resl)
-            nub.append(resu)
-
-            for i in range(len(indices)):
-                j = indices[i]
-                update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
 
         elina_interval_array_free(bounds,num_neurons)
         nn.conv_counter+=1
@@ -670,16 +633,11 @@ class DeeppolyResadd:
         layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        lbi = []
-        ubi = []
-        candidate_vars = []
-        for i in range(num_neurons):
-            inf = bounds[i].contents.inf
-            sup = bounds[i].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-            if ((lbi[i] < 0 and ubi[i] > 0) or (lbi[i] > 0)):
-                candidate_vars.append(i)
+
+        itv = [bounds[i] for i in range(num_neurons)]
+        lbi = [x.contents.inf.contents.val.dbl for x in itv]
+        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+
         nlb.append(lbi)
         nub.append(ubi)
         # print("Residual ", nn.layertypes[layerno],layerno)

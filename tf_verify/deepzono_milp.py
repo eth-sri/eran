@@ -319,7 +319,6 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
         var_list.append(var)
 
     counter = 0
-    start = 0
     #for i in range(numlayer):
     #    if(nn.layertypes[i]=='SkipNet1'):
     #        start = i+1
@@ -406,7 +405,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
 
         else:
-            print('layertype not supported')
+            print('layertype:', nn.layertypes[i], 'not supported')
             return
     nn.ffn_counter = ffn_counter
     nn.conv_counter = conv_counter
