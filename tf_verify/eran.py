@@ -96,7 +96,6 @@ class ERAN:
             if the analysis couldn't prove robustness then -1 is returned
         """
         assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
-        zonotope = np.reshape(zonotope, (-1,))
         nn = layers()
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':

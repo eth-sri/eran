@@ -6,8 +6,7 @@ def read_zonotope(zonotope_file):
     assert os.path.isfile(zonotope_file), 'There exists no zonotope file.'
 
     zonotope_read = open(zonotope_file,'r').read()
-    zonotope_read = zonotope_read.replace(' ', '')
-    zonotope = re.split(',|\n', zonotope_read)
+    zonotope = re.split('[, \n]+', zonotope_read)
     zonotope_height = int(zonotope[0])
     zonotope_width = int(zonotope[1])
 
