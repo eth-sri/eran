@@ -239,7 +239,9 @@ class DeepzonoInputZonotope:
             iterable of ints with the shape of the output of this node
         """
         add_input_output_information(self, input_names, output_name, output_shape)
-        self.zonotope = np.ascontiguousarray(zonotope, dtype=np.double)
+        zonotope = np.ascontiguousarray(zonotope, dtype=np.double)
+        self.num_error_terms = zonotope.shape[1]
+        self.zonotope = get_xpp(zonotope)
 
     def transformer(self, man):
         """
@@ -255,7 +257,9 @@ class DeepzonoInputZonotope:
         output : ElinaAbstract0Ptr
         """
         zonotope_shape = self.zonotope.shape
-        return elina_abstract0_from_zonotope(man, 0, zonotope_shape[0], zonotope_shape[1], self.zonotope)
+        
+        element = elina_abstract0_from_zonotope(man, 0, zonotope_shape[0], self.num_error_terms, self.zonotope)
+        return element
 
 
 

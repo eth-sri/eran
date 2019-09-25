@@ -276,6 +276,20 @@ if dataset=='acasxu':
 
     print(end - start, "seconds")
 
+elif zonotope_bool:
+    perturbed_label, nn, nlb, nub = eran.analyze_zonotope(zonotope, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+    print("nlb ",nlb[len(nlb)-1])
+    #print("nub ",nub)
+    if(perturbed_label!=-1):
+         print("Verified")
+    elif(complete==True):
+         verified_flag,adv_image = verify_network_with_milp_zonotope(nn, zonotope, label, nlb, nub)
+         if(verified_flag==True):
+             print("Verified")
+         else:
+             print("Failed")
+    else:
+         print("Failed")
 else:
     for test in tests:
         if(dataset=='mnist'):
@@ -292,12 +306,8 @@ else:
         if(is_trained_with_pytorch):
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
-
-        if zonotope_bool:
-            # Assume original is classified correctly by neural network
-            label = int(test[0])
-        else:
-            label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+        
+        label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
@@ -305,39 +315,33 @@ else:
         #        else:
         #            print('True')
 
-        #print("concrete ", nlb[len(nlb)-1])
+        print("concrete ", nlb[len(nlb)-1])
         #if(label == int(test[0])):
         if(label == int(test[0])):
             perturbed_label = None
-            if zonotope_bool:
-                perturbed_label, _, nlb, nub = eran.analyze_zonotope(zonotope, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+            
+            if(dataset=='mnist'):
+                specLB = np.clip(image - epsilon,0,1)
+                specUB = np.clip(image + epsilon,0,1)
             else:
-                if(dataset=='mnist'):
-                    specLB = np.clip(image - epsilon,0,1)
-                    specUB = np.clip(image + epsilon,0,1)
-                else:
-                    if(is_trained_with_pytorch):
-                        specLB = np.clip(image - epsilon,0,1)
-                        specUB = np.clip(image + epsilon,0,1)
-                    else:
-                        specLB = np.clip(image-epsilon,-0.5,0.5)
-                        specUB = np.clip(image+epsilon,-0.5,0.5)
                 if(is_trained_with_pytorch):
-                    normalize(specLB, means, stds)
-                    normalize(specUB, means, stds)
-                start = time.time()
-                perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
+                     specLB = np.clip(image - epsilon,0,1)
+                     specUB = np.clip(image + epsilon,0,1)
+                else:
+                     specLB = np.clip(image-epsilon,-0.5,0.5)
+                     specUB = np.clip(image+epsilon,-0.5,0.5)
+            if(is_trained_with_pytorch):
+                normalize(specLB, means, stds)
+                normalize(specUB, means, stds)
+            start = time.time()
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
             print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
             if(perturbed_label==label):
                 print("img", total_images, "Verified", label)
                 verified_images += 1
             else:
                 if complete==True:
-                    verified_flag, adv_image = None, None
-                    if zonotope_bool:
-                        verified_flag,adv_image = verify_network_with_milp_zonotope(nn, zonotope, label, nlb, nub)
-                    else:
-                        verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, label, nlb, nub)
+                    verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, label, nlb, nub)
                     if(verified_flag==True):
                         print("img", total_images, "Verified", label)
                         verified_images += 1
