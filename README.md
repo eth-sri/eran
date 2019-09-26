@@ -390,7 +390,7 @@ Contributors
 
 * [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
 
-* [Jonathan Maurer] - maurerjo@student.ethz.ch
+* Jonathan Maurer - maurerjo@student.ethz.ch
 
 * [Matthew Mirman](https://www.mirman.com) - matt@mirman.com
 
