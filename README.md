@@ -128,20 +128,20 @@ Usage
 ```
 cd tf_verify
 
-python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono/refinepoly> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False>
 ```
 
 * ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing ACAS Xu networks.
 
-* ```<zonotope>```: The Zonotope specification file can be comma or whitespace separated file where the first two integers can specify the number of input dimensions D and the number of error terms per dimension N. The following D*N doubles specify the coefficient of error terms. For every dimension i, the error terms are numbered from 0 to N-1 where the 0-th error term is the central error term. See an example here [https://github.com/eth-sri/eran/files/3653882/zonotope_example.txt].
+* ```<zonotope>```: The Zonotope specification file can be comma or whitespace separated file where the first two integers can specify the number of input dimensions D and the number of error terms per dimension N. The following D*N doubles specify the coefficient of error terms. For every dimension i, the error terms are numbered from 0 to N-1 where the 0-th error term is the central error term. See an example here [https://github.com/eth-sri/eran/files/3653882/zonotope_example.txt]. This option only works with the "deepzono" or "refinezono" domain.
 
-* ```<use_area_heuristic>```: specifies whether to use area heuristic for the ReLU approximation in DeepPoly
+* ```<use_area_heuristic>```: specifies whether to use area heuristic for the ReLU approximation in DeepPoly.
 
 * Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
 
-* Refinezono refines the analysis results from the DeepZ domain using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
+* Refinezono and RefinePoly refines the analysis results from the DeepZ and DeepPoly domain respectively using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
-* Since Refinezono uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
+* Since Refinezono and RefinePoly uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
 * Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. When complete verification fails, ERAN prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. 
 
@@ -150,6 +150,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 Example
 -------------
 
+L_oo Specification
 ```
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --epsilon 0.1 --domain deepzono --dataset mnist
 ```
@@ -163,7 +164,15 @@ will evaluate the local robustness of the MNIST convolutional network (upto 35K 
 * The ratio of images on which the network is robust versus the number of images on which it classifies correctly.
  
 
-For the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
+Zonotope Specification
+```
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --zonotope some_path/zonotope_example.txt --domain deepzono 
+```
+
+will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output either "Verified" or "Failed" along with the timing.
+
+Similarly, for the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
+
 
 Publications
 -------------
