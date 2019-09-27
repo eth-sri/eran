@@ -150,7 +150,6 @@ class Optimizer:
 
         use_dict = self.deepzono_get_dict(output)
         output   = self.deepzono_forward_pass(output, use_dict)
-        self.set_predecessors(nn, output)
 
         return output
 
