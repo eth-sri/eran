@@ -455,7 +455,7 @@ class DeeppolyConv2dNodeIntermediate:
         self.filters     = np.ascontiguousarray(filters, dtype=np.double)
         self.strides     = np.ascontiguousarray(strides, dtype=np.uintp)
         self.bias        = np.ascontiguousarray(bias, dtype=np.double)
-        self.out_size    = output_shape
+        self.out_size    = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3]) 
         self.pad_top     = pad_top
         self.pad_left    = pad_left
         self.has_relu    = has_relu

@@ -45,10 +45,9 @@ def calculate_padding(padding_str, image_shape, filter_shape, strides):
 		else:
 			tmp = filter_shape[1] - (image_shape[2] % strides[1]);
 			pad_along_width = max(tmp, 0)
-		pad_top = pad_along_height / 2
+		pad_top = int(pad_along_height / 2)
 
-		pad_left = pad_along_width / 2
-
+		pad_left = int(pad_along_width / 2)
 	return pad_top, pad_left
 
 
@@ -283,7 +282,7 @@ class TFTranslator:
 		image_shape = tensorshape_to_intlist(image.shape)[1:]
 		strides     = op.get_attr('strides')[1:3]
 		padding_str = op.get_attr('padding').decode('utf-8')
-		pad_top, pad_left = calculate_padding(padding_str, image_shape, filters.shape[1:3], strides)
+		pad_top, pad_left = calculate_padding(padding_str, image_shape, filters.shape, strides)
 		return filters, image_shape, strides, pad_top, pad_left
 	
 	

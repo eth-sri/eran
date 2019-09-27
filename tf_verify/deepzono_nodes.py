@@ -462,7 +462,7 @@ class DeepzonoConv:
         self.image_size = np.ascontiguousarray(image_shape, dtype=np.uintp)
         self.filters    = np.ascontiguousarray(filters, dtype=np.double)
         self.strides    = np.ascontiguousarray(strides, dtype=np.uintp)
-        self.output_shape = output_shape
+        self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3]) 
         self.pad_top    = pad_top
         self.pad_left   = pad_left
     
