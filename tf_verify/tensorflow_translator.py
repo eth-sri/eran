@@ -27,6 +27,30 @@ def tensorshape_to_intlist(tensorshape):
 	return list(map(lambda j: 1 if j.value is None else int(j), tensorshape))
 
 
+def calculate_padding(padding_str, image_shape, filter_shape, strides):
+	is_valid_padding = padding_str == 'VALID'
+
+	pad_top = 0
+	pad_left = 0
+	if not is_valid_padding:
+		if image_shape[0] % strides[0] == 0:
+			tmp = filter_shape[0] - strides[0]
+			pad_along_height = max(tmp, 0)
+		else:
+			tmp = filter_shape[0] - (image_shape[1] % strides[0])
+			pad_along_height = max(tmp, 0)
+		if image_shape[1] % strides[1] == 0:
+			tmp = filter_shape[1] - strides[1]
+			pad_along_width = max(tmp, 0)
+		else:
+			tmp = filter_shape[1] - (image_shape[2] % strides[1]);
+			pad_along_width = max(tmp, 0)
+		pad_top = pad_along_height / 2
+
+		pad_left = pad_along_width / 2
+
+	return pad_top, pad_left
+
 
 class TFTranslator:
 	"""
@@ -156,14 +180,14 @@ class TFTranslator:
 						else:
 							assert 0, "this bias add doesn't meet our assumption (bias is constant)"
 					elif op.type == "Conv2D":
-						filters, image_shape, strides, padding = self.conv2d_resources(op)
-						deeppoly_res = (filters, image_shape, strides, padding) + in_out_info
+						filters, image_shape, strides, pad_top, pad_left = self.conv2d_resources(op)
+						deeppoly_res = (filters, image_shape, strides, pad_top, pad_left) + in_out_info
 						deepzono_res = deeppoly_res 
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "MaxPool":
-						image_shape, window_size, strides, padding = self.maxpool_resources(op)
+						image_shape, window_size, strides, pad_top, pad_left = self.maxpool_resources(op)
 						deeppoly_res =  (image_shape, window_size, in_out_info[2]) + in_out_info
-						deepzono_res = (image_shape, window_size, strides, padding) + in_out_info
+						deepzono_res = (image_shape, window_size, strides, pad_top, pad_left) + in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type in ["Placeholder", "PlaceholderWithDefault"]:
 						deeppoly_res = in_out_info
@@ -258,8 +282,9 @@ class TFTranslator:
 		filters     = self.sess.run(filters)
 		image_shape = tensorshape_to_intlist(image.shape)[1:]
 		strides     = op.get_attr('strides')[1:3]
-		padding     = op.get_attr('padding').decode('utf-8')
-		return filters, image_shape, strides, padding	
+		padding_str = op.get_attr('padding').decode('utf-8')
+		pad_top, pad_left = calculate_padding(padding_str, image_shape, filters.shape[1:3], strides)
+		return filters, image_shape, strides, pad_top, pad_left
 	
 	
 	def maxpool_resources(self, op):
@@ -281,9 +306,10 @@ class TFTranslator:
 		image_shape = tensorshape_to_intlist(image.shape)[1:]
 		window_size = op.get_attr('ksize')[1:3]
 		strides     = op.get_attr('strides')[1:3]
-		padding     = op.get_attr('padding').decode('utf-8')
-		
-		return image_shape, window_size, strides, padding
+		padding_str = op.get_attr('padding').decode('utf-8')
+		pad_top, pad_left = calculate_padding(padding_str, image_shape, window_size, strides)
+
+		return image_shape, window_size, strides, pad_top, pad_left
 	
 	
 	def nonlinearity_resources(self, op):

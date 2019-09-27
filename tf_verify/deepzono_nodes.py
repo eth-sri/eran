@@ -418,7 +418,7 @@ class DeepzonoAffine(DeepzonoMatmul):
         #if self.refine == 'True':
         #    refine_after_affine(self, man, element, nlb, nub)
         dimension = elina_abstract0_dimension(man,element)
-        var_in_element = dimension.intdim + dimension.realdim 
+        var_in_element = dimension.intdim + dimension.realdim
         bounds = elina_abstract0_to_box(man,element)
         lbi = []
         ubi = []
@@ -439,7 +439,7 @@ class DeepzonoAffine(DeepzonoMatmul):
 
 
 class DeepzonoConv:
-    def __init__(self, image_shape, filters, strides, padding, input_names, output_name, output_shape):
+    def __init__(self, image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -462,7 +462,9 @@ class DeepzonoConv:
         self.image_size = np.ascontiguousarray(image_shape, dtype=np.uintp)
         self.filters    = np.ascontiguousarray(filters, dtype=np.double)
         self.strides    = np.ascontiguousarray(strides, dtype=np.uintp)
-        self.padding    = padding
+        self.output_shape = output_shape
+        self.pad_top    = pad_top
+        self.pad_left   = pad_left
     
     
     def get_arguments(self, man, element):
@@ -489,7 +491,7 @@ class DeepzonoConv:
         image_size  = (c_size_t * 3)(self.image_size[0],self.image_size[1],self.image_size[2])
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
         element     = add_dimensions(man, element, offset+old_length, new_length)
-        return man, True, element, old_length+offset, self.filters, np.ndarray([0,0,0]), image_size, offset, filter_size, num_filters, strides, self.padding == "VALID", False
+        return man, True, element, old_length+offset, self.filters, np.ndarray([0,0,0]), image_size, offset, filter_size, num_filters, strides, self.output_shape, self.pad_top, self.pad_left, False
         
     
     
@@ -518,7 +520,7 @@ class DeepzonoConv:
 
 
 class DeepzonoConvbias(DeepzonoConv):
-    def __init__(self, image_shape, filters, bias, strides, padding, input_names, output_name, output_shape):
+    def __init__(self, image_shape, filters, bias, strides, pad_top, pad_left, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -539,14 +541,14 @@ class DeepzonoConvbias(DeepzonoConv):
         output_shape : iterable
             iterable of ints with the shape of the output of this node
         """
-        DeepzonoConv.__init__(self, image_shape, filters, strides, padding, input_names, output_name, output_shape)
+        DeepzonoConv.__init__(self, image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape)
         self.bias = np.ascontiguousarray(bias, dtype=np.double)
     
     
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
         """
         transforms element with conv_matmult_zono, with bias
-        
+
         Arguments
         ---------
         man : ElinaManagerPtr
@@ -560,11 +562,10 @@ class DeepzonoConvbias(DeepzonoConv):
             abstract element after the transformer
         """
         offset, old_length  = self.abstract_information
-        man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias = self.get_arguments(man, element)
+        man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, out_size, pad_top, pad_left, has_bias = self.get_arguments(man, element)
         bias     = self.bias
         has_bias = True
-        #print("start ", start_offset,expr_offset,filter_size,num_filters)
-        element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, is_valid_padding, has_bias)
+        element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, out_size, pad_top, pad_left, has_bias)
         num_vars = self.output_length
         #print("coming here")
         dimension = elina_abstract0_dimension(man,element)
@@ -701,7 +702,7 @@ class DeepzonoTanh(DeepzonoNonlinearity):
 
 
 class DeepzonoMaxpool:
-    def __init__(self, image_shape, window_size, strides, padding, input_names, output_name, output_shape):
+    def __init__(self, image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -724,7 +725,9 @@ class DeepzonoMaxpool:
         self.window_size = np.ascontiguousarray(window_size, dtype=np.uintp)
         self.input_shape = np.ascontiguousarray(image_shape, dtype=np.uintp)
         self.stride      = np.ascontiguousarray(strides, dtype=np.uintp)
-        self.padding     = padding
+        self.pad_top     = pad_top
+        self.pad_left    = pad_left
+        self.output_shape = np.ascontiguousarray(output_shape, dtype=np.uintp)
         
     
     
@@ -747,7 +750,7 @@ class DeepzonoMaxpool:
         offset, old_length = self.abstract_information
         h, w    = self.window_size
         H, W, C = self.input_shape
-        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.padding=="VALID")
+        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -830,3 +833,21 @@ class DeepzonoResadd:
             return element
         else:
             return remove_dimensions(man, element, src_offset, num_var)
+
+
+class DeepzonoGather:
+    def __init__(self, indexes, input_names, output_name, output_shape):
+        """
+        collects the information needed for the handle_gather_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        indexes : numpy.ndarray
+            array of ints representing the entries of the of the input that are passed to the next layer
+        """
+        add_input_output_information(self, [input_names[0]], output_name, output_shape)
+        self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+        # TODO implement: handle_gather_layer(man, element, self.indexes)
+        return element

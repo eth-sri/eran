@@ -212,7 +212,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(),  use_area_heuristic)
+        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
         bounds = box_for_layer(man, element, layerno)
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
@@ -436,7 +436,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
 
 
 class DeeppolyConv2dNodeIntermediate:
-    def __init__(self, filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu):
+    def __init__(self, filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu):
         """
         collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
         
@@ -455,7 +455,9 @@ class DeeppolyConv2dNodeIntermediate:
         self.filters     = np.ascontiguousarray(filters, dtype=np.double)
         self.strides     = np.ascontiguousarray(strides, dtype=np.uintp)
         self.bias        = np.ascontiguousarray(bias, dtype=np.double)
-        self.padding    =  padding
+        self.out_size    = output_shape
+        self.pad_top     = pad_top
+        self.pad_left    = pad_left
         self.has_relu    = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
@@ -476,7 +478,7 @@ class DeeppolyConv2dNodeIntermediate:
         filter_size = (c_size_t * 2) (self.filters.shape[0], self.filters.shape[1])
         numfilters  = self.filters.shape[3]
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
-        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.padding == "VALID", True, self.predecessors
+        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, True, self.predecessors
 
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
@@ -647,4 +649,26 @@ class DeeppolyResadd:
             #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
         elina_interval_array_free(bounds, num_neurons)
 
+        return element
+
+
+class DeeppolyGather:
+    def __init__(self, indexes, input_names, output_name, output_shape):
+        """
+        collects the information needed for the handle_gather_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        indexes : numpy.ndarray
+            1D array of ints with 3 entries [height, width, channels] representing the shape of the of the image that is passed to the conv-layer
+        window_size : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the window's size in these directions
+        strides : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the stride in these directions
+        """
+        self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
+        # TODO implement: handle_gather_layer(man, element, self.indexes)
         return element

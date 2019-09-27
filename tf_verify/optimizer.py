@@ -4,6 +4,7 @@
 from deepzono_nodes import *
 from deeppoly_nodes import *
 from functools import reduce
+import numpy as np
 
 
 # TODO replace all strings with constants
@@ -79,45 +80,45 @@ class Optimizer:
                 i += 1
             elif self.operations[i] == "Conv2D":
                 if i != nbr_op-1 and self.operations[i+1] == "BiasAdd":
-                    filters, image_shape, strides, padding, c_input_names, _, _ = self.resources[i][domain]
+                    filters, image_shape, strides, pad_top, pad_left, c_input_names, _, _ = self.resources[i][domain]
                     bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
                     nn.numfilters.append(filters.shape[3])
                     nn.filter_size.append([filters.shape[0], filters.shape[1]])
                     nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                     nn.strides.append([strides[0],strides[1]])
-                    nn.padding.append(padding=="VALID")
+                    #nn.padding.append(padding=="VALID")
                     nn.filters.append(filters)
 
                     nn.biases.append(bias)
                     nn.layertypes.append('Conv2D')
                     nn.numlayer+=1
-                    output.append(DeepzonoConvbias(image_shape, filters, bias, strides, padding, c_input_names, b_output_name, b_output_shape))
+                    output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
                     i += 2
                 else:
                     filters, image_shape, strides, padding, input_names, output_name, output_shape = self.resources[i][domain]
-                    output.append(DeepzonoConv(image_shape, filters, strides, padding, input_names, output_name, output_shape))
+                    output.append(DeepzonoConv(image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape))
                     i += 1
             elif self.operations[i] == "Conv":
-                filters, bias, image_shape, strides, padding, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
-                nn.padding.append(padding=="VALID")
+                #nn.padding.append(padding=="VALID")
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv2D')
                 nn.numlayer+=1
-                output.append(DeepzonoConvbias(image_shape, filters, bias, strides, padding, c_input_names, b_output_name, b_output_shape))
+                output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
                 i += 1
             elif self.operations[i] == "Add":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "MaxPool":
-                image_shape, window_size, strides, padding, input_names, output_name, output_shape = self.resources[i][domain]
-                output.append(DeepzonoMaxpool(image_shape, window_size, strides, padding, input_names, output_name, output_shape))
+                image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                output.append(DeepzonoMaxpool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape))
                 i += 1
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
@@ -137,6 +138,11 @@ class Optimizer:
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Gather":
+                image_shape, indexes, axis,  input_names, output_name, output_shape = self.resources[i][domain]
+                calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
+                output.append(DeepzonoGather(calculated_indexes, input_names, output_name, output_shape))
+                i += 1
+            elif self.operations[i] == "Reshape":
                 output.append(DeepzonoGather(*self.resources[i][domain]))
                 i += 1
             else:
@@ -371,13 +377,13 @@ class Optimizer:
                 # Tensorflow operation
             elif self.operations[i] == "Conv2D" and self.operations[i + 1] == "BiasAdd":
 
-                filters, image_shape, strides, padding, input_names, _, _ = self.resources[i][domain]
+                filters, image_shape, strides, pad_top, pad_left, input_names, _, _ = self.resources[i][domain]
                 bias, _, output_name, output_shape = self.resources[i + 1][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0], image_shape[1], image_shape[2]])
                 nn.strides.append([strides[0], strides[1]])
-                nn.padding.append(padding == "VALID")
+                #nn.padding.append(padding == "VALID")
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
@@ -392,47 +398,49 @@ class Optimizer:
                 nn.numlayer += 1
                 if i == 1:
                     output.append(
-                        DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name,
+                        DeeppolyConv2dNodeFirst(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name,
                                                 output_shape, has_relu))
                 else:
-                    output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names,
+                    output.append(DeeppolyConv2dNodeIntermediate(filters, strides, pad_top, pad_left, bias, image_shape, input_names,
                                                              output_name, output_shape, has_relu))
                 i += increment
 
             # ONNX operation
             elif i == 1 and self.operations[1] == "Conv":
                 #print("resources ", self.resources[i][domain])
-                filters, bias, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
-                _,output_name,output_shape = self.resources[i+1][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, input_names,output_name,out_shape = self.resources[i][domain]
                 has_relu = self.operations[i+1] == "Relu"
                 if has_relu:
                     nn.layertypes.append('Conv2D')
+                    _,output_name,output_shape = self.resources[i+1][domain]
+                    i += 2
                 else:
                     nn.layertypes.append('Conv2DNoReLu')
+                    i += 1
                 nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeFirst(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
-                i += 2
+                output.append(DeeppolyConv2dNodeFirst(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu))
 
             # ONNX operation
             elif self.operations[i] == "Conv":
-                filters, bias, image_shape, strides, padding, input_names,_,_ = self.resources[i][domain]
-                _,output_name,output_shape = self.resources[i+1][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, input_names,output_name,out_shape = self.resources[i][domain]
+                has_relu = self.operations[i+1] == "Relu"
+                if has_relu:
+                    nn.layertypes.append('Conv2D')
+                    _,output_name,output_shape = self.resources[i+1][domain]
+                    i += 2
+                else:
+                    nn.layertypes.append('Conv2DNoReLu')
+                    i += 1
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
-                nn.padding.append(padding=="VALID")
+                #nn.padding.append(padding=="VALID")
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
-                has_relu = self.operations[i+1] == "Relu"
-                if has_relu:
-                    nn.layertypes.append('Conv2D')
-                else:
-                    nn.layertypes.append('Conv2DNoReLu')
                 nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, padding, bias, image_shape, input_names, output_name, output_shape, has_relu))
-                i += 2
+                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu))
 
             # Residual layer
             elif self.operations[i] == "Resadd":
@@ -451,8 +459,17 @@ class Optimizer:
 
             # Gather
             elif self.operations[i] == "Gather":
-                output.append(DeepzonoGather(*self.resources[i][domain]))
+                image_shape, indexes, axis, input_names,output_name,output_shape = self.resources[i][domain]
+                calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
+                output.append(DeeppolyGather(calculated_indexes, input_names,output_name,output_shape))
                 nn.numlayer+=1
+                i+=1
+
+            elif self.operations[i] == "Reshape":
+                indexes, input_names, output_name, output_shape = self.resources[i][domain]
+                output.append(DeeppolyGather(indexes, [input_names[0]], output_name, output_shape))
+                nn.numlayer+=1
+                i+=1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
 
@@ -474,3 +491,7 @@ class Optimizer:
             node.predecessors = predecessors
             nn.predecessors.append(predecessors)
 
+    def get_gather_indexes(self, input_shape, indexes, axis):
+        size = np.prod(input_shape)
+        base_indexes = np.arange(size).reshape(input_shape)
+        return np.take(base_indexes, indexes, axis=axis)

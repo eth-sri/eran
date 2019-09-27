@@ -169,8 +169,8 @@ class ONNXTranslator:
 				else:
 					assert 0, "this bias add doesn't meet our assumption (bias is constant)"
 			elif node.op_type == "Conv":
-				filters, bias, image_shape, strides, padding = self.conv_resources(node)
-				deeppoly_res = (filters, bias, image_shape, strides, padding) + in_out_info
+				filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape = self.conv_resources(node)
+				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool":
@@ -250,7 +250,7 @@ class ONNXTranslator:
 		Return
 		------
 		output : tuple
-		    tuple with the matrix and bias (of type numpy.ndarray)
+		    tuple with the matrix and bias (of type numpy.ndarray) and is_left used to calculate the output shape
 		"""
 		inputs = op.input
 		left   = inputs[0]
@@ -325,13 +325,23 @@ class ONNXTranslator:
 		filters = self.constants_map[op.input[1]].transpose(1,2,3,0)
 		bias = self.constants_map[op.input[2]]
 
-		image_shape = onnxshape_to_intlist(self.value_info_map[image].shape)[1:]
+		image_shape = self.get_shape(image)
+		pads = [0, 0, 0, 0]
 		for attribute in op.attribute:
 			if attribute.name == 'strides':
 				strides = attribute.ints
 			elif attribute.name == 'pads':
-				padding = attribute.ints
-		return filters, bias, image_shape, strides, padding
+				pads = attribute.ints
+			elif attribute.name == 'kernel_shape':
+				kernel_shape = attribute.ints
+
+		pad_top = pads[0]
+		pad_left = pads[1]
+		pad_bottom = pads[2]
+		pad_right = pads[3]
+		assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
+		assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
+		return filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape
 	
 	
 	def maxpool_resources(self, op):
@@ -355,7 +365,7 @@ class ONNXTranslator:
 		padding = 'NOTSET'
 		ceil_mode = 0
 		storage_order = 0
-		pads = None
+		pads = [0, 0, 0, 0]
 		dilations = None
 
 		for attribute in op.attribute:
@@ -373,7 +383,13 @@ class ONNXTranslator:
 				ceil_mode = attribute.i
 			elif attribute.name == 'storage_order':
 				storage_order = attribute.i
-		return image_shape, kernel_shape, strides, padding, dilations, pads, ceil_mode, storage_order
+		pad_top = pads[0]
+		pad_left = pads[1]
+		pad_bottom = pads[2]
+		pad_right = pads[3]
+		assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
+		assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
+		return image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, ceil_mode, storage_order
 	
 	
 	def nonlinearity_resources(self, op):
