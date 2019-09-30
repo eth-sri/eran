@@ -849,9 +849,5 @@ class DeepzonoGather:
         self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
-        np.set_printoptions(threshold=sys.maxsize)
-        print("indexes ",len(self.indexes[0]))
-        dimension = elina_abstract0_dimension(man,element)
-        print("dimension ", dimension.intdim + dimension.realdim)
         handle_gather_layer(man, True, element, self.indexes)
         return element
