@@ -849,5 +849,5 @@ class DeepzonoGather:
         self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
-        # TODO implement: handle_gather_layer(man, element, self.indexes)
+        handle_gather_layer(man, element, self.indexes)
         return element

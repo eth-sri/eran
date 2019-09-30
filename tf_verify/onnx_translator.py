@@ -3,7 +3,6 @@
 '''
 import numpy as np
 import onnx
-from onnx import shape_inference
 from onnx import numpy_helper
 
 
@@ -47,6 +46,212 @@ def nchw_to_nhwc(array):
 	return array
 
 
+def reshape_nhwc(shape_in, shape_out):
+	print(shape_in, shape_out)
+	total = np.prod(shape_in)
+	assert int(total) == int(np.prod(shape_out)), "Reshape doesn't have same number of neurons before and after"
+	array = np.asarray(range(total)).reshape(shape_in)
+	if array.ndim == 4:
+		array = array.transpose((0, 3, 1, 2))
+	array = array.reshape(shape_out)
+	if array.ndim == 4:
+		return array.transpose((0, 2, 3, 1))
+	else:
+		return array
+
+
+def prepare_model(model):
+	"""
+	The constructor has produced a graph_def with the help of the functions graph_util.convert_variables_to_constants and graph_util.remove_training_nodes.
+	translate() takes that graph_def, imports it, and translates it into two lists which then can be processed by an Optimzer object.
+
+	Return
+	------
+	(operation_types, operation_resources) : (list, list)
+	    A tuple with two lists, the first one has items of type str and the second one of type dict. In the first list the operation types are stored (like "Add", "MatMul", etc.).
+	    In the second list we store the resources (matrices, biases, etc.) for those operations. It is organised as follows: operation_resources[i][domain] has the resources related to
+	    operation_types[i] when analyzed with domain (domain is currently either 'deepzono' or 'deeppoly', as of 8/30/18)
+	"""
+	shape_map = {}
+	constants_map = {}
+	value_node_map = {}
+
+	for initial in model.graph.initializer:
+		const = nchw_to_nhwc(numpy_helper.to_array(initial))
+		constants_map[initial.name] = const
+		shape_map[initial.name] = const.shape
+
+	for input in model.graph.input:
+		if input.name not in shape_map:
+			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
+
+	for node in model.graph.node:
+		print(node)
+		value_node_map[node.output[0]] = node
+		if node.op_type == "Constant":
+			const = node.attribute
+			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t))
+			constants_map[node.output[0]] = const
+			shape_map[node.output[0]] = const.shape
+
+		elif node.op_type in ["MatMul", "Gemm"]:
+			transA = 0
+			transB = 0
+			for attribute in node.attribute:
+				if 'transA' == attribute.name:
+					transA = attribute.i
+				elif 'transB' == attribute.name:
+					transB = attribute.i
+			M = shape_map[node.input[0]][transA]
+			N = shape_map[node.input[1]][1 - transB]
+			shape_map[node.output[0]] = [M, N]
+
+		elif node.op_type in ["Add", "BiasAdd"]:
+			shape_map[node.output[0]] = shape_map[node.input[0]]
+		elif node.op_type in ["Conv", "MaxPool"]:
+			output_shape = []
+			input_shape = shape_map[node.input[0]]
+
+			require_kernel_shape = node.op_type in ["MaxPool"]
+			if not require_kernel_shape:
+				filter_shape = shape_map[node.input[1]]
+				kernel_shape = filter_shape[1:-1]
+
+			strides = [1, 1]
+			padding = [0, 0, 0, 0]
+			auto_pad = 'NOTSET'
+			dilations = [1, 1]
+			group = 1
+			ceil_mode = 0
+			for attribute in node.attribute:
+				if attribute.name == 'strides':
+					strides = attribute.ints
+				elif attribute.name == 'pads':
+					padding = attribute.ints
+				elif attribute.name == 'auto_pad':
+					auto_pad = attribute.s
+				elif attribute.name == 'kernel_shape':
+					kernel_shape = attribute.ints
+				elif attribute.name == 'dilations':
+					dilations = attribute.ints
+				elif attribute.name == 'group':
+					group = attribute.i
+				elif attribute.name == 'ceil_mode':
+					ceil_mode = attribute.i
+
+			effective_kernel_shape = [(kernel_shape[i] - 1) * dilations[i] + 1 for i in range(len(kernel_shape))]
+
+			output_shape.append(input_shape[0])
+
+			for i in range(len(kernel_shape)):
+				effective_input_size = input_shape[1 + i]
+				effective_input_size += padding[i]
+				effective_input_size += padding[i + len(kernel_shape)]
+				if ceil_mode == 1:
+					strided_kernel_positions = int(np.ceil((effective_input_size - effective_kernel_shape[i]) / float(strides[i])))
+				else:
+					strided_kernel_positions = int(np.floor((effective_input_size - effective_kernel_shape[i]) / strides[i]))
+				output_shape.append(1 + strided_kernel_positions)
+
+			if require_kernel_shape:
+				output_shape.append(input_shape[1])
+			else:
+				output_shape.append(filter_shape[0])
+
+			shape_map[node.output[0]] = output_shape
+		elif node.op_type in ["Relu", "Sigmoid", "Tanh"]:
+			shape_map[node.output[0]] = shape_map[node.input[0]]
+
+		# Gather is for the moment solely for shapes
+		elif node.op_type == "Gather":
+			axis = 0
+			for attribute in node.attribute:
+				axis = attribute.i
+			if node.input[0] in constants_map and node.input[1] in constants_map:
+				data = constants_map[node.input[0]]
+				indexes = constants_map[node.input[1]]
+				constants_map[node.output[0]] = np.take(data, indexes, axis)
+
+			if node.input[0] in shape_map and node.input[1] in shape_map:
+				r = len(shape_map[node.input[0]])
+				q = len(shape_map[node.input[1]])
+				out_rank = q + r - 1
+				if out_rank == 0:
+					shape_map[node.output[0]] = shape_map[node.input[1]]
+				else:
+					output_shape = []
+					for i in range(out_rank):
+						if i < axis:
+							output_shape.append(shape_map[node.input[0]][i]) # i < axis < r
+						elif i >= axis and i < axis + q:
+							output_shape.append(shape_map[node.input[0]][i-axis]) # i - axis < q
+						else:
+							output_shape.append(shape_map[node.input[0]][i - q + 1]) # i < out_rank < q + r - 1
+					shape_map[node.output[0]] = output_shape
+		elif node.op_type == "Shape":
+			if node.input[0] in shape_map:
+				constants_map[node.output[0]] = shape_map[node.input[0]]
+				shape_map[node.output[0]] = [len(shape_map[node.input[0]])]
+
+		elif node.op_type == "Reshape":
+			if node.input[1] in constants_map:
+				total = 1
+				replace_index = -1
+				for index in range(len(constants_map[node.input[1]])):
+					if constants_map[node.input[1]][index] == -1:
+						replace_index = index
+					else:
+						total *= constants_map[node.input[1]][index]
+
+				if replace_index != -1:
+					constants_map[node.input[1]][replace_index] = np.prod(shape_map[node.input[0]]) / total
+
+				if len(constants_map[node.input[1]]) == 4:
+					shape_map[node.output[0]] = [constants_map[node.input[1]][0], constants_map[node.input[1]][2], constants_map[node.input[1]][3], constants_map[node.input[1]][1]]
+				else:
+					shape_map[node.output[0]] = constants_map[node.input[1]]
+
+		elif node.op_type == "Unsqueeze":
+			if node.input[0] in shape_map:
+				axis = node.attribute[0].ints
+				output_shape = list(shape_map[node.input[0]])
+				if node.input[0] in constants_map:
+					constants_map[node.output[0]] = constants_map[node.input[0]]
+				for i in axis:
+					output_shape.insert(i, 1)
+					if node.input[0] in constants_map:
+						constants_map[node.output[0]] = np.expand_dims(constants_map[node.output[0]], axis=i)
+				shape_map[node.output[0]] = output_shape
+
+		elif node.op_type == "Concat":
+			all_constant = True
+			axis = node.attribute[0].i
+			for input in node.input:
+				if not input in constants_map:
+					all_constant = False
+					break
+			if all_constant:
+				constants_map[node.output[0]] = np.concatenate([constants_map[input] for input in node.input], axis=axis)
+
+			all_shape_known = True
+			for input in node.input:
+				if not input in shape_map:
+					all_shape_known = False
+					break
+			if all_shape_known:
+				new_axis_size = 0
+				for input in node.input:
+					new_axis_size += shape_map[input][axis]
+				shape_map[node.output[0]] = [shape_map[node.input[0]][i] if i != axis else new_axis_size for i in range(len(shape_map[node.input[0]]))]
+		else:
+			assert 0, "Operations of type " + node.op_type + " are not yet supported."
+
+	#print('const_map')
+	#print(constants_map)
+	#print('shape_map')
+	#print(shape_map)
+	return shape_map, constants_map, value_node_map
+
 
 class ONNXTranslator:
 	"""
@@ -66,30 +271,10 @@ class ONNXTranslator:
 		"""
 		if issubclass(model.__class__, onnx.ModelProto):
 			onnx.checker.check_model(model)
-			inferred_model = shape_inference.infer_shapes(model)
-			onnx.checker.check_model(inferred_model)
-			self.model = inferred_model
+			self.model = model
 			self.nodes = self.model.graph.node
 
-			value_node_map = {}
-			for node in self.nodes:
-				for value in node.output:
-					value_node_map[value] = node
-			self.value_node_map = value_node_map
-
-			constants_map = {}
-			for initial in self.model.graph.initializer:
-				constants_map[initial.name] = nchw_to_nhwc(numpy_helper.to_array(initial))
-			self.constants_map = constants_map
-
-			value_info_map = {}
-			for info in self.model.graph.value_info:
-				value_info_map[info.name] = info.type.tensor_type
-			for info in self.model.graph.input:
-				value_info_map[info.name] = info.type.tensor_type
-			for info in self.model.graph.output:
-				value_info_map[info.name] = info.type.tensor_type
-			self.value_info_map = value_info_map
+			self.shape_map, self.constants_map, self.value_node_map = prepare_model(model)
 		else:
 			assert 0, 'not onnx model'
 	
@@ -112,9 +297,7 @@ class ONNXTranslator:
 		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
-		operations_to_be_ignored = ["Reshape", "Pack", "Shape", "StridedSlice", "Prod", "Concat"]
-		ignore_for_now = ['Gather', 'Unsqueeze']
-		operations_to_be_ignored += ignore_for_now
+		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze"]
 
 		for node in self.nodes:
 			if node.op_type == "Constant":
@@ -131,15 +314,15 @@ class ONNXTranslator:
 
 			operation_types.append(node.op_type)
 			input_onnx_names = []
-			for inp in node.input:
-				name = inp
-				kind = self.get_kind(inp)
+			for name in node.input:
+				kind = self.get_kind(name)
 				if kind in operations_to_be_ignored:
 					name = reshape_map[name]
 				if kind == 'Constant':
 					continue
 				input_onnx_names.append(name)
-			in_out_info = (input_onnx_names, node.output[0], onnxshape_to_intlist(self.value_info_map[node.output[0]].shape))
+			shape = self.get_shape(node.output[0])
+			in_out_info = (input_onnx_names, node.output[0], shape)
 
 			if node.op_type == "MatMul":
 				deeppoly_res = self.matmul_resources(node) + in_out_info
@@ -188,11 +371,31 @@ class ONNXTranslator:
 				deeppoly_res = self.nonlinearity_resources(node) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-			#elif op.type == "ConcatV2":
-			#	print("Concatv2")
-			#	deeppoly_res = self.concat_resources(op)
-			#	deepzono_res = deeppoly_res + in_out_info
-			#	operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+
+			# Gather is for the moment solely for shapes
+			elif node.op_type == "Gather":
+				only_shape, image_shape, indexes, axis = self.gather_resources(node)
+				if only_shape:
+					operation_types.pop()
+					input_name  = node.input[0]
+					output_name = node.output[0]
+					kind = self.get_kind(input_name)
+					if kind in operations_to_be_ignored:
+						reshape_map[output_name] = reshape_map[input_name]
+					else:
+						reshape_map[output_name] = input_name
+				else:
+					deeppoly_res = (image_shape, indexes, axis) + in_out_info
+					deepzono_res = deeppoly_res
+					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+
+			elif node.op_type == "Reshape":
+				shape_in = self.get_shape(node.input[0])
+				shape_out = self.get_shape(node.output[0])
+				indexes = reshape_nhwc(shape_in, shape_out)
+				deeppoly_res = (indexes,) + in_out_info
+				deepzono_res = deeppoly_res
+				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			else:
 				print("operation type1 ",in_out_info, self.value_info_map[node.input[0]].shape, self.value_info_map[node.input[1]].shape)
 				assert 0, "Operations of type " + node.op_type + " are not yet supported."
@@ -208,6 +411,11 @@ class ONNXTranslator:
 		else:
 			kind = self.value_node_map[name].op_type
 		return kind
+
+
+	def get_shape(self, name):
+		if name in self.shape_map:
+			return self.shape_map[name]
 
 
 	def matmul_resources(self, op):
@@ -325,7 +533,7 @@ class ONNXTranslator:
 		filters = self.constants_map[op.input[1]].transpose(1,2,3,0)
 		bias = self.constants_map[op.input[2]]
 
-		image_shape = self.get_shape(image)
+		image_shape = self.get_shape(image)[1:]
 		pads = [0, 0, 0, 0]
 		for attribute in op.attribute:
 			if attribute.name == 'strides':
@@ -360,7 +568,7 @@ class ONNXTranslator:
 		"""
 		image       = op.inputs[0]
 		
-		image_shape = onnxshape_to_intlist(image.shape)
+		image_shape = self.get_shape(image)[1:]
 
 		padding = 'NOTSET'
 		ceil_mode = 0
@@ -403,3 +611,29 @@ class ONNXTranslator:
 		"""
 		return ()
 
+
+	def gather_resources(self, op):
+		"""
+		Extracts the indexes in the image which have to be gathered.
+
+		Arguments
+		---------
+		op : ONNX.Node
+		    must have op_type "Gather"
+
+		Return
+		------
+		output : tuple
+		    has 4 entries - (list, numpy.ndarray, numpy.ndarray, numpy.ndarray, int, int, str)
+		"""
+		inputs  = op.input
+		image   = inputs[0]
+		if image in self.constants_map:
+			only_shape = True
+			image_shape, indexes, axis = None, None, None
+		else:
+			only_shape = False
+			image_shape = self.get_shape(image)[1:]
+			indexes = self.constants_map[op.input[1]]
+			axis = op.attribute[0].i
+		return only_shape, image_shape, indexes, axis
