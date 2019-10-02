@@ -116,6 +116,14 @@ class Optimizer:
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
                 i += 1
+            elif self.operations[i] == "Sub":
+                #self.resources[i][domain].append(refine)
+                output.append(DeepzonoSub(*self.resources[i][domain]))
+                i += 1
+            elif self.operations[i] == "Mul":
+                #self.resources[i][domain].append(refine)
+                output.append(DeepzonoMul(*self.resources[i][domain]))
+                i += 1
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
                 output.append(DeepzonoMaxpool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape))
@@ -282,7 +290,7 @@ class Optimizer:
             elif self.operations[i] == "MatMul" and self.operations[i+1] in ["Add", "BiasAdd"]:
                 matrix, input_names, _,_ = self.resources[i][domain]
                 bias,_, output_name, output_shape = self.resources[i+1][domain]
-                if i != len(self.operations) - 2:
+                if i != len(self.operations) - 2 and self.operations[i + 2] in ["Relu", "Sigmoid", "Tanh"]:
                     _,output_name, output_shape = self.resources[i+2][domain]
                 nn.weights.append(matrix)
                 nn.biases.append(bias)
@@ -469,6 +477,14 @@ class Optimizer:
                 output.append(DeeppolyGather(indexes, [input_names[0]], output_name, output_shape))
                 nn.numlayer+=1
                 i+=1
+
+            elif self.operations[i] == "Sub":
+                output.append(DeeppolySub(*self.resources[i][domain]))
+                i += 1
+
+            elif self.operations[i] == "Mul":
+                output.append(DeeppolyMul(*self.resources[i][domain]))
+                i += 1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
 

@@ -106,8 +106,16 @@ def prepare_model(model):
 			N = shape_map[node.input[1]][1 - transB]
 			shape_map[node.output[0]] = [M, N]
 
-		elif node.op_type in ["Add", "BiasAdd"]:
+		elif node.op_type in ["Add", "BiasAdd", "Sub", "Mul"]:
 			shape_map[node.output[0]] = shape_map[node.input[0]]
+			if node.input[0] in constants_map and node.input[1] in constants_map:
+				if node.op_type == "Add":
+					result = np.add(constants_map[node.input[0]], constants_map[node.input[1]])
+				elif node.op_type == "Sub":
+					result = np.subtract(constants_map[node.input[0]], constants_map[node.input[1]])
+				elif node.op_type == "Mul":
+					result = np.multiply(constants_map[node.input[0]], constants_map[node.input[1]])
+				constants_map[node.output[0]] = result
 		elif node.op_type in ["Conv", "MaxPool"]:
 			output_shape = []
 			input_shape = shape_map[node.input[0]]
@@ -243,6 +251,17 @@ def prepare_model(model):
 				for input in node.input:
 					new_axis_size += shape_map[input][axis]
 				shape_map[node.output[0]] = [shape_map[node.input[0]][i] if i != axis else new_axis_size for i in range(len(shape_map[node.input[0]]))]
+
+		elif node.op_type == "Expand":
+			if node.input[1] in constants_map:
+				if len(constants_map[node.input[1]]) == 4:
+					shape_map[node.output[0]] = [constants_map[node.input[1]][0], constants_map[node.input[1]][2], constants_map[node.input[1]][3], constants_map[node.input[1]][1]]
+				else:
+					shape_map[node.output[0]] = constants_map[node.input[1]]
+
+				result = np.zeros(shape_map[node.output[0]]) + constants_map[node.input[0]]
+				constants_map[node.output[0]] = result
+
 		else:
 			assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
@@ -332,18 +351,34 @@ class ONNXTranslator:
 				deeppoly_res = self.gemm_resources(node) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-			elif node.op_type == "Add":
+			elif node.op_type in ["Add", "Mul"]:
 				left_type  = self.get_kind(node.input[0])
 				right_type = self.get_kind(node.input[1])
 				if left_type == 'Constant' and right_type == 'Constant':
-					assert 0, "we don't support the addition of two constants yet"
+					operation_types.pop()
 				elif left_type == 'Constant' or right_type == 'Constant':
 					deeppoly_res = self.add_resources(node) + in_out_info
 					deepzono_res = deeppoly_res
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 				else:
+					if node.op_type != "Add":
+						assert 0, "we don't support residual operations other then add"
 					operation_types[-1] = "Resadd"
 					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
+
+			elif node.op_type == "Sub":
+				left_type  = self.get_kind(node.input[0])
+				right_type = self.get_kind(node.input[1])
+				if left_type == 'Constant' and right_type == 'Constant':
+					assert 0, "we don't support the subraction of two constants yet"
+				elif left_type == 'Constant' or right_type == 'Constant':
+					deeppoly_res = self.sub_resources(node) + in_out_info
+					deepzono_res = deeppoly_res
+					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+				else:
+					operation_types[-1] = "Ressub"
+					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
+
 			elif node.op_type == "BiasAdd":
 				if self.get_kind(node.input[1]) == 'Constant':
 					deeppoly_res = self.add_resources(node) + in_out_info
@@ -389,6 +424,15 @@ class ONNXTranslator:
 					deepzono_res = deeppoly_res
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
+			elif node.op_type == "Expand":
+				only_shape, image_shape, to_expand = self.expand_resources(node)
+				if only_shape:
+					operation_types.pop()
+				else:
+					deeppoly_res = (image_shape, indexes, axis) + in_out_info
+					deepzono_res = deeppoly_res
+					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+
 			elif node.op_type == "Reshape":
 				shape_in = self.get_shape(node.input[0])
 				shape_out = self.get_shape(node.output[0])
@@ -397,16 +441,15 @@ class ONNXTranslator:
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			else:
-				print("operation type1 ",in_out_info, self.value_info_map[node.input[0]].shape, self.value_info_map[node.input[1]].shape)
 				assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
 		return operation_types, operation_resources
 
 
 	def get_kind(self, name):
-		if 'weight' in name or 'bias' in name:
+		if name in self.constants_map:
 			kind = 'Constant'
-		elif 'input' in name:
+		elif 'input' in name or '0' == name:
 			kind = 'Placeholder'
 		else:
 			kind = self.value_node_map[name].op_type
@@ -487,31 +530,57 @@ class ONNXTranslator:
 		else:
 			matrix = self.constants_map[right].transpose() if not transB else self.constants_map[right]
 		return matrix * alpha, bias * beta
-	
-	
+
 	def add_resources(self, op):
 		"""
 		checks which one of the direct ancestor tf.Operations is a constant and returns the underlying onnx as a numpy.ndarray inside a tuple.
-		
+
 		Arguments
 		---------
 		op : ONNX.Node
 		    must have op_type "Add"
-		
-		Return 
+
+		Return
 		------
 		output : tuple
-		    tuple with the addend (of type numpy.ndarray) as its only item   
+		    tuple with the addend (of type numpy.ndarray) as its only item
 		"""
-		inputs = op.inputs
-		left   = inputs[0]
-		right  = inputs[1]
-		
+		inputs = op.input
+		left = inputs[0]
+		right = inputs[1]
+
 		if left in self.constants_map:
 			addend = self.constants_map[left]
 		else:
 			addend = self.constants_map[right]
 		return addend,
+
+
+	def sub_resources(self, op):
+		"""
+		checks which one of the direct ancestors is a constant and returns the underlying onnx as a numpy.ndarray and a bool is_minuend, whether the returned ndarray is the minuend, inside a tuple.
+
+		Arguments
+		---------
+		op : ONNX.Node
+		    must have op_type "Sub"
+
+		Return
+		------
+		output : tuple
+		    tuple with the addend (of type numpy.ndarray) and left_constant
+		"""
+		inputs = op.input
+		left   = inputs[0]
+		right  = inputs[1]
+
+		if left in self.constants_map:
+			addend = self.constants_map[left]
+			is_minuend = True
+		else:
+			addend = self.constants_map[right]
+			is_minuend = False
+		return addend, is_minuend
 		
 		
 	def conv_resources(self, op):
@@ -628,7 +697,7 @@ class ONNXTranslator:
 		"""
 		inputs  = op.input
 		image   = inputs[0]
-		if image in self.constants_map:
+		if op.output[0] in self.constants_map:
 			only_shape = True
 			image_shape, indexes, axis = None, None, None
 		else:
@@ -637,3 +706,12 @@ class ONNXTranslator:
 			indexes = self.constants_map[op.input[1]]
 			axis = op.attribute[0].i
 		return only_shape, image_shape, indexes, axis
+
+
+	def expand_resources(self, op):
+		if op.output[0] in self.constants_map:
+			only_shape = True
+			image_shape, to_expand = None, None
+		else:
+			assert 0, "Implementation for 'Expand' is missing."
+		return only_shape, image_shape, to_expand

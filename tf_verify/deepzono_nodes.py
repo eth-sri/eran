@@ -375,6 +375,89 @@ class DeepzonoAdd:
 
 
 
+class DeepzonoSub:
+    def __init__(self, bias, is_minuend, input_names, output_name, output_shape):
+        """
+        Arguments
+        ---------
+        bias : numpy.ndarray
+            the values of the first addend
+        input_names : iterable
+            iterable with the name of the second addend
+        output_name : str
+            name of this node's output
+        output_shape : iterable
+            iterable of ints with the shape of the output of this node
+        """
+        add_input_output_information(self, input_names, output_name, output_shape)
+        self.bias = np.ascontiguousarray(bias, dtype=np.double)
+        self.is_minuend = is_minuend
+
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+        """
+        transforms element with ffn_sub_bias_zono
+
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            man to which element belongs
+        element : ElinaAbstract0Ptr
+            abstract element onto which the transformer gets applied
+
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            abstract element after the transformer
+        """
+        offset, old_length = self.abstract_information
+        return ffn_sub_bias_zono(man, True, element, offset, self.bias, self.is_minuend, old_length)
+
+
+
+
+
+class DeepzonoMul:
+    def __init__(self, bias, input_names, output_name, output_shape):
+        """
+        Arguments
+        ---------
+        bias : numpy.ndarray
+            the values of the first addend
+        input_names : iterable
+            iterable with the name of the second addend
+        output_name : str
+            name of this node's output
+        output_shape : iterable
+            iterable of ints with the shape of the output of this node
+        """
+        add_input_output_information(self, input_names, output_name, output_shape)
+        self.bias = np.ascontiguousarray(bias, dtype=np.double)
+
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+        """
+        transforms element with ffn_mul_bias_zono
+
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            man to which element belongs
+        element : ElinaAbstract0Ptr
+            abstract element onto which the transformer gets applied
+
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            abstract element after the transformer
+        """
+        offset, old_length = self.abstract_information
+        return ffn_mul_bias_zono(man, True, element, offset, self.bias, old_length)
+
+
+
+
+
 class DeepzonoAffine(DeepzonoMatmul):
     def __init__(self, matrix, bias, input_names, output_name, output_shape):
         """

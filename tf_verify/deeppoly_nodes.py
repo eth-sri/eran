@@ -672,3 +672,48 @@ class DeeppolyGather:
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         handle_gather_layer(man, element, self.indexes)
         return element
+
+
+class DeeppolySub:
+    def __init__(self, bias, is_minuend, input_names, output_name, output_shape):
+        """
+        collects the information needed for the handle_gather_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        indexes : numpy.ndarray
+            1D array of ints with 3 entries [height, width, channels] representing the shape of the of the image that is passed to the conv-layer
+        window_size : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the window's size in these directions
+        strides : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the stride in these directions
+        """
+        self.bias = np.ascontiguousarray(bias, dtype=np.uintp)
+        self.is_minuend = is_minuend
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
+        handle_sub_layer(man, element, self.bias, self.is_minuend)
+        return element
+
+
+class DeeppolyMul:
+    def __init__(self, bias, input_names, output_name, output_shape):
+        """
+        collects the information needed for the handle_gather_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        indexes : numpy.ndarray
+            1D array of ints with 3 entries [height, width, channels] representing the shape of the of the image that is passed to the conv-layer
+        window_size : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the window's size in these directions
+        strides : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the stride in these directions
+        """
+        self.bias = np.ascontiguousarray(bias, dtype=np.uintp)
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
+        handle_mul_layer(man, element, self.bias)
+        return element
