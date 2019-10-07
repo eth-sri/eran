@@ -74,7 +74,8 @@ def prepare_model(model):
 	"""
 	shape_map = {}
 	constants_map = {}
-	value_node_map = {}
+	output_node_map = {}
+	input_node_map = {}
 
 	for initial in model.graph.initializer:
 		const = nchw_to_nhwc(numpy_helper.to_array(initial))
@@ -84,10 +85,13 @@ def prepare_model(model):
 	for input in model.graph.input:
 		if input.name not in shape_map:
 			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
+			input_node_map[input.name] = input
 
 	for node in model.graph.node:
 		print(node)
-		value_node_map[node.output[0]] = node
+		output_node_map[node.output[0]] = node
+		for input in node.input:
+			input_node_map[input] = node
 		if node.op_type == "Constant":
 			const = node.attribute
 			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t))
@@ -269,7 +273,7 @@ def prepare_model(model):
 	#print(constants_map)
 	#print('shape_map')
 	#print(shape_map)
-	return shape_map, constants_map, value_node_map
+	return shape_map, constants_map, output_node_map, input_node_map
 
 
 class ONNXTranslator:
@@ -293,7 +297,7 @@ class ONNXTranslator:
 			self.model = model
 			self.nodes = self.model.graph.node
 
-			self.shape_map, self.constants_map, self.value_node_map = prepare_model(model)
+			self.shape_map, self.constants_map, self.output_node_map, self.input_node_map = prepare_model(model)
 		else:
 			assert 0, 'not onnx model'
 	
@@ -324,8 +328,7 @@ class ONNXTranslator:
 			elif node.op_type in operations_to_be_ignored:
 				input_name  = node.input[0]
 				output_name = node.output[0]
-				kind = self.get_kind(input_name)
-				if kind in operations_to_be_ignored:
+				if input_name in reshape_map:
 					reshape_map[output_name] = reshape_map[input_name]
 				else:
 					reshape_map[output_name] = input_name
@@ -335,7 +338,7 @@ class ONNXTranslator:
 			input_onnx_names = []
 			for name in node.input:
 				kind = self.get_kind(name)
-				if kind in operations_to_be_ignored:
+				if name in reshape_map:
 					name = reshape_map[name]
 				if kind == 'Constant':
 					continue
@@ -376,6 +379,7 @@ class ONNXTranslator:
 					deepzono_res = deeppoly_res
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 				else:
+					assert 0, "we don't support the ressub yet"
 					operation_types[-1] = "Ressub"
 					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
 
@@ -411,14 +415,7 @@ class ONNXTranslator:
 			elif node.op_type == "Gather":
 				only_shape, image_shape, indexes, axis = self.gather_resources(node)
 				if only_shape:
-					operation_types.pop()
-					input_name  = node.input[0]
-					output_name = node.output[0]
-					kind = self.get_kind(input_name)
-					if kind in operations_to_be_ignored:
-						reshape_map[output_name] = reshape_map[input_name]
-					else:
-						reshape_map[output_name] = input_name
+					self.ignore_node(node, operation_types, reshape_map)
 				else:
 					deeppoly_res = (image_shape, indexes, axis) + in_out_info
 					deepzono_res = deeppoly_res
@@ -434,17 +431,28 @@ class ONNXTranslator:
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
 			elif node.op_type == "Reshape":
-				shape_in = self.get_shape(node.input[0])
-				shape_out = self.get_shape(node.output[0])
-				indexes = reshape_nhwc(shape_in, shape_out)
-				deeppoly_res = (indexes,) + in_out_info
-				deepzono_res = deeppoly_res
-				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+				if self.input_node_map[node.output[0]].op_type in ["MatMul", "Gemm"]:
+					self.ignore_node(node, operation_types, reshape_map)
+				else:
+					shape_in = self.get_shape(node.input[0])
+					shape_out = self.get_shape(node.output[0])
+					indexes = reshape_nhwc(shape_in, shape_out)
+					deeppoly_res = (indexes,) + in_out_info
+					deepzono_res = deeppoly_res
+					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			else:
 				assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
 		return operation_types, operation_resources
 
+	def ignore_node(self, node, operation_types, reshape_map):
+		operation_types.pop()
+		input_name = node.input[0]
+		output_name = node.output[0]
+		if input_name in reshape_map:
+			reshape_map[output_name] = reshape_map[input_name]
+		else:
+			reshape_map[output_name] = input_name
 
 	def get_kind(self, name):
 		if name in self.constants_map:
@@ -452,7 +460,7 @@ class ONNXTranslator:
 		elif 'input' in name or '0' == name:
 			kind = 'Placeholder'
 		else:
-			kind = self.value_node_map[name].op_type
+			kind = self.output_node_map[name].op_type
 		return kind
 
 
@@ -483,10 +491,21 @@ class ONNXTranslator:
 
 		if left in self.constants_map:
 			matrix = self.constants_map[left]
+			matrix = self.reshape_adjust(right, matrix)
 		else:
 			matrix = self.constants_map[right].transpose()
+			matrix = self.reshape_adjust(left, matrix)
 		return matrix,
 
+	def reshape_adjust(self, element, matrix):
+		if self.get_kind(element) == 'Reshape':
+			shape_in = self.get_shape(self.output_node_map[element].input[0])
+			shape_out = self.get_shape(self.output_node_map[element].output[0])
+			indexes = reshape_nhwc(shape_in, shape_out)
+			indexes = indexes.reshape(-1)
+			inverse_perm = np.arange(len(indexes))[np.argsort(indexes)]
+			matrix = matrix[:, inverse_perm]
+		return matrix
 
 	def gemm_resources(self, op):
 		"""
@@ -527,8 +546,10 @@ class ONNXTranslator:
 
 		if left in self.constants_map:
 			matrix = self.constants_map[left] if not transA else self.constants_map[left].transpose()
+			matrix = self.reshape_adjust(right, matrix)
 		else:
 			matrix = self.constants_map[right].transpose() if not transB else self.constants_map[right]
+			matrix = self.reshape_adjust(left, matrix)
 		return matrix * alpha, bias * beta
 
 	def add_resources(self, op):
