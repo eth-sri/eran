@@ -431,7 +431,13 @@ class ONNXTranslator:
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
 			elif node.op_type == "Reshape":
-				if self.input_node_map[node.output[0]].op_type in ["MatMul", "Gemm"]:
+				if node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["MatMul", "Gemm"]:
+					self.ignore_node(node, operation_types, reshape_map)
+
+				elif node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["Relu", "Sigmoid", "Tanh"] and self.input_node_map[self.input_node_map[node.output[0]].output[0]].op_type == "Reshape":
+					# ignore this reshape even in the shape_map
+					self.shape_map[node.output[0]] = self.shape_map[node.input[0]]
+					self.shape_map[self.input_node_map[node.output[0]].output[0]] = self.shape_map[node.input[0]]
 					self.ignore_node(node, operation_types, reshape_map)
 				else:
 					shape_in = self.get_shape(node.input[0])
