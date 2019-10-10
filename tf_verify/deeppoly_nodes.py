@@ -693,7 +693,8 @@ class DeeppolySub:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
-        handle_sub_layer(man, element, self.bias, self.is_minuend)
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
+        handle_sub_layer(man, element, layerno, self.bias, self.is_minuend)
         return element
 
 
@@ -715,5 +716,6 @@ class DeeppolyMul:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
-        handle_mul_layer(man, element, self.bias)
+        layerno = nn.ffn_counter + nn.conv_counter + nn.residual_counter
+        handle_mul_layer(man, element, layerno, self.bias)
         return element
