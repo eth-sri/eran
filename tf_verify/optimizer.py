@@ -157,6 +157,7 @@ class Optimizer:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
 
         use_dict = self.deepzono_get_dict(output)
+        self.set_predecessors(nn, output)
         output   = self.deepzono_forward_pass(output, use_dict)
 
         return output
