@@ -151,7 +151,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp,
             if nn.layertypes[i] == 'Conv2D':
                 is_conv = True
                 break
-        use_milp = 0
+
         if is_conv==True:
             use_milp = 1
         else:
@@ -168,10 +168,8 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp,
                  candidate_vars.append(i)
         #TODO handle residual layers here
         resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, length, nlb, nub, use_milp,  candidate_vars, timeout)
-        nlb.pop()
-        nub.pop()
-        nlb.append(resl)
-        nub.append(resu)
+        nlb[-1] = resl
+        nub[-1] = resu
 
         j = 0
      

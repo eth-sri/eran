@@ -206,9 +206,10 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
 
 def read_onnx_net(net_file):
     mean = 0.0
-    std = 0.0
+    std = 1.0
     onnx_model = onnx.load(net_file)
     onnx.checker.check_model(onnx_model)
+
     is_conv = False
 
     for node in onnx_model.graph.node:

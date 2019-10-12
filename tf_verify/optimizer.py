@@ -104,7 +104,8 @@ class Optimizer:
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
-                #nn.padding.append(padding=="VALID")
+                nn.out_shapes.append(b_output_shape)
+                nn.padding.append([pad_top, pad_left])
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
@@ -391,7 +392,8 @@ class Optimizer:
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0], image_shape[1], image_shape[2]])
                 nn.strides.append([strides[0], strides[1]])
-                #nn.padding.append(padding == "VALID")
+                nn.padding.append([pad_top, pad_left])
+                nn.out_shapes.append(out_shape)
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
@@ -443,7 +445,8 @@ class Optimizer:
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
-                #nn.padding.append(padding=="VALID")
+                nn.padding.append([pad_top, pad_left])
+                nn.out_shapes.append(out_shape)
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
@@ -470,13 +473,11 @@ class Optimizer:
                 image_shape, indexes, axis, input_names,output_name,output_shape = self.resources[i][domain]
                 calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
                 output.append(DeeppolyGather(calculated_indexes, input_names,output_name,output_shape))
-                nn.numlayer+=1
                 i+=1
 
             elif self.operations[i] == "Reshape":
                 indexes, input_names, output_name, output_shape = self.resources[i][domain]
                 output.append(DeeppolyGather(indexes, [input_names[0]], output_name, output_shape))
-                nn.numlayer+=1
                 i+=1
 
             elif self.operations[i] == "Sub":

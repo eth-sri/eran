@@ -21,6 +21,7 @@ class layers:
         self.input_shape = []
         self.strides = []
         self.padding = []
+        self.out_shapes = []
         self.pool_size = []
         self.numlayer = 0
         self.ffn_counter = 0

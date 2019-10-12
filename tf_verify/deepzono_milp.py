@@ -2,41 +2,10 @@ from gurobipy import *
 import numpy as np
 import time
 
-def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfilters,input_shape, strides, padding, lbi, ubi, use_milp):
-    if(padding==True):
-       o1 = int(np.ceil((input_shape[0] - filter_size[0]+1)/strides[0]))
-       o2 = int(np.ceil((input_shape[1] - filter_size[1]+1)/strides[1]))
-    else:
-       o1 = int(np.ceil(input_shape[0] / strides[0]))
-       o2 = int(np.ceil(input_shape[1] / strides[1]))
+def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
 
-    o3 = int(numfilters)
-    num_out_neurons = o1*o2*o3
+    num_out_neurons = np.prod(out_shape)
     num_in_neurons = input_shape[0]*input_shape[1]*input_shape[2]
-
-    pad_top=0
-    pad_left=0
-
-    if(padding==False):
-        if (input_shape[0] % strides[0] == 0):
-            tmp = filter_size[0] - strides[0]
-            pad_along_height = np.max(tmp, 0)
-        else:
-            tmp = filter_size[0] - (input_shape[0] % strides[0])
-            pad_along_height = np.max(tmp, 0)
-
-        if (input_shape[1] % strides[1] == 0):
-            tmp = filter_size[1] - strides[1]
-            pad_along_width = np.max(tmp, 0)
-
-        else:
-            tmp = filter_size[1] - (input_shape[1] % strides[1])
-            pad_along_width = np.max(tmp, 0)
-
-        pad_top = int(np.ceil(pad_along_height / 2))
-
-        pad_left = int(np.ceil(pad_along_width / 2))
-
 
     start = len(var_list)
     for j in range(num_out_neurons):
@@ -44,10 +13,10 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfil
         var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub =ubi[j], name=var_name)
         var_list.append(var)
 
-    for out_x in range(o1):
-        for out_y in range(o2):
-            for out_z in range(o3):
-                dst_ind = out_x*o2*o3 + out_y*o3 + out_z
+    for out_x in range(out_shape[1]):
+        for out_y in range(out_shape[2]):
+            for out_z in range(out_shape[3]):
+                dst_ind = out_x*out_shape[2]*out_shape[3] + out_y*out_shape[3] + out_z
                 expr = LinExpr()
                 expr += -1*var_list[start+dst_ind]
                 for inp_z in range(input_shape[2]):
@@ -66,7 +35,7 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size, numfil
                              if(mat_offset>=num_in_neurons):
                                  continue
                              src_ind = start_counter + mat_offset
-                             filter_index = x_shift*filter_size[1]*input_shape[2]*o3 + y_shift*input_shape[2]*o3 + inp_z*o3 + out_z
+                             filter_index = x_shift*filter_size[1]*input_shape[2]*out_shape[3] + y_shift*input_shape[2]*out_shape[3] + inp_z*out_shape[3] + out_z
                              #expr.addTerms(filters[filter_index],var_list[src_ind])
                              expr.addTerms(filters[x_shift][y_shift][inp_z][out_z],var_list[src_ind])
 
@@ -360,22 +329,16 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             filter_size = nn.filter_size[nn.conv_counter]
             numfilters = nn.numfilters[nn.conv_counter]
-            strides = nn.strides[nn.conv_counter]
+            out_shape = nn.out_shapes[nn.conv_counter]
             padding = nn.padding[nn.conv_counter]
+            strides = nn.strides[nn.conv_counter]
             input_shape = nn.input_shape[nn.conv_counter +nn.maxpool_counter]
-            if(padding==True):
-               o1 = int(np.ceil((input_shape[0] - filter_size[0]+1)/strides[0]))
-               o2 = int(np.ceil((input_shape[1] - filter_size[1]+1)/strides[1]))
-            else:
-               o1 = int(np.ceil(input_shape[0] / strides[0]))
-               o2 = int(np.ceil(input_shape[1] / strides[1]))
-            o3 = numfilters
-            num_neurons = o1*o2*o3
+            num_neurons = np.prod(out_shape)
 
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
 
-            counter = handle_conv(model, var_list, counter, filters,biases, filter_size, numfilters, input_shape, strides, padding, nlb[i],nub[i],use_milp)
+            counter = handle_conv(model, var_list, counter, filters,biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
 
             if(relu_needed[i] and nn.layertypes[i]=='Conv2D'):
                counter = handle_relu(model, var_list, i, counter, num_neurons, nlb[i], nub[i], use_milp)
