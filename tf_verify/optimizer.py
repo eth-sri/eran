@@ -403,7 +403,7 @@ class Optimizer:
                     _, output_name, output_shape = self.resources[i + 2][domain]
                     increment = 3
                 else:
-                    nn.layertypes.append('Conv2DNoReLu')
+                    nn.layertypes.append('Conv2DNoReLU')
                     increment = 2
                 nn.numlayer += 1
                 if i == 1:
@@ -416,31 +416,16 @@ class Optimizer:
                 i += increment
 
             # ONNX operation
-            elif i == 1 and self.operations[1] == "Conv":
-                #print("resources ", self.resources[i][domain])
-                filters, bias, image_shape, strides, pad_top, pad_left, input_names,output_name,out_shape = self.resources[i][domain]
-                has_relu = self.operations[i+1] == "Relu"
-                if has_relu:
-                    nn.layertypes.append('Conv2D')
-                    _,output_name,output_shape = self.resources[i+1][domain]
-                    i += 2
-                else:
-                    nn.layertypes.append('Conv2DNoReLu')
-                    i += 1
-                nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeFirst(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu))
-
-            # ONNX operation
             elif self.operations[i] == "Conv":
                 filters, bias, image_shape, strides, pad_top, pad_left, input_names,output_name,out_shape = self.resources[i][domain]
                 has_relu = self.operations[i+1] == "Relu"
                 if has_relu:
                     nn.layertypes.append('Conv2D')
                     _,output_name,output_shape = self.resources[i+1][domain]
-                    i += 2
+                    increment = 2
                 else:
-                    nn.layertypes.append('Conv2DNoReLu')
-                    i += 1
+                    nn.layertypes.append('Conv2DNoReLU')
+                    increment = 1
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
@@ -451,7 +436,11 @@ class Optimizer:
 
                 nn.biases.append(bias)
                 nn.numlayer+=1
-                output.append(DeeppolyConv2dNodeIntermediate(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu))
+                if i == 1:
+                    output.append(DeeppolyConv2dNodeFirst(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu))
+                else:
+                    output.append(DeeppolyConv2dNodeIntermediate(filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape, has_relu))
+                i += increment
 
             # Residual layer
             elif self.operations[i] == "Resadd":
