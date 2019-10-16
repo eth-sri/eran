@@ -442,10 +442,13 @@ class ONNXTranslator:
 				else:
 					shape_in = self.get_shape(node.input[0])
 					shape_out = self.get_shape(node.output[0])
-					indexes = reshape_nhwc(shape_in, shape_out)
-					deeppoly_res = (indexes,) + in_out_info
-					deepzono_res = deeppoly_res
-					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+					if len(shape_in) == 2 and len(shape_out) == 2:
+						self.ignore_node(node, operation_types, reshape_map)
+					else:
+						indexes = reshape_nhwc(shape_in, shape_out)
+						deeppoly_res = (indexes,) + in_out_info
+						deepzono_res = deeppoly_res
+						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			else:
 				assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
