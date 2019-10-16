@@ -831,7 +831,8 @@ class DeepzonoMaxpool:
         offset, old_length = self.abstract_information
         h, w    = self.window_size
         H, W, C = self.input_shape
-        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
+        print("Output shape ",self.output_shape,self.output_shape.shape)
+        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, (c_size_t * 3)(self.output_shape[1],self.output_shape[2],self.output_shape[3]))
         return remove_dimensions(man, element, offset, old_length)
 
 
