@@ -205,8 +205,6 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
 
 
 def read_onnx_net(net_file):
-    mean = 0.0
-    std = 1.0
     onnx_model = onnx.load(net_file)
     onnx.checker.check_model(onnx_model)
 
@@ -217,6 +215,4 @@ def read_onnx_net(net_file):
             is_conv = True
             break
 
-    # TODO mean std
-
-    return onnx_model, is_conv, mean, std
+    return onnx_model, is_conv

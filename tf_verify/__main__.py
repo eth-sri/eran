@@ -45,6 +45,8 @@ parser.add_argument('--complete', type=str2bool, default=False,  help='flag spec
 parser.add_argument('--timeout_lp', type=float, default=1,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for the MILP solver')
 parser.add_argument('--use_area_heuristic', type=str2bool, default=True,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
+parser.add_argument('--mean', nargs='*', type=float,  help='the mean used to normalize the data with')
+parser.add_argument('--std', nargs='*', type=float,  help='the standard deviation used to normalize the data with')
 
 args = parser.parse_args()
 
@@ -135,17 +137,22 @@ else:
         num_pixels = len(zonotope)
     if is_onnx:
         is_trained_with_pytorch = True
-        model, is_conv, means, stds = read_onnx_net(netname)
-        # this is a hack and should be done nicer
+        model, is_conv = read_onnx_net(netname)
+        # this is to have different defaults for mnist and cifar10
         if dataset == 'cifar10':
             means=[0.485, 0.456, 0.406]
             stds=[0.225, 0.225, 0.225]
         else:
-            means = [0, 0, 0]
-            stds = [1, 1, 1]
+            means = [0]
+            stds = [1]
     else:
         model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
     eran = ERAN(model, is_onnx=is_onnx)
+
+if args.mean:
+    means = args.mean
+if args.std:
+    stds = args.std
 
 correctly_classified_images = 0
 verified_images = 0
@@ -311,7 +318,7 @@ else:
         specLB = np.copy(image)
         specUB = np.copy(image)
 
-        if(is_trained_with_pytorch):
+        if is_trained_with_pytorch:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
         
