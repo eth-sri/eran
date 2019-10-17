@@ -45,8 +45,8 @@ parser.add_argument('--complete', type=str2bool, default=False,  help='flag spec
 parser.add_argument('--timeout_lp', type=float, default=1,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for the MILP solver')
 parser.add_argument('--use_area_heuristic', type=str2bool, default=True,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
-parser.add_argument('--mean', nargs='*', type=float,  help='the mean used to normalize the data with')
-parser.add_argument('--std', nargs='*', type=float,  help='the standard deviation used to normalize the data with')
+parser.add_argument('--mean', nargs='+', type=float,  help='the mean used to normalize the data with')
+parser.add_argument('--std', nargs='+', type=float,  help='the standard deviation used to normalize the data with')
 
 args = parser.parse_args()
 

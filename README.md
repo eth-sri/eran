@@ -128,7 +128,7 @@ Usage
 ```
 cd tf_verify
 
-python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono/refinepoly> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono/refinepoly> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False> --mean <float(s)> --std <float(s)>
 ```
 
 * ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing ACAS Xu networks.
@@ -136,6 +136,10 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 * ```<zonotope>```: The Zonotope specification file can be comma or whitespace separated file where the first two integers can specify the number of input dimensions D and the number of error terms per dimension N. The following D*N doubles specify the coefficient of error terms. For every dimension i, the error terms are numbered from 0 to N-1 where the 0-th error term is the central error term. See an example here [https://github.com/eth-sri/eran/files/3653882/zonotope_example.txt]. This option only works with the "deepzono" or "refinezono" domain.
 
 * ```<use_area_heuristic>```: specifies whether to use area heuristic for the ReLU approximation in DeepPoly.
+
+* ```<mean>```: specifies mean used to normalize the data. If the data has multiple channels the mean for every channel has to be provided (e.g. for cifar10 --mean 0.5 0.5 0.5) (default is 0 for mnist and 0.485, 0.456, 0.406 for cifar10)
+
+* ```<std>```: specifies standard deviation used to normalize the data. If the data has multiple channels the standard deviaton for every channel has to be provided (e.g. for cifar10 --std 0.2 0.3 0.2) (default is 1 for mnist and 0.225, 0.225, 0.225 for cifar10)
 
 * Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
 
