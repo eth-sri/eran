@@ -47,7 +47,7 @@ def nchw_to_nhwc(array):
 
 
 def reshape_nhwc(shape_in, shape_out):
-	print(shape_in, shape_out)
+	#print(shape_in, shape_out)
 	total = np.prod(shape_in)
 	assert int(total) == int(np.prod(shape_out)), "Reshape doesn't have same number of neurons before and after"
 	array = np.asarray(range(total)).reshape(shape_in)
@@ -88,7 +88,7 @@ def prepare_model(model):
 			input_node_map[input.name] = input
 
 	for node in model.graph.node:
-		print(node)
+		#print(node)
 		output_node_map[node.output[0]] = node
 		for input in node.input:
 			input_node_map[input] = node
