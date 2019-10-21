@@ -393,7 +393,7 @@ class Optimizer:
                 nn.input_shape.append([image_shape[0], image_shape[1], image_shape[2]])
                 nn.strides.append([strides[0], strides[1]])
                 nn.padding.append([pad_top, pad_left])
-                nn.out_shapes.append(out_shape)
+                nn.out_shapes.append(output_shape)
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
