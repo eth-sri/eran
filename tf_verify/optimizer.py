@@ -86,7 +86,7 @@ class Optimizer:
                     nn.filter_size.append([filters.shape[0], filters.shape[1]])
                     nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                     nn.strides.append([strides[0],strides[1]])
-                    #nn.padding.append(padding=="VALID")
+                    nn.padding.append([pad_top, pad_left])
                     nn.filters.append(filters)
 
                     nn.biases.append(bias)
@@ -95,7 +95,7 @@ class Optimizer:
                     output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
                     i += 2
                 else:
-                    filters, image_shape, strides, padding, input_names, output_name, output_shape = self.resources[i][domain]
+                    filters, image_shape, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
                     output.append(DeepzonoConv(image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape))
                     i += 1
             elif self.operations[i] == "Conv":
