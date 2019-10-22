@@ -41,7 +41,7 @@ def add_input_output_information_deeppoly(self, input_names, output_name, output
     self.output_name   = output_name
 
 
-def calc_layerno(self, nn):
+def calc_layerno(nn):
     return nn.ffn_counter + nn.conv_counter + nn.residual_counter
 
 
