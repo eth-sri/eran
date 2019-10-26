@@ -265,14 +265,14 @@ for dataset in datasets:
                     model.graph.output.append(out_node)
                 runnable = rt.prepare(model, 'CPU')
                 pred = runnable.run(input)
-                print(pred)
+                #print(pred)
                 pred = pred[-1]
             else:
                 if not (is_saved_tf_model or is_pb_file):
                     input = np.array(test_input, dtype=np.float32)
                 output_names = [e[0] for e in output_info]
                 pred = sess.run(get_out_tensors(output_names), {sess.graph.get_operations()[0].name + ':0': input})
-                print(pred)
+                #print(pred)
                 pred = pred[-1]
             pred_eran = np.asarray([(i+j)/2 for i, j in zip(nlb[-1], nub[-1])])
             pred = np.asarray(pred).reshape(-1)
