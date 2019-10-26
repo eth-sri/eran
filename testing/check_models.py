@@ -102,7 +102,7 @@ for dataset in datasets:
         networks = args.network
         dataset_folder = ''
     else:
-        dataset_folder = '../data/test_nets/' + dataset + '/'
+        dataset_folder = './test_nets/' + dataset + '/'
         networks = os.listdir(dataset_folder)
 
     for network in networks:
@@ -246,10 +246,11 @@ for dataset in datasets:
 
             if dataset == 'cifar10':
                 input = np.array(test_input, dtype=np.float32).reshape([1, 32, 32, 3])
-                if is_onnx:
-                    input = input.transpose(0, 3, 1, 2)
             elif dataset == 'mnist':
-                input = np.array(test_input, dtype=np.float32).reshape([1, 1, 28, 28])
+                input = np.array(test_input, dtype=np.float32).reshape([1, 28, 28, 1])
+
+            if is_onnx:
+                input = input.transpose(0, 3, 1, 2)
 
             if is_onnx:
                 for name, shape in output_info:
