@@ -37,6 +37,9 @@ class layers:
         self.predecessors = []
         self.lastlayer = None
 
+    def calc_layerno(self):
+        return self.ffn_counter + self.conv_counter + self.residual_counter + self.maxpool_counter
+
 class Analyzer:
     def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic):
         """
@@ -63,7 +66,7 @@ class Analyzer:
         self.timeout_lp = timeout_lp
         self.timeout_milp = timeout_milp
         self.specnumber = specnumber
-        self.use_area_heuristic = use_area_heuristic    
+        self.use_area_heuristic = use_area_heuristic
 
     
     def __del__(self):
@@ -94,7 +97,7 @@ class Analyzer:
         output: int
             index of the dominant class. If no class dominates then returns -1
         """
-        element, nlb, nub  = self.get_abstract0()
+        element, nlb, nub = self.get_abstract0()
         output_size = 0
         if self.domain == 'deepzono' or self.domain == 'refinezono':
             output_size = self.ir_list[-1].output_length
@@ -135,7 +138,7 @@ class Analyzer:
                         break
             if flag:
                 dominant_class = 3
-                
+
         elina_abstract0_free(self.man, element)
         return dominant_class, nlb, nub
     

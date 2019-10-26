@@ -42,6 +42,7 @@ class Optimizer:
             list of Deepzono-Nodes that can be run by an Analyzer object
         """        
         output = []
+        output_info = []
         domain = 'deepzono'
         nbr_op = len(self.operations)
         
