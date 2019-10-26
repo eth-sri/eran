@@ -185,8 +185,8 @@ class TFTranslator:
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "MaxPool":
 						image_shape, window_size, strides, pad_top, pad_left = self.maxpool_resources(op)
-						deeppoly_res =  (image_shape, window_size, in_out_info[2]) + in_out_info
-						deepzono_res = (image_shape, window_size, strides, pad_top, pad_left) + in_out_info
+						deeppoly_res =  (image_shape, window_size, strides, pad_top, pad_left) + in_out_info
+						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type in ["Placeholder", "PlaceholderWithDefault"]:
 						deeppoly_res = in_out_info

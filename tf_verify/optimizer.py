@@ -47,6 +47,7 @@ class Optimizer:
         
         i = 0
         while i < nbr_op:
+            output_info.append(self.resources[i][domain][-2:])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
                 if specUB is None:
@@ -57,13 +58,13 @@ class Optimizer:
             elif self.operations[i] == "MatMul":
                 if i != nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
                     matrix,  m_input_names, _, _           = self.resources[i][domain]
-                    bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
+                    bias, _, output_name, b_output_shape = self.resources[i+1][domain]
                     
                     nn.weights.append(matrix)
                     nn.biases.append(bias)
                     nn.layertypes.append('Affine')
                     nn.numlayer+= 1
-                    output.append(DeepzonoAffine(matrix, bias, m_input_names, b_output_name, b_output_shape))
+                    output.append(DeepzonoAffine(matrix, bias, m_input_names, output_name, b_output_shape))
                     i += 2
                 else:
                     #self.resources[i][domain].append(refine)
@@ -100,7 +101,7 @@ class Optimizer:
                     output.append(DeepzonoConv(image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape))
                     i += 1
             elif self.operations[i] == "Conv":
-                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
@@ -112,7 +113,7 @@ class Optimizer:
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv2D')
                 nn.numlayer+=1
-                output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
+                output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape))
                 i += 1
             elif self.operations[i] == "Add":
                 #self.resources[i][domain].append(refine)
@@ -137,8 +138,7 @@ class Optimizer:
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
                 if nn.layertypes[len(nn.layertypes)-1]=='Affine':
-                    nn.layertypes.pop()
-                    nn.layertypes.append('ReLU')
+                    nn.layertypes[-1] = 'ReLU'
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Sigmoid":
@@ -162,7 +162,7 @@ class Optimizer:
         self.set_predecessors(nn, output)
         output   = self.deepzono_forward_pass(output, use_dict)
 
-        return output
+        return output, output_info
 
 
     def deepzono_get_dict(self, ir_list):
@@ -279,10 +279,12 @@ class Optimizer:
             list of Deeppoly-Nodes that can be run by an Analyzer object
         """
         output = []
+        output_info = []
         domain = 'deeppoly'
 
         i = 0
         while i < len(self.operations):
+            output_info.append(self.resources[i][domain][-2:])
             #print(self.operations[i])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
@@ -308,7 +310,13 @@ class Optimizer:
                         output.append(DeeppolySigmoidNodeFirst(matrix, bias, input_names, output_name, output_shape))
                     elif (self.operations[i + 2] == "Tanh"):
                         output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                    else:
+                        assert 0
                     i += 3
+
+                elif i == len(self.operations) - 2:
+                    output.append(DeeppolyReluNodeLast(matrix, bias, False, input_names, output_name, output_shape))
+                    i += 2
 
                 elif i == len(self.operations) - 3:
                     if(self.operations[i+2] == "Relu"):
@@ -318,11 +326,9 @@ class Optimizer:
                         output.append(DeeppolySigmoidNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                     elif(self.operations[i+2] == "Tanh"):
                         output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                    else:
+                        assert 0, self.operations[i+2]
                     i += 3
-
-                elif i == len(self.operations) - 2:
-                    output.append(DeeppolyReluNodeLast(matrix, bias, False, input_names, output_name, output_shape))
-                    i += 2
 
                 else:
                     if(self.operations[i+2] == "Relu"):
@@ -332,6 +338,8 @@ class Optimizer:
                         output.append(DeeppolySigmoidNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                     elif(self.operations[i+2]=="Tanh"):
                         output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                    else:
+                        assert 0
                     i += 3
 
 
@@ -353,6 +361,8 @@ class Optimizer:
                         output.append(DeeppolySigmoidNodeFirst(matrix, bias, input_names, output_name, output_shape))
                     elif (self.operations[i + 1] == "Tanh"):
                         output.append(DeeppolyTanhNodeFirst(matrix, bias, input_names, output_name, output_shape))
+                    else:
+                        assert 0
                     i += 2
 
                 elif i == len(self.operations) - 2:
@@ -363,6 +373,8 @@ class Optimizer:
                         output.append(DeeppolySigmoidNodeLast(matrix, bias, True, input_names, output_name, output_shape))
                     elif(self.operations[i+1] == "Tanh"):
                         output.append(DeeppolyTanhNodeLast(matrix, bias, True, input_names, output_name, output_shape))
+                    else:
+                        assert 0
                     i += 2
 
                 elif i == len(self.operations) - 1:
@@ -377,6 +389,8 @@ class Optimizer:
                         output.append(DeeppolySigmoidNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
                     elif(self.operations[i+1]=="Tanh"):
                         output.append(DeeppolyTanhNodeIntermediate(matrix, bias, input_names, output_name, output_shape))
+                    else:
+                        assert 0
                     i += 2
 
             elif self.operations[i] == "MaxPool":
@@ -481,7 +495,7 @@ class Optimizer:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
 
         self.set_predecessors(nn, output)
-        return output
+        return output, output_info
 
     def set_predecessors(self, nn, output):
         output_index_store = {}

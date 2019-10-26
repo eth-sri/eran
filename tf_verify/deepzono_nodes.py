@@ -543,7 +543,7 @@ class DeepzonoConv:
         self.image_size = np.ascontiguousarray(image_shape, dtype=np.uintp)
         self.filters    = np.ascontiguousarray(filters, dtype=np.double)
         self.strides    = np.ascontiguousarray(strides, dtype=np.uintp)
-        self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3]) 
+        self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3])
         self.pad_top    = pad_top
         self.pad_left   = pad_left
     
@@ -808,7 +808,7 @@ class DeepzonoMaxpool:
         self.stride      = np.ascontiguousarray(strides, dtype=np.uintp)
         self.pad_top     = pad_top
         self.pad_left    = pad_left
-        self.output_shape = np.ascontiguousarray(output_shape, dtype=np.uintp)
+        self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3])
         
     
     
@@ -831,8 +831,7 @@ class DeepzonoMaxpool:
         offset, old_length = self.abstract_information
         h, w    = self.window_size
         H, W, C = self.input_shape
-        print("Output shape ",self.output_shape,self.output_shape.shape)
-        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, (c_size_t * 3)(self.output_shape[1],self.output_shape[2],self.output_shape[3]))
+        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
         return remove_dimensions(man, element, offset, old_length)
 
 

@@ -310,7 +310,7 @@ else:
         if(dataset=='mnist'):
             image= np.float64(test[1:len(test)])/np.float64(255)
         else:
-            if(is_trained_with_pytorch):
+            if is_trained_with_pytorch:
                 image= (np.float64(test[1:len(test)])/np.float64(255))
             else:
                 image= (np.float64(test[1:len(test)])/np.float64(255)) - 0.5
@@ -321,7 +321,7 @@ else:
         if is_trained_with_pytorch:
             normalize(specLB, means, stds)
             normalize(specUB, means, stds)
-        
+
         label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
@@ -330,11 +330,11 @@ else:
         #        else:
         #            print('True')
 
-        print("concrete ", nlb[len(nlb)-1])
+        print("concrete ", nlb[-1])
         #if(label == int(test[0])):
         if(label == int(test[0])):
             perturbed_label = None
-            
+
             if(dataset=='mnist'):
                 specLB = np.clip(image - epsilon,0,1)
                 specUB = np.clip(image + epsilon,0,1)
@@ -378,4 +378,3 @@ else:
         total_images += 1
 
     print('analysis precision ',verified_images,'/ ', correctly_classified_images)
-

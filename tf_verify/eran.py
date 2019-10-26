@@ -41,7 +41,7 @@ class ERAN:
         self.optimizer  = Optimizer(operations, resources)
     
     
-    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0):
+    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0, testing = False):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
         
@@ -67,13 +67,16 @@ class ERAN:
         nn.specLB = specLB
         nn.specUB = specUB
         if domain == 'deepzono' or domain == 'refinezono':
-            execute_list   = self.optimizer.get_deepzono(nn,specLB, specUB)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+            execute_list, output_info = self.optimizer.get_deepzono(nn,specLB, specUB)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         elif domain == 'deeppoly' or domain == 'refinepoly':
-            execute_list   = self.optimizer.get_deeppoly(nn, specLB, specUB)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+            execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         dominant_class, nlb, nub = analyzer.analyze()
-        return dominant_class, nn, nlb, nub
+        if testing:
+            return dominant_class, nn, nlb, nub, output_info
+        else:
+            return dominant_class, nn, nlb, nub
 
 
     def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0):
@@ -87,7 +90,7 @@ class ERAN:
         zonotope : numpy.ndarray
             ndarray with the zonotope
         domain : str
-            either 'deepzono', 'refinezono' or 'deeppoly', decides which set of abstract transformers is used.
+            either 'deepzono', 'refinezono', 'deeppoly' or 'refinepoly', decides which set of abstract transformers is used.
 
         Return
         ------
@@ -99,7 +102,7 @@ class ERAN:
         nn = layers()
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
-            execute_list   = self.optimizer.get_deepzono(nn, zonotope)
+            execute_list, output_info   = self.optimizer.get_deepzono(nn, zonotope)
             analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0

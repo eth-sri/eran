@@ -13,6 +13,22 @@ from deepzono_milp import *
 from functools import reduce
 import config
 
+
+def calc_bounds(man, element, nn, nlb, nub, destroy=True):
+    layerno = nn.calc_layerno()
+    bounds = box_for_layer(man, element, layerno)
+    num_neurons = get_num_neurons_in_layer(man, element, layerno)
+    itv = [bounds[i] for i in range(num_neurons)]
+    lbi = [x.contents.inf.contents.val.dbl for x in itv]
+    ubi = [x.contents.sup.contents.val.dbl for x in itv]
+    nlb.append(lbi)
+    nub.append(ubi)
+    if destroy:
+        elina_interval_array_free(bounds,num_neurons)
+        return
+    return layerno, bounds, num_neurons, lbi, ubi
+
+
 def add_input_output_information_deeppoly(self, input_names, output_name, output_shape):
     """
     sets for an object the three fields:
@@ -39,10 +55,6 @@ def add_input_output_information_deeppoly(self, input_names, output_name, output
     self.output_length = reduce((lambda x, y: x*y), output_shape)
     self.input_names   = input_names
     self.output_name   = output_name
-
-
-def calc_layerno(nn):
-    return nn.ffn_counter + nn.conv_counter + nn.residual_counter
 
 
 class DeeppolyInput:
@@ -140,18 +152,7 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_first_relu_layer(man, element, *self.get_arguments())
-        layerno = calc_layerno(nn)
-        bounds = box_for_layer(man, element, layerno)
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-
-        itv = [bounds[i] for i in range(num_neurons)]
-        lbi = [x.contents.inf.contents.val.dbl for x in itv]
-        ubi = [x.contents.sup.contents.val.dbl for x in itv]
-
-        nlb.append(lbi)
-        nub.append(ubi)
-
-        elina_interval_array_free(bounds,num_neurons)
+        calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
 
@@ -174,6 +175,8 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_first_sigmoid_layer(man, element, *self.get_arguments())
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.ffn_counter+=1
         return element
 
 
@@ -195,6 +198,8 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_first_tanh_layer(man, element, *self.get_arguments())
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.ffn_counter+=1
         return element
 
 
@@ -217,17 +222,8 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno = calc_layerno(nn)
-        bounds = box_for_layer(man, element, layerno)
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-
-        itv = [bounds[i] for i in range(num_neurons)]
-        lbi = [x.contents.inf.contents.val.dbl for x in itv]
-        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, destroy = False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
-
-        nlb.append(lbi)
-        nub.append(ubi)
         #print("lbi ", timeout_milp, "ubi ", timeout_lp)
         if refine:
             if layerno <= 1:
@@ -253,6 +249,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         nn.ffn_counter+=1
         return element
 
+
 class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
         """
@@ -271,6 +268,8 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.ffn_counter+=1
         return element
 
 
@@ -292,6 +291,8 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.ffn_counter+=1
         return element
 
 
@@ -328,17 +329,8 @@ class DeeppolyReluNodeLast(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present,  use_area_heuristic)
-        layerno = calc_layerno(nn)
-        bounds = box_for_layer(man, element, nn.ffn_counter+nn.conv_counter)
-        num_neurons = get_num_neurons_in_layer(man, element, nn.ffn_counter+nn.conv_counter)
-
-        itv = [bounds[i] for i in range(num_neurons)]
-        lbi = [x.contents.inf.contents.val.dbl for x in itv]
-        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
-
-        nlb.append(lbi)
-        nub.append(ubi)
 
         if(refine):
             if layerno<=1:
@@ -399,6 +391,8 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
                     abstract element after the transformer 
         """
         ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_area_heuristic)
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.ffn_counter+=1
         return element
 
 
@@ -434,6 +428,8 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
                     abstract element after the transformer 
         """
         ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_area_heuristic)
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.ffn_counter+=1
         return element
 
 
@@ -503,17 +499,8 @@ class DeeppolyConv2dNodeIntermediate:
             conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         else:
             conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno = calc_layerno(nn)
-        bounds = box_for_layer(man, element, layerno)
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-
-        itv = [bounds[i] for i in range(num_neurons)]
-        lbi = [x.contents.inf.contents.val.dbl for x in itv]
-        ubi = [x.contents.sup.contents.val.dbl for x in itv]
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
-
-        nlb.append(lbi)
-        nub.append(ubi)
 
         if(refine):
             use_milp = config.use_milp
@@ -557,18 +544,7 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
             abstract element after the transformer 
         """
         conv_handle_first_layer(man, element, *self.get_arguments())
-        layerno = calc_layerno(nn)
-        bounds = box_for_layer(man, element, layerno)
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-
-        itv = [bounds[i] for i in range(num_neurons)]
-        lbi = [x.contents.inf.contents.val.dbl for x in itv]
-        ubi = [x.contents.sup.contents.val.dbl for x in itv]
-
-        nlb.append(lbi)
-        nub.append(ubi)
-
-        elina_interval_array_free(bounds,num_neurons)
+        calc_bounds(man, element, nn, nlb, nub)
         nn.conv_counter+=1
         return element
 
@@ -611,6 +587,8 @@ class DeeppolyMaxpool:
             abstract element after the transformer 
         """
         handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
+        calc_bounds(man, element, nn, nlb, nub)
+        nn.maxpool_counter += 1
         return element
 
 
@@ -634,22 +612,9 @@ class DeeppolyResadd:
              handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         else:
              handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
-        layerno = calc_layerno(nn)
-        bounds = box_for_layer(man, element, layerno)
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-
-        itv = [bounds[i] for i in range(num_neurons)]
-        lbi = [x.contents.inf.contents.val.dbl for x in itv]
-        ubi = [x.contents.sup.contents.val.dbl for x in itv]
-
-        nlb.append(lbi)
-        nub.append(ubi)
+        calc_bounds(man, element, nn, nlb, nub)
         # print("Residual ", nn.layertypes[layerno],layerno)
-        nn.residual_counter = nn.residual_counter + 1
-        #if (refine):
-            # handle residual layers here
-            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
-        elina_interval_array_free(bounds, num_neurons)
+        nn.residual_counter +=  + 1
 
         return element
 
@@ -695,7 +660,7 @@ class DeeppolySub:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
-        layerno = calc_layerno(nn)
+        layerno = nn.calc_layerno()
         #handle_sub_layer(man, element, layerno, self.bias, self.is_minuend)
         nn.ffn_counter+=1
         return element
@@ -719,7 +684,7 @@ class DeeppolyMul:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic):
-        layerno = calc_layerno(nn)
+        layerno = nn.calc_layerno()
         #handle_mul_layer(man, element, layerno, self.bias)
         nn.ffn_counter+=1
         return element
