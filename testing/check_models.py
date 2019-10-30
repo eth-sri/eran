@@ -17,10 +17,10 @@ parser = argparse.ArgumentParser(description='ERAN sanity check',  formatter_cla
 parser.add_argument('--dataset', type=str,  help='the dataset to test with')
 parser.add_argument('--domain', nargs='+', type=str, default=['deepzono', 'refinezono', 'deeppoly', 'refinepoly'],  help='the domains to be tested. default:deepzono refinezono deeppoly refinepoly')
 parser.add_argument('--network', nargs='+', type=str,  help='the networks to be tested (if this option is taken --dataset MUST be given.')
-parser.add_argument('--out', default='tested.txt', type=str,  help='the filename where the result will be saved. default: tested.txt')
-parser.add_argument('-parser', dest='parser_only', action='store_true',  help='with this flag only the parser will be tested')
-parser.add_argument('-continue', dest='new_only', action='store_true',  help='with this flag only networks without a previous test result will be tested')
-parser.add_argument('-failed', dest='failed_only', action='store_true',  help='with this flag only networks that have not passed a previous test will be tested')
+parser.add_argument('--out', '-o', default='tested.txt', type=str,  help='the filename where the result will be saved. default: tested.txt')
+parser.add_argument('--parser', '-p', dest='parser_only', action='store_true',  help='with this flag only the parser will be tested')
+parser.add_argument('--continue', '-c', dest='new_only', action='store_true',  help='with this flag only networks without a previous test result will be tested')
+parser.add_argument('--failed', '-f', dest='failed_only', action='store_true',  help='with this flag only networks that have not passed a previous test will be tested')
 parser.set_defaults(parser_only=False)
 parser.set_defaults(new_only=False)
 parser.set_defaults(failed_only=False)
@@ -94,7 +94,7 @@ def get_out_tensors(out_names):
 if args.dataset:
     datasets = [args.dataset]
 else:
-    datasets = os.listdir('./test_nets/')
+    datasets = os.listdir('../data/test_nets/')
 
 for dataset in datasets:
     if args.network:
@@ -102,7 +102,7 @@ for dataset in datasets:
         networks = args.network
         dataset_folder = ''
     else:
-        dataset_folder = './test_nets/' + dataset + '/'
+        dataset_folder = '../data/test_nets/' + dataset + '/'
         networks = os.listdir(dataset_folder)
 
     for network in networks:
