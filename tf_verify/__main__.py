@@ -34,6 +34,20 @@ def parse_acasxu_spec(text):
            high.append(np.double(ub))
     return low,high
 
+
+def show_ascii_spec(lb, ub):
+    print('==================================================================')
+    for i in range(n_rows):
+        print('  ', end='')
+        for j in range(n_cols):
+            print('#' if lb[n_cols*n_channels*i+j*n_channels] >= 0.5 else ' ', end='')
+        print('  |  ', end='')
+        for j in range(n_cols):
+            print('#' if ub[n_cols*n_channels*i+j*n_channels] >= 0.5 else ' ', end='')
+        print('  |  ')
+    print('==================================================================')
+
+
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--netname', type=str, default=None, help='the network name, the extension can be only .pyt, .tf and .meta')
 parser.add_argument('--epsilon', type=float, default=0, help='the epsilon for L_infinity perturbation')
@@ -306,7 +320,7 @@ elif zonotope_bool:
     else:
          print("Failed")
 else:
-    for test in tests:
+    for i, test in enumerate(tests):
         if(dataset=='mnist'):
             image= np.float64(test[1:len(test)])/np.float64(255)
         else:

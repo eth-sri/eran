@@ -257,7 +257,7 @@ class Optimizer:
 
 
 
-    def get_deeppoly(self, nn, specLB, specUB):
+    def get_deeppoly(self, nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size):
         """
         This function will go through self.operations and self.resources and create a list of Deeppoly-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deeppoly'] holds the resources for an operation of type self.operations[i].
@@ -289,7 +289,8 @@ class Optimizer:
             #print(self.operations[i])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
-                output.append(DeeppolyInput(specLB, specUB, input_names, output_name, output_shape))
+                output.append(DeeppolyInput(specLB, specUB, input_names, output_name, output_shape,
+                                            lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size))
                 i += 1
 
             # Tensorflow operation
@@ -395,7 +396,7 @@ class Optimizer:
                     i += 2
 
             elif self.operations[i] == "MaxPool":
-                image_shape, window_size, out_shape, input_names, output_name, output_shape = self.resources[i][domain]
+                image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
                 output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
                 i += 1
 

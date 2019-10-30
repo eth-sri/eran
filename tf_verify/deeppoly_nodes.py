@@ -58,7 +58,10 @@ def add_input_output_information_deeppoly(self, input_names, output_name, output
 
 
 class DeeppolyInput:
-    def __init__(self, specLB, specUB, input_names, output_name, output_shape):
+    def __init__(self, specLB, specUB, input_names, output_name, output_shape,
+                 lexpr_weights=None, lexpr_cst=None, lexpr_dim=None,
+                 uexpr_weights=None, uexpr_cst=None, uexpr_dim=None,
+                 expr_size=0):
         """
         Arguments
         ---------
@@ -66,9 +69,51 @@ class DeeppolyInput:
             1D array with the lower bound of the input spec
         specUB : numpy.ndarray
             1D array with the upper bound of the input spec
+        lexpr_weights: numpy.ndarray
+            ndarray of doubles with coefficients of lower polyhedral expressions
+        lexpr_cst: numpy.ndarray
+            ndarray of doubles with the constants of lower polyhedral expressions
+        lexpr_dim: numpy.ndarray
+            ndarray of unsigned int with the indexes of pixels from the original image for the lower polyhedral expressions
+        uexpr_weights: numpy.ndarray
+            ndarray of doubles with coefficients of upper polyhedral expressions
+        uexpr_cst: numpy.ndarray
+            ndarray of doubles with the constants of upper polyhedral expressions
+        uexpr_dim: numpy.ndarray
+            ndarray of unsigned int with the indexes of pixels from the original image for the upper polyhedral expressions
+        expr_size: numpy.ndarray
+            unsigned int with the sizes of polyhedral expressions
         """
         self.specLB = np.ascontiguousarray(specLB, dtype=np.double)
         self.specUB = np.ascontiguousarray(specUB, dtype=np.double)
+
+        if lexpr_weights is not None:
+            self.lexpr_weights = np.ascontiguousarray(lexpr_weights, dtype=np.double)
+        else:
+            self.lexpr_weights = None
+        if lexpr_cst is not None:
+            self.lexpr_cst = np.ascontiguousarray(lexpr_cst, dtype=np.double)
+        else:
+            self.lexpr_cst = None
+        if lexpr_dim is not None:
+            self.lexpr_dim = np.ascontiguousarray(lexpr_dim, dtype=np.uintp)
+        else:
+            self.lexpr_dim = None
+
+        if uexpr_weights is not None:
+            self.uexpr_weights = np.ascontiguousarray(uexpr_weights, dtype=np.double)
+        else:
+            self.uexpr_weights = None
+        if uexpr_cst is not None:
+            self.uexpr_cst = np.ascontiguousarray(uexpr_cst, dtype=np.double)
+        else:
+            self.uexpr_cst = None
+        if uexpr_dim is not None:
+            self.uexpr_dim = np.ascontiguousarray(lexpr_dim, dtype=np.uintp)
+        else:
+            self.uexpr_dim = None
+
+        self.expr_size = expr_size
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
 
@@ -86,7 +131,12 @@ class DeeppolyInput:
         output : ElinaAbstract0Ptr
             new abstract element representing the element specified by self.specLB and self.specUB
         """
-        return fppoly_from_network_input(man, 0, len(self.specLB), self.specLB, self.specUB)
+        if self.expr_size == 0:
+            return fppoly_from_network_input(man, 0, len(self.specLB), self.specLB, self.specUB)
+        else:
+            return fppoly_from_network_input_poly(man, 0, len(self.specLB), self.specLB, self.specUB,
+                                                  self.lexpr_weights, self.lexpr_cst, self.lexpr_dim,
+                                                  self.uexpr_weights, self.uexpr_cst, self.uexpr_dim, self.expr_size)
 
 
 
