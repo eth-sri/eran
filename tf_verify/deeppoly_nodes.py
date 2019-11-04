@@ -9,7 +9,7 @@ from fppoly import *
 from elina_interval import *
 from elina_abstract0 import *
 from elina_manager import *
-from deepzono_milp import *
+from ai_milp import *
 from functools import reduce
 import config
 

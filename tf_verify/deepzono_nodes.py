@@ -11,7 +11,7 @@ from elina_manager import *
 from elina_dimension import *
 from ctypes.util import find_library
 from functools import reduce
-from deepzono_milp import *
+from ai_milp import *
 
 
 
