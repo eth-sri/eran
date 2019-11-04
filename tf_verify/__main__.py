@@ -9,7 +9,7 @@ import tensorflow as tf
 import csv
 import time
 from tqdm import tqdm
-from deepzono_milp import *
+from ai_milp import *
 import argparse
 
 #ZONOTOPE_EXTENSION = '.zt'
