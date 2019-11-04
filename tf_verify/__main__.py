@@ -8,6 +8,7 @@ from read_zonotope_file import read_zonotope
 import tensorflow as tf
 import csv
 import time
+from tqdm import tqdm
 from deepzono_milp import *
 import argparse
 
@@ -35,7 +36,7 @@ def parse_acasxu_spec(text):
     return low,high
 
 
-def show_ascii_spec(lb, ub):
+def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
     print('==================================================================')
     for i in range(n_rows):
         print('  ', end='')
@@ -47,6 +48,88 @@ def show_ascii_spec(lb, ub):
         print('  |  ')
     print('==================================================================')
 
+
+def normalize(image, means, stds, dataset, is_conv):
+    if(dataset=='mnist'):
+        for i in range(len(image)):
+            image[i] = (image[i] - means[0])/stds[0]
+    elif(dataset=='cifar10'):
+        tmp = np.zeros(3072)
+        for i in range(3072):
+            tmp[i] = (image[i] - means[i % 3]) / stds[i % 3]
+
+        if(is_conv):
+            for i in range(3072):
+                image[i] = tmp[i]
+        else:
+            count = 0
+            for i in range(3072):
+                image[i] = (tmp[i % 1024 + (i % 3) * 1024] - means[i % 3]) / stds[i % 3]
+
+
+def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
+    if dataset == 'mnist' or dataset == 'fashion':
+        for i in range(len(lexpr_cst)):
+            lexpr_cst[i] = (lexpr_cst[i] - means[0]) / stds[0]
+            uexpr_cst[i] = (uexpr_cst[i] - means[0]) / stds[0]
+        for i in range(len(lexpr_weights)):
+            lexpr_weights[i] /= stds[0]
+            uexpr_weights[i] /= stds[0]
+    else:
+        for i in range(len(lexpr_cst)):
+            lexpr_cst[i] = (lexpr_cst[i] - means[i % 3]) / stds[i % 3]
+            uexpr_cst[i] = (uexpr_cst[i] - means[i % 3]) / stds[i % 3]
+        for i in range(len(lexpr_weights)):
+            lexpr_weights[i] /= stds[(i // num_params) % 3]
+            uexpr_weights[i] /= stds[(i // num_params) % 3]
+
+
+def denormalize(image, means, stds, dataset):
+    if(dataset=='mnist'):
+        for i in range(len(image)):
+            image[i] = image[i]*stds[0] + means[0]
+    elif(dataset=='cifar10'):
+        count = 0
+        tmp = np.zeros(3072)
+        for i in range(1024):
+            tmp[count] = image[count]*stds[0] + means[0]
+            count = count + 1
+            tmp[count] = image[count]*stds[1] + means[1]
+            count = count + 1
+            tmp[count] = image[count]*stds[2] + means[2]
+            count = count + 1
+
+        if(is_conv):
+            for i in range(3072):
+                image[i] = tmp[i]
+        else:
+            count = 0
+            for i in range(1024):
+                image[i] = tmp[count]
+                count = count+1
+                image[i+1024] = tmp[count]
+                count = count+1
+                image[i+2048] = tmp[count]
+                count = count+1
+
+
+def get_tests(dataset):
+    if (dataset == 'acasxu'):
+        specfile = '../data/acasxu/specs/acasxu_prop' + str(specnumber) + '_spec.txt'
+        tests = open(specfile, 'r').read()
+    else:
+        csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+        tests = csv.reader(csvfile, delimiter=',')
+    return tests
+
+
+def init_domain(d):
+    if d == 'refinezono':
+        return 'deepzono'
+    elif d == 'refinepoly':
+        return 'deeppoly'
+    else:
+        return d
 
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--netname', type=str, default=None, help='the network name, the extension can be only .pyt, .tf and .meta')
@@ -61,6 +144,15 @@ parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for 
 parser.add_argument('--use_area_heuristic', type=str2bool, default=True,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
 parser.add_argument('--mean', nargs='+', type=float,  help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float,  help='the standard deviation used to normalize the data with')
+parser.add_argument('--data_dir', type=str, help='Directory which contains data')
+parser.add_argument('--data_root', type=str, help='Directory which contains data')
+parser.add_argument('--num_params', type=int, default=0, help='Number of transformation parameters')
+parser.add_argument('--num_tests', type=int, default=None, help='Number of images to test')
+parser.add_argument('--from_test', type=int, default=0, help='Number of images to test')
+parser.add_argument('--test_idx', type=int, default=None, help='Index to test')
+parser.add_argument('--debug', action='store_true', help='Whether to display debug info')
+parser.add_argument('--attack', action='store_true', help='Whether to attack')
+parser.add_argument('--geometric', '-g', dest='geometric', action='store_true', help='Whether to attack')
 
 args = parser.parse_args()
 
@@ -91,7 +183,7 @@ domain = args.domain
 
 if zonotope_bool:
     assert domain in ['deepzono', 'refinezono'], "domain name can be either deepzono or refinezono"
-else:
+elif not args.geometric:
     assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain name can be either deepzono, refinezono, deeppoly or refinepoly"
 
 dataset = args.dataset
@@ -141,14 +233,14 @@ if is_saved_tf_model or is_pb_file:
     eran = ERAN(sess.graph.get_tensor_by_name(ops[last_layer_index].name + ':0'), sess)
 
 else:
-    if(dataset=='mnist'):
+    if(zonotope_bool==True):
+        num_pixels = len(zonotope)
+    elif(dataset=='mnist'):
         num_pixels = 784
     elif (dataset=='cifar10'):
         num_pixels = 3072
     elif(dataset=='acasxu'):
         num_pixels = 5
-    elif(zonotope_bool==True):
-        num_pixels = len(zonotope)
     if is_onnx:
         is_trained_with_pytorch = True
         model, is_conv = read_onnx_net(netname)
@@ -172,79 +264,9 @@ correctly_classified_images = 0
 verified_images = 0
 total_images = 0
 
-def normalize(image, means, stds):
-    if(dataset=='mnist'):
-        for i in range(len(image)):
-            image[i] = (image[i] - means[0])/stds[0]
-    elif(dataset=='cifar10'):
-        count = 0
-        tmp = np.zeros(3072)
-        for i in range(1024):
-            tmp[count] = (image[count] - means[0])/stds[0]
-            count = count + 1
-            tmp[count] = (image[count] - means[1])/stds[1]
-            count = count + 1
-            tmp[count] = (image[count] - means[2])/stds[2]
-            count = count + 1
 
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
 
-def denormalize(image, means, stds):
-    if(dataset=='mnist'):
-        for i in range(len(image)):
-            image[i] = image[i]*stds[0] + means[0]
-    elif(dataset=='cifar10'):
-        count = 0
-        tmp = np.zeros(3072)
-        for i in range(1024):
-            tmp[count] = image[count]*stds[0] + means[0]
-            count = count + 1
-            tmp[count] = image[count]*stds[1] + means[1]
-            count = count + 1
-            tmp[count] = image[count]*stds[2] + means[2]
-            count = count + 1
-
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
-
-def init_domain(d):
-    if d == 'refinezono':
-        return 'deepzono'
-    elif d == 'refinepoly':
-        return 'deeppoly'
-    else:
-        return d
-
-if(dataset=='mnist'):
-    csvfile = open('../data/mnist_test.csv', 'r')
-    tests = csv.reader(csvfile, delimiter=',')
-elif(dataset=='cifar10'):
-    csvfile = open('../data/cifar10_test.csv', 'r')
-    tests = csv.reader(csvfile, delimiter=',')
-else:
-    specfile = '../data/acasxu/specs/acasxu_prop' + str(specnumber) +'_spec.txt'
-    tests = open(specfile, 'r').read()
+tests = get_tests(dataset)
 
 
 if dataset=='acasxu':
@@ -319,6 +341,227 @@ elif zonotope_bool:
     #         print("Failed")
     else:
          print("Failed")
+
+
+elif args.geometric:
+    total, attacked, standard_correct, tot_time = 0, 0, 0, 0
+    correct_box, correct_poly = 0, 0
+    cver_box, cver_poly = [], []
+
+    for i, test in enumerate(tests):
+        if args.test_idx is not None and i != args.test_idx:
+            continue
+
+        attacks_file = os.path.join(args.data_dir, 'attack_{}.csv'.format(i))
+        if args.num_tests is not None and i >= args.num_tests:
+            break
+        print('Test {}:'.format(i))
+
+        if args.dataset == 'mnist' or args.dataset == 'fashion':
+            image = np.float64(test[1:len(test)])
+            n_rows, n_cols, n_channels = 28, 28, 1
+        else:
+            n_rows, n_cols, n_channels = 32, 32, 3
+            if is_trained_with_pytorch:
+                image = np.float64(test[1:len(test)])
+            else:
+                image = np.float64(test[1:len(test)]) - 0.5
+
+        spec_lb = np.copy(image)
+        spec_ub = np.copy(image)
+
+        if (is_trained_with_pytorch):
+            normalize(spec_lb, means, stds, args.dataset, is_conv)
+            normalize(spec_ub, means, stds, args.dataset, is_conv)
+
+        label, nn, nlb, nub = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', args.timeout_lp, args.timeout_milp,
+                                               args.use_area_heuristic)
+        print('Label: ', label)
+
+        begtime = time.time()
+        if label != int(test[0]):
+            print('Label {}, but true label is {}, skipping...'.format(label, int(test[0])))
+            print('Standard accuracy: {} percent'.format(standard_correct / float(i + 1) * 100))
+            continue
+        else:
+            standard_correct += 1
+            print('Standard accuracy: {} percent'.format(standard_correct / float(i + 1) * 100))
+
+        dim = n_rows * n_cols * n_channels
+
+        ok_box, ok_poly = True, True
+        k = args.num_params + 1 + 1 + dim
+
+        attack_imgs, checked, attack_pass = [], [], 0
+        cex_found = False
+        if args.attack:
+            with open(attacks_file, 'r') as fin:
+                lines = fin.readlines()
+                for j in tqdm(range(0, len(lines), args.num_params + 1)):
+                    params = [float(line[:-1]) for line in lines[j:j + args.num_params]]
+                    tokens = lines[j + args.num_params].split(',')
+                    values = np.array(list(map(float, tokens)))
+
+                    attack_lb = values[::2]
+                    attack_ub = values[1::2]
+
+                    if is_trained_with_pytorch:
+                        normalize(attack_lb, means, stds, args.dataset, is_conv)
+                        normalize(attack_ub, means, stds, args.dataset, is_conv)
+                    else:
+                        attack_lb -= 0.5
+                        attack_ub -= 0.5
+                    attack_imgs.append((params, attack_lb, attack_ub))
+                    checked.append(False)
+
+                    predict_label, _, _, _ = eran.analyze_box(
+                        attack_lb[:dim], attack_ub[:dim], 'deeppoly',
+                        args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0)
+                    if predict_label != int(test[0]):
+                        print('counter-example, params: ', params, ', predicted label: ', predict_label)
+                        cex_found = True
+                        break
+                    else:
+                        attack_pass += 1
+        print('tot attacks: ', len(attack_imgs))
+        specs_file = os.path.join(args.data_dir, '{}.csv'.format(i))
+        with open(specs_file, 'r') as fin:
+            lines = fin.readlines()
+            print('Number of lines: ', len(lines))
+            assert len(lines) % k == 0
+
+            spec_lb = np.zeros(args.num_params + dim)
+            spec_ub = np.zeros(args.num_params + dim)
+
+            expr_size = args.num_params
+            lexpr_cst, uexpr_cst = [], []
+            lexpr_weights, uexpr_weights = [], []
+            lexpr_dim, uexpr_dim = [], []
+
+            ver_chunks_box, ver_chunks_poly, tot_chunks = 0, 0, 0
+
+            for i, line in enumerate(lines):
+                if i % k < args.num_params:
+                    # read specs for the parameters
+                    values = np.array(list(map(float, line[:-1].split(' '))))
+                    assert values.shape[0] == 2
+                    param_idx = i % k
+                    spec_lb[dim + param_idx] = values[0]
+                    spec_ub[dim + param_idx] = values[1]
+                    if args.debug:
+                        print('parameter %d: [%.4f, %.4f]' % (param_idx, values[0], values[1]))
+                elif i % k == args.num_params:
+                    # read interval bounds for image pixels
+                    values = np.array(list(map(float, line[:-1].split(','))))
+                    spec_lb[:dim] = values[::2]
+                    spec_ub[:dim] = values[1::2]
+                    # if args.debug:
+                    #     show_ascii_spec(spec_lb, spec_ub)
+                elif i % k < k - 1:
+                    # read polyhedra constraints for image pixels
+                    tokens = line[:-1].split(' ')
+                    assert len(tokens) == 2 + 2 * args.num_params + 1
+
+                    bias_lower, weights_lower = float(tokens[0]), list(map(float, tokens[1:1 + args.num_params]))
+                    assert tokens[args.num_params + 1] == '|'
+                    bias_upper, weights_upper = float(tokens[args.num_params + 2]), list(
+                        map(float, tokens[3 + args.num_params:]))
+
+                    assert len(weights_lower) == args.num_params
+                    assert len(weights_upper) == args.num_params
+
+                    lexpr_cst.append(bias_lower)
+                    uexpr_cst.append(bias_upper)
+                    for j in range(args.num_params):
+                        lexpr_dim.append(dim + j)
+                        uexpr_dim.append(dim + j)
+                        lexpr_weights.append(weights_lower[j])
+                        uexpr_weights.append(weights_upper[j])
+                else:
+                    assert (line == 'SPEC_FINISHED\n')
+                    for p_idx in range(args.num_params):
+                        lexpr_cst.append(spec_lb[dim + p_idx])
+                        for l in range(args.num_params):
+                            lexpr_weights.append(0)
+                            lexpr_dim.append(dim + l)
+                        uexpr_cst.append(spec_ub[dim + p_idx])
+                        for l in range(args.num_params):
+                            uexpr_weights.append(0)
+                            uexpr_dim.append(dim + l)
+                    if (is_trained_with_pytorch):
+                        normalize(spec_lb[:dim], means, stds, args.dataset, is_conv)
+                        normalize(spec_ub[:dim], means, stds, args.dataset, is_conv)
+                    normalize_poly(args.num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights,
+                                   uexpr_dim, means, stds, args.dataset)
+
+                    for attack_idx, (attack_params, attack_lb, attack_ub) in enumerate(attack_imgs):
+                        ok_attack = True
+                        for j in range(num_pixels):
+                            low, up = lexpr_cst[j], uexpr_cst[j]
+                            for idx in range(args.num_params):
+                                low += lexpr_weights[j * args.num_params + idx] * attack_params[idx]
+                                up += uexpr_weights[j * args.num_params + idx] * attack_params[idx]
+                            if low > attack_lb[j] + EPS or attack_ub[j] > up + EPS:
+                                ok_attack = False
+                        if ok_attack:
+                            checked[attack_idx] = True
+                            # print('checked ', attack_idx)
+                    if args.debug:
+                        print('Running the analysis...')
+
+                    t_begin = time.time()
+                    perturbed_label_poly, _, _, _ = eran.analyze_box(
+                        spec_lb, spec_ub, 'deeppoly',
+                        args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0,
+                        lexpr_weights, lexpr_cst, lexpr_dim,
+                        uexpr_weights, uexpr_cst, uexpr_dim,
+                        expr_size)
+                    perturbed_label_box, _, _, _ = eran.analyze_box(
+                        spec_lb[:dim], spec_ub[:dim], 'deeppoly',
+                        args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0)
+                    t_end = time.time()
+
+                    print('DeepG: ', perturbed_label_poly, '\tInterval: ', perturbed_label_box, '\tlabel: ', label,
+                          '[Time: %.4f]' % (t_end - t_begin))
+
+                    tot_chunks += 1
+                    if perturbed_label_box != label:
+                        ok_box = False
+                    else:
+                        ver_chunks_box += 1
+
+                    if perturbed_label_poly != label:
+                        ok_poly = False
+                    else:
+                        ver_chunks_poly += 1
+
+                    lexpr_cst, uexpr_cst = [], []
+                    lexpr_weights, uexpr_weights = [], []
+                    lexpr_dim, uexpr_dim = [], []
+
+        total += 1
+        if ok_box:
+            correct_box += 1
+        if ok_poly:
+            correct_poly += 1
+        if cex_found:
+            assert (not ok_box) and (not ok_poly)
+            attacked += 1
+        cver_poly.append(ver_chunks_poly / float(tot_chunks))
+        cver_box.append(ver_chunks_box / float(tot_chunks))
+        tot_time += time.time() - begtime
+
+        print('Verified[box]: {}, Verified[poly]: {}, CEX found: {}'.format(ok_box, ok_poly, cex_found))
+        assert not cex_found or not ok_box, 'ERROR! Found counter-example, but image was verified with box!'
+        assert not cex_found or not ok_poly, 'ERROR! Found counter-example, but image was verified with poly!'
+
+        print('Attacks found: %.2f percent, %d/%d' % (100.0 * attacked / total, attacked, total))
+        print('[Box]  Provably robust: %.2f percent, %d/%d' % (100.0 * correct_box / total, correct_box, total))
+        print('[Poly] Provably robust: %.2f percent, %d/%d' % (100.0 * correct_poly / total, correct_poly, total))
+        print('Empirically robust: %.2f percent, %d/%d' % (100.0 * (total - attacked) / total, total - attacked, total))
+        print('[Box]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_box)))
+        print('[Poly]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_poly)))
+        print('Average time: ', tot_time / total)
 else:
     for i, test in enumerate(tests):
         if(dataset=='mnist'):
@@ -333,8 +576,8 @@ else:
         specUB = np.copy(image)
 
         if is_trained_with_pytorch:
-            normalize(specLB, means, stds)
-            normalize(specUB, means, stds)
+            normalize(specLB, means, stds, dataset, is_conv)
+            normalize(specUB, means, stds, dataset, is_conv)
 
         label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
         #for number in range(len(nub)):
@@ -360,8 +603,8 @@ else:
                      specLB = np.clip(image-epsilon,-0.5,0.5)
                      specUB = np.clip(image+epsilon,-0.5,0.5)
             if(is_trained_with_pytorch):
-                normalize(specLB, means, stds)
-                normalize(specUB, means, stds)
+                normalize(specLB, means, stds, dataset, is_conv)
+                normalize(specUB, means, stds, dataset, is_conv)
             start = time.time()
             perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
             print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
@@ -379,7 +622,7 @@ else:
                         cex_label,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', args.timeout_lp, args.timeout_milp, args.use_area_heuristic)
                         if(cex_label!=label):
                             if(is_trained_with_pytorch):
-                                denormalize(adv_image, means, stds)
+                                denormalize(adv_image, means, stds, dataset)
                             print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
                 else:
                     print("img", total_images, "Failed")

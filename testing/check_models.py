@@ -26,61 +26,15 @@ parser.set_defaults(new_only=False)
 parser.set_defaults(failed_only=False)
 args = parser.parse_args()
 
-def normalize(image, means, stds):
-    if(dataset=='mnist'):
+
+def normalize(image, means, stds, dataset):
+    if dataset == 'mnist' or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
-    elif(dataset=='cifar10'):
-        count = 0
-        tmp = np.zeros(3072)
-        for i in range(1024):
-            tmp[count] = (image[count] - means[0])/stds[0]
-            count = count + 1
-            tmp[count] = (image[count] - means[1])/stds[1]
-            count = count + 1
-            tmp[count] = (image[count] - means[2])/stds[2]
-            count = count + 1
+    else:
+        for i in range(3072):
+            image[i] = (image[i] - means[i % 3]) / stds[i % 3]
 
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
-
-def denormalize(image, means, stds):
-    if(dataset=='mnist'):
-        for i in range(len(image)):
-            image[i] = image[i]*stds[0] + means[0]
-    elif(dataset=='cifar10'):
-        count = 0
-        tmp = np.zeros(3072)
-        for i in range(1024):
-            tmp[count] = image[count]*stds[0] + means[0]
-            count = count + 1
-            tmp[count] = image[count]*stds[1] + means[1]
-            count = count + 1
-            tmp[count] = image[count]*stds[2] + means[2]
-            count = count + 1
-
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
 
 domains = args.domain
 non_layer_operation_types = ['NoOp', 'Assign', 'Const', 'RestoreV2', 'SaveV2', 'PlaceholderWithDefault', 'IsVariableInitialized', 'Placeholder', 'Identity']
@@ -230,9 +184,9 @@ for dataset in datasets:
             test_input = np.copy(image)
 
             if is_trained_with_pytorch or is_onnx:
-                normalize(specLB, means, stds)
-                normalize(specUB, means, stds)
-                normalize(test_input, means, stds)
+                normalize(specLB, means, stds, dataset)
+                normalize(specUB, means, stds, dataset)
+                normalize(test_input, means, stds, dataset)
 
             print(', '.join([dataset, network, domain]), 'testing now')
 
@@ -266,28 +220,34 @@ for dataset in datasets:
                 runnable = rt.prepare(model, 'CPU')
                 pred = runnable.run(input)
                 #print(pred)
-                pred = pred[-1]
             else:
                 if not (is_saved_tf_model or is_pb_file):
                     input = np.array(test_input, dtype=np.float32)
                 output_names = [e[0] for e in output_info]
                 pred = sess.run(get_out_tensors(output_names), {sess.graph.get_operations()[0].name + ':0': input})
                 #print(pred)
-                pred = pred[-1]
             pred_eran = np.asarray([(i+j)/2 for i, j in zip(nlb[-1], nub[-1])])
-            pred = np.asarray(pred).reshape(-1)
+            pred_model = np.asarray(pred[-1]).reshape(-1)
             if len(pred_eran) != len(pred):
                 tested_file.write(', '.join([dataset, network, domain, 'predictions have not the same number of labels. ERAN: ' + len(pred_eran) + ' model: ' + len(pred)]) + '\n')
                 tested_file.flush()
                 continue
-            difference = pred_eran - pred
+            difference = pred_eran - pred_model
             if np.all([abs(elem) < .001 for elem in difference]):
                 tested_file.write(', '.join([dataset, network, domain, 'success']) + '\n')
                 tested_file.flush()
             else:
-                i = 0
-                if is_onnx:
-                    i = 1
-
-                tested_file.write(', '.join([dataset, network, domain, str(pred_eran), str(pred)]) + '\n')
+                tested_file.write(', '.join([dataset, network, domain, str(pred_eran), str(pred_model)]) + '\n')
                 tested_file.flush()
+                for i in range(len(nlb)):
+                    pred_eran = np.asarray([(l+u)/2 for l, u in zip(nlb[i], nub[i])])
+                    offset = 1
+                    if is_onnx:
+                        offset = 2
+                    pred_model = np.asarray(pred[i + offset]).reshape(-1)
+                    difference = pred_eran - pred_model
+
+                    if not np.all([abs(elem) < .001 for elem in difference]):
+                        tested_file.write(', '.join([dataset, network, domain, 'started divergence at layer', str(i), 'outputname', str(output_info[i][0]), 'difference', str(difference)]) + '\n')
+                        tested_file.flush()
+                        break

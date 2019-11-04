@@ -282,10 +282,17 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
     var_list = []
 
     # TODO zonotope
-    for i in range(num_pixels):
-        var_name = "x" + str(i)
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb = LB_N0[i], ub=UB_N0[i], name=var_name)
-        var_list.append(var)
+    if UB_N0 is None:
+        # LB_N0 is zonotope
+        for i in range(len(LB_N0)):
+            var_name = "x" + str(i)
+            var = model.addVar(vtype=GRB.CONTINUOUS, lb = LB_N0[i], ub=UB_N0[i], name=var_name)
+            var_list.append(var)
+
+    else:
+        for i in range(num_pixels):
+            var_name = "x" + str(i)
+            var_list.append(var)
 
     counter = 0
     #for i in range(numlayer):
@@ -573,6 +580,40 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub, is_max=True):
     for i in range(numlayer):
         use_milp.append(1)
         relu_needed.append(1)
+
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, True,relu_needed)
+
+    num_var = len(var_list)
+    output_size = num_var - counter
+
+    for i in range(output_size):
+        if(i!=c):
+            obj = LinExpr()
+            if is_max:
+                obj += 1*var_list[counter+c]
+                obj += -1*var_list[counter + i]
+            else:
+                obj += -1*var_list[counter+c]
+                obj += 1*var_list[counter + i]
+            model.setObjective(obj,GRB.MINIMIZE)
+            model.optimize()
+
+            if(model.objval<0):
+
+                return False, model.x[0:input_size]
+
+    return True, model.x[0:input_size]
+
+
+def verify_network_with_milp_zonotope(nn, zonotope, c, nlb, nub, is_max=True):
+    nn.ffn_counter = 0
+    nn.conv_counter = 0
+    nn.residual_counter = 0
+    nn.maxpool_counter = 0
+    numlayer = nn.numlayer
+    use_milp = [1] * numlayer
+    relu_needed = [1] * numlayer
+    input_size = len(zonotope)
 
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, True,relu_needed)
 
