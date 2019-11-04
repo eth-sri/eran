@@ -265,8 +265,8 @@ verified_images = 0
 total_images = 0
 
 
-
-tests = get_tests(dataset)
+if dataset:
+    tests = get_tests(dataset)
 
 
 if dataset=='acasxu':
