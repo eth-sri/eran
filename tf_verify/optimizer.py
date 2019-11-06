@@ -48,7 +48,6 @@ class Optimizer:
         
         i = 0
         while i < nbr_op:
-            output_info.append(self.resources[i][domain][-2:])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
                 if specUB is None:
@@ -158,6 +157,9 @@ class Optimizer:
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
+
+            # for testing, getting the corresponding layer in the tensorflow or onnx model
+            output_info.append(self.resources[i-1][domain][-2:])
 
         use_dict = self.deepzono_get_dict(output)
         self.set_predecessors(nn, output)
@@ -285,7 +287,6 @@ class Optimizer:
 
         i = 0
         while i < len(self.operations):
-            output_info.append(self.resources[i][domain][-2:])
             #print(self.operations[i])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
@@ -495,6 +496,9 @@ class Optimizer:
                 i += 1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
+
+            # for testing, getting the corresponding layer in the tensorflow or onnx model
+            output_info.append(self.resources[i-1][domain][-2:])
 
         self.set_predecessors(nn, output)
         return output, output_info

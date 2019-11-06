@@ -1,13 +1,14 @@
 import sys
 sys.path.insert(0, '../ELINA/python_interface/')
 sys.path.insert(1, '../tf_verify/')
+import traceback
 import numpy as np
 import os
 from eran import ERAN
 from read_net_file import *
 import tensorflow as tf
 import csv
-from deepzono_milp import *
+from ai_milp import *
 import onnxruntime.backend as rt
 import argparse
 from onnx import helper
@@ -52,7 +53,7 @@ else:
 
 for dataset in datasets:
     if args.network:
-        assert args.dataset, "if you define specific network(s), you must difine their dataset."
+        assert args.dataset, "if you define specific network(s), you must define their dataset."
         networks = args.network
         dataset_folder = ''
     else:
@@ -112,7 +113,7 @@ for dataset in datasets:
             try:
                 eran = ERAN(out_tensor, sess)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e)]) + '\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -138,7 +139,7 @@ for dataset in datasets:
             try:
                 eran = ERAN(model, is_onnx=is_onnx)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e)]) + '\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -194,7 +195,7 @@ for dataset in datasets:
                 label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, True, testing=True)
 
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error message: ' + str(e)]) + '\n')
+                tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -228,8 +229,8 @@ for dataset in datasets:
                 #print(pred)
             pred_eran = np.asarray([(i+j)/2 for i, j in zip(nlb[-1], nub[-1])])
             pred_model = np.asarray(pred[-1]).reshape(-1)
-            if len(pred_eran) != len(pred):
-                tested_file.write(', '.join([dataset, network, domain, 'predictions have not the same number of labels. ERAN: ' + len(pred_eran) + ' model: ' + len(pred)]) + '\n')
+            if len(pred_eran) != len(pred_model):
+                tested_file.write(', '.join([dataset, network, domain, 'predictions have not the same number of labels. ERAN: ' + str(len(pred_eran)) + ' model: ' + str(len(pred_model))]) + '\n\n\n')
                 tested_file.flush()
                 continue
             difference = pred_eran - pred_model
@@ -237,7 +238,7 @@ for dataset in datasets:
                 tested_file.write(', '.join([dataset, network, domain, 'success']) + '\n')
                 tested_file.flush()
             else:
-                tested_file.write(', '.join([dataset, network, domain, str(pred_eran), str(pred_model)]) + '\n')
+                tested_file.write(', '.join([dataset, network, domain, '\neran', str(pred_eran), '\nmodel', str(pred_model)]) + '\n')
                 tested_file.flush()
                 for i in range(len(nlb)):
                     pred_eran = np.asarray([(l+u)/2 for l, u in zip(nlb[i], nub[i])])
@@ -246,8 +247,7 @@ for dataset in datasets:
                         offset = 2
                     pred_model = np.asarray(pred[i + offset]).reshape(-1)
                     difference = pred_eran - pred_model
-
                     if not np.all([abs(elem) < .001 for elem in difference]):
-                        tested_file.write(', '.join([dataset, network, domain, 'started divergence at layer', str(i), 'outputname', str(output_info[i][0]), 'difference', str(difference)]) + '\n')
+                        tested_file.write(', '.join([dataset, network, domain, 'started divergence at layer', str(i), 'outputname', str(output_info[i+1][0]), '\ndifference', str(difference)]) + '\n\n\n')
                         tested_file.flush()
                         break

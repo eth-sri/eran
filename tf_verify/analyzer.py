@@ -41,7 +41,7 @@ class layers:
         return self.ffn_counter + self.conv_counter + self.residual_counter + self.maxpool_counter
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing = False):
         """
         Arguments
         ---------
@@ -67,6 +67,7 @@ class Analyzer:
         self.timeout_milp = timeout_milp
         self.specnumber = specnumber
         self.use_area_heuristic = use_area_heuristic
+        self.testing = testing
 
     
     def __del__(self):
@@ -82,9 +83,9 @@ class Analyzer:
         nub = []
         for i in range(1, len(self.ir_list)):
             if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
             else:
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
         return element, nlb, nub
     
     
@@ -103,11 +104,6 @@ class Analyzer:
             output_size = self.ir_list[-1].output_length
         else:
             output_size = reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
-
-        #bounds = elina_abstract0_to_box(self.man,element)
-        #for i in range(output_size):
-        #    print("inf", bounds[i].contents.inf.contents.val.dbl, "sup", bounds[i].contents.sup.contents.val.dbl)
-        #elina_interval_array_free(bounds,output_size)
     
         dominant_class = -1
         if self.specnumber==0:

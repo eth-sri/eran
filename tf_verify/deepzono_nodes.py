@@ -9,7 +9,6 @@ from elina_interval import *
 from elina_abstract0 import *
 from elina_manager import *
 from elina_dimension import *
-from ctypes.util import find_library
 from functools import reduce
 from ai_milp import *
 
@@ -141,7 +140,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp,
     """
     
     offset, length = self.abstract_information
-    layerno = nn.ffn_counter + nn.conv_counter
+    layerno = nn.calc_layerno()
     if layerno==0 or nn.last_layer=='Conv2D':
         element = relu_zono_layerwise(man,True,element,offset, length) 
     else:
@@ -316,7 +315,7 @@ class DeepzonoMatmul:
         return man, True, element, offset+old_length, matrix_xpp, new_length, offset, old_length
     
     
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with ffn_matmult_without_bias_zono
         
@@ -337,7 +336,8 @@ class DeepzonoMatmul:
         #if self.refine == 'True':
         #    refine_after_affine(self, man, element, nlb, nub)
 
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -362,7 +362,7 @@ class DeepzonoAdd:
         self.bias = np.ascontiguousarray(bias, dtype=np.double)
     
     
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with ffn_add_bias_zono
         
@@ -380,7 +380,8 @@ class DeepzonoAdd:
         """
         offset, old_length = self.abstract_information
         element = ffn_add_bias_zono(man, True, element, offset, self.bias, old_length)
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         return element
 
 
@@ -406,7 +407,7 @@ class DeepzonoSub:
         self.is_minuend = is_minuend
 
 
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with ffn_sub_bias_zono
 
@@ -424,7 +425,8 @@ class DeepzonoSub:
         """
         offset, old_length = self.abstract_information
         element = ffn_sub_bias_zono(man, True, element, offset, self.bias, self.is_minuend, old_length)
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         return element
 
 
@@ -449,7 +451,7 @@ class DeepzonoMul:
         self.bias = np.ascontiguousarray(bias, dtype=np.double)
 
 
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with ffn_mul_bias_zono
 
@@ -467,7 +469,8 @@ class DeepzonoMul:
         """
         offset, old_length = self.abstract_information
         element = ffn_mul_bias_zono(man, True, element, offset, self.bias, old_length)
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         return element
 
 
@@ -495,7 +498,7 @@ class DeepzonoAffine(DeepzonoMatmul):
         #self.refine = refine    
 
     
-    def transformer(self, nn, man, element,nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element,nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with ffn_matmult_zono
         
@@ -578,7 +581,7 @@ class DeepzonoConv:
         
     
     
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with conv_matmult_zono, without bias
         
@@ -596,7 +599,8 @@ class DeepzonoConv:
         """
         offset, old_length  = self.abstract_information
         element = conv_matmult_zono(*self.get_arguments(man, element))
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -627,7 +631,7 @@ class DeepzonoConvbias(DeepzonoConv):
         self.bias = np.ascontiguousarray(bias, dtype=np.double)
     
     
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with conv_matmult_zono, with bias
 
@@ -694,7 +698,7 @@ class DeepzonoNonlinearity:
 
 
 class DeepzonoRelu(DeepzonoNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with relu_zono_layerwise
         
@@ -710,13 +714,13 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         output : ElinaAbstract0Ptr
             abstract element after the transformer
         """
-        offset, old_length = self.abstract_information
+        offset, length = self.abstract_information
+        add_bounds(man, element, nlb, nub, length, offset)
         if refine==True:
             element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp, timeout_milp)
         else:
             element = relu_zono_layerwise(*self.get_arguments(man, element))
 
-        add_bounds(man, element, nlb, nub, self.output_length, offset)
         if nn.last_layer=='Affine':
            nn.ffn_counter+=1
         elif nn.last_layer == 'Conv2D':
@@ -727,7 +731,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
 
 
 class DeepzonoSigmoid(DeepzonoNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with sigmoid_zono_layerwise
         
@@ -745,14 +749,15 @@ class DeepzonoSigmoid(DeepzonoNonlinearity):
         """
         offset, old_length = self.abstract_information
         element = sigmoid_zono_layerwise(*self.get_arguments(man, element))
-        add_bounds(man, element, nlb, nub, self.output_length, offset)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset)
         return element
 
 
 
 
 class DeepzonoTanh(DeepzonoNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with tanh_zono_layerwise
         
@@ -770,7 +775,8 @@ class DeepzonoTanh(DeepzonoNonlinearity):
         """
         offset, old_length = self.abstract_information
         element = tanh_zono_layerwise(*self.get_arguments(man, element))
-        add_bounds(man, element, nlb, nub, self.output_length, offset)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset)
         return element
 
 
@@ -806,7 +812,7 @@ class DeepzonoMaxpool:
         
     
     
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         transforms element with maxpool_zono
         
@@ -826,7 +832,8 @@ class DeepzonoMaxpool:
         h, w    = self.window_size
         H, W, C = self.input_shape
         element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -846,7 +853,7 @@ class DeepzonoDuplicate:
         self.num_var    = num_var
         
         
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         adds self.num_var dimensions to element and then fills these dimensions with zono_copy_section
         
@@ -885,7 +892,7 @@ class DeepzonoResadd:
         add_input_output_information(self, input_names, output_name, output_shape)
         
     
-    def transformer(self, nn, man, element, nlb,nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         """
         uses zono_add to add two sections from element together and removes the section that is defined by self.abstract_information[2]
         the result of the addition is stored in the section defined by self.abstract_information[:2]
@@ -905,7 +912,9 @@ class DeepzonoResadd:
         dst_offset, num_var = self.abstract_information[:2]
         src_offset = self.abstract_information[2]
         zono_add(man, element, dst_offset, src_offset, num_var)
-        add_bounds(man, element, nlb, nub, self.output_length, dst_offset+num_var)
+
+        if testing or refine:
+            add_bounds(man, element, nlb, nub, self.output_length, dst_offset+num_var)
         if dst_offset == src_offset:
             return element
         else:
@@ -925,6 +934,6 @@ class DeepzonoGather:
         add_input_output_information(self, [input_names[0]], output_name, output_shape)
         self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
 
-    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp):
+    def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, testing):
         handle_gather_layer(man, True, element, self.indexes)
         return element
