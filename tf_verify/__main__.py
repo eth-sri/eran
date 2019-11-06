@@ -311,12 +311,12 @@ elif zonotope_bool:
     #print("nub ",nub)
     if(perturbed_label!=-1):
          print("Verified")
-    #elif(complete==True):
-    #     verified_flag,adv_image = verify_network_with_milp_zonotope(nn, zonotope, label, nlb, nub)
-    #     if(verified_flag==True):
-    #         print("Verified")
-    #     else:
-    #         print("Failed")
+    elif(complete==True):
+         verified_flag,adv_image = verify_network_with_milp(nn, zonotope, [],perturbed_label, nlb, nub)
+         if(verified_flag==True):
+             print("Verified")
+         else:
+             print("Failed")
     else:
          print("Failed")
 else:

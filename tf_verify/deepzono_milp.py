@@ -264,7 +264,7 @@ def handle_relu(model,var_list,layerno,affine_counter,num_neurons,lbi,ubi,use_mi
 
 def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
-
+    
     model = Model("milp")
 
     model.setParam("OutputFlag",0)
@@ -280,14 +280,39 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
     nn.residual_couter = 0
     nn.maxpool_counter = 0
     var_list = []
-
-    # TODO zonotope
-    for i in range(num_pixels):
-        var_name = "x" + str(i)
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb = LB_N0[i], ub=UB_N0[i], name=var_name)
-        var_list.append(var)
-
     counter = 0
+    # TODO zonotope
+    if len(UB_N0)==0:
+        num_pixels = nn.zonotope.shape[0]
+        num_error_terms = nn.zonotope.shape[1]
+        for j in range(num_error_terms-1):
+            var_name = "x" + str(j)
+            var = model.addVar(vtype=GRB.CONTINUOUS, lb = -1, ub=1, name=var_name)
+            var_list.append(var)
+        counter = num_error_terms-1
+        for i in range(num_pixels):
+            lower_bound = nn.zonotope[i][0]
+            upper_bound = lower_bound
+            for j in range(1,num_error_terms):
+                lower_bound = lower_bound - abs(nn.zonotope[i][j])
+                upper_bound = upper_bound + abs(nn.zonotope[i][j])
+            var_name = "x" + str(counter+i)  
+            var = model.addVar(vtype=GRB.CONTINUOUS, lb = lower_bound, ub=upper_bound, name=var_name)
+            var_list.append(var)
+            expr = LinExpr()
+            expr += -1 * var_list[counter + i]
+            for j in range(num_error_terms-1):
+                expr.addTerms(nn.zonotope[i][j+1],var_list[j])        
+       
+            expr.addConstant(nn.zonotope[i][0])
+            model.addConstr(expr, GRB.EQUAL, 0)
+        
+    else:
+        for i in range(num_pixels):
+            var_name = "x" + str(i)
+            var = model.addVar(vtype=GRB.CONTINUOUS, lb = LB_N0[i], ub=UB_N0[i], name=var_name)
+            var_list.append(var)
+
     #for i in range(numlayer):
     #    if(nn.layertypes[i]=='SkipNet1'):
     #        start = i+1
@@ -305,7 +330,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
     #        nn.maxpool_counter+=1
 
     start_counter = []
-    start_counter.append(0)
+    start_counter.append(counter)
     for i in range(numlayer):
         if(nn.layertypes[i] in ['SkipCat']):
             continue
@@ -314,6 +339,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
+            
             counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
 
 
