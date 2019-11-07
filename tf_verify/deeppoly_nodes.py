@@ -202,7 +202,7 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_first_relu_layer(man, element, *self.get_arguments())
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -226,7 +226,7 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_first_sigmoid_layer(man, element, *self.get_arguments())
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -250,7 +250,7 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_first_tanh_layer(man, element, *self.get_arguments())
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -288,14 +288,13 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
                 timeout = timeout_milp
             else:
                 timeout = timeout_lp
-            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
 
             nlb[-1] = resl
             nub[-1] = resu
 
 
-            for i in range(len(indices)):
-                j = indices[i]
+            for j in indices:
                 update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
 
         elina_interval_array_free(bounds,num_neurons)
@@ -321,7 +320,7 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -345,7 +344,7 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
             abstract element after the transformer
             """
         ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -397,15 +396,13 @@ class DeeppolyReluNodeLast(DeeppolyNode):
                 timeout = timeout_milp
             else:
                 timeout = timeout_lp
-            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
-            print("resl ", resl, "resu ", resu)
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
             nlb[-1] = resl
             nub[-1] = resu
             lbi = nlb[layerno]
             ubi = nub[layerno]
             #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
-            for i in range(len(indices)):
-                j = indices[i]
+            for j in indices:
                 update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
 
 
@@ -446,7 +443,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
                     abstract element after the transformer 
         """
         ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_area_heuristic)
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -484,7 +481,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
                     abstract element after the transformer 
         """
         ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_area_heuristic)
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         return element
@@ -568,7 +565,7 @@ class DeeppolyConv2dNodeIntermediate:
             numconvslayers = sum('Conv2D' in l for l in nn.layertypes)
             if numconvslayers-nn.conv_counter <= 1:
 
-                resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+                resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
 
                 nlb[-1] = resl
                 nub[-1] = resu
@@ -601,7 +598,7 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
             abstract element after the transformer 
         """
         conv_handle_first_layer(man, element, *self.get_arguments())
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.conv_counter+=1
         return element
@@ -645,7 +642,7 @@ class DeeppolyMaxpool:
             abstract element after the transformer 
         """
         handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         nn.maxpool_counter += 1
         return element
@@ -671,7 +668,7 @@ class DeeppolyResadd:
              handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         else:
              handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
-        if testing:
+        if testing or refine:
             calc_bounds(man, element, nn, nlb, nub)
         # print("Residual ", nn.layertypes[layerno],layerno)
         nn.residual_counter +=  + 1

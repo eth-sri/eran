@@ -98,6 +98,16 @@ class Optimizer:
                     i += 2
                 else:
                     filters, image_shape, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                    nn.numfilters.append(filters.shape[3])
+                    nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                    nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                    nn.strides.append([strides[0],strides[1]])
+                    nn.padding.append([pad_top, pad_left])
+                    nn.out_shapes.append(output_shape)
+                    nn.filters.append(filters)
+
+                    nn.layertypes.append('Conv2D')
+                    nn.numlayer+=1
                     output.append(DeepzonoConv(image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape))
                     i += 1
             elif self.operations[i] == "Conv":
@@ -129,6 +139,13 @@ class Optimizer:
                 i += 1
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                #nn.pool_size.append(window_size)
+                #nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                #nn.strides.append([strides[0],strides[1]])
+                #nn.out_shapes.append(output_shape)
+                #nn.padding.append([pad_top, pad_left])
+                #nn.layertypes.append('MaxPooling2D')
+                #nn.numlayer+=1
                 output.append(DeepzonoMaxpool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape))
                 i += 1
             elif self.operations[i] == "Resadd":
@@ -398,6 +415,13 @@ class Optimizer:
 
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                #nn.pool_size.append(window_size)
+                #nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                #nn.strides.append([strides[0],strides[1]])
+                #nn.out_shapes.append(output_shape)
+                #nn.padding.append([pad_top, pad_left])
+                #nn.layertypes.append('MaxPooling2D')
+                #nn.numlayer+=1
                 output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
                 i += 1
 

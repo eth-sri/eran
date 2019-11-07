@@ -44,7 +44,7 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_s
     return start
 
 
-def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, lbi, ubi, lbi_prev, ubi_prev, use_milp):
+def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, out_shape, lbi, ubi, lbi_prev, ubi_prev, use_milp):
 
     start = len(var_list)
     num_neurons = input_shape[0]*input_shape[1]*input_shape[2]
@@ -57,9 +57,9 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
             var = model.addVar(vtype=GRB.BINARY, name=var_name)
 
             var_list.append(var)
-    o1 = int(input_shape[0]/pool_size[0])
-    o2 = int(input_shape[1]/pool_size[1])
-    o3 = int(input_shape[2]/pool_size[2])
+    o1 = out_shape[0]
+    o2 = out_shape[1]
+    o3 = out_shape[2]
     output_size = o1*o2*o3
 
     for j in range(output_size):
@@ -340,10 +340,10 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             filter_size = nn.filter_size[nn.conv_counter]
             numfilters = nn.numfilters[nn.conv_counter]
-            out_shape = nn.out_shapes[nn.conv_counter]
-            padding = nn.padding[nn.conv_counter]
-            strides = nn.strides[nn.conv_counter]
-            input_shape = nn.input_shape[nn.conv_counter +nn.maxpool_counter]
+            out_shape = nn.out_shapes[nn.conv_counter]# + nn.maxpool_counter]
+            padding = nn.padding[nn.conv_counter]# + nn.maxpool_counter]
+            strides = nn.strides[nn.conv_counter]# + nn.maxpool_counter]
+            input_shape = nn.input_shape[nn.conv_counter]# +nn.maxpool_counter]
             num_neurons = np.prod(out_shape)
 
             index = nn.predecessors[i+1][0]
@@ -361,9 +361,13 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
         elif(nn.layertypes[i]=='MaxPooling2D'):
             pool_size = nn.pool_size[nn.maxpool_counter]
             input_shape = nn.input_shape[nn.conv_counter + nn.maxpool_counter]
-            maxpool_lb = nn.maxpool_lb[nn.maxpool_counter]
-            maxpool_ub = nn.maxpool_ub[nn.maxpool_counter]
-            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, nlb[i],nub[i],maxpool_lb,maxpool_ub,use_milp)
+            out_shape = nn.out_shapes[nn.conv_counter + nn.maxpool_counter]
+
+            index = nn.predecessors[i+1][0]
+            counter = start_counter[index]
+
+            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, out_shape, nlb[i],nub[i], nlb[i-1], nlb[i-1],use_milp)
+            start_counter.append(counter)
             nn.maxpool_counter+=1
 
         elif nn.layertypes[i] in ['Resadd', 'Resaddnorelu']:
@@ -388,7 +392,10 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
     return counter, var_list, model
 
 
-def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, output_size, nlb, nub, use_milp, candidate_vars, timeout):
+def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, output_size, nlb, nub, use_milp, candidate_vars, timeout):
+
+    layerno = nn.ffn_counter +  nn.conv_counter + nn.residual_counter
+    abs_layer_count = nn.calc_layerno()
 
     is_conv = False
 
@@ -408,7 +415,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     candidate_length = len(candidate_vars)
     widths = np.zeros(candidate_length)
     avg_weight = np.zeros(candidate_length)
-    next_layer = nn.ffn_counter +  nn.conv_counter + nn.residual_counter + nn.maxpool_counter + 1
+    next_layer = nn.calc_layerno() + 1
 
     for i in range(candidate_length):
         ind = candidate_vars[i]

@@ -166,7 +166,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp,
             if((lbi[i]<0 and ubi[i]>0) or (lbi[i]>0)):
                  candidate_vars.append(i)
         #TODO handle residual layers here
-        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, length, nlb, nub, use_milp,  candidate_vars, timeout)
+        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, length, nlb, nub, use_milp,  candidate_vars, timeout)
         nlb[-1] = resl
         nub[-1] = resu
 
@@ -914,7 +914,7 @@ class DeepzonoResadd:
         zono_add(man, element, dst_offset, src_offset, num_var)
 
         if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, dst_offset+num_var)
+            add_bounds(man, element, nlb, nub, self.output_length, dst_offset)
         if dst_offset == src_offset:
             return element
         else:
