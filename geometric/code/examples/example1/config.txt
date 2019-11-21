@@ -1,0 +1,16 @@
+dataset				mnist
+noise			    0
+chunks 			    1
+inside_splits		1
+method 			    polyhedra
+spatial_transform 	Translation1d(-0.2,0.2)
+num_tests 		    1
+ub_estimate 		Triangle
+num_attacks		    20
+poly_eps		    0.0001
+num_threads 		20
+max_coeff		    20
+lp_samples		    1000
+num_poly_check 		50
+set			        test
+

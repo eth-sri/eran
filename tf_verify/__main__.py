@@ -1,8 +1,10 @@
 import sys
 sys.path.insert(0, '../ELINA/python_interface/')
+sys.path.insert(0, '../geometric/code/')
 import numpy as np
 import os
 from eran import ERAN
+from geometric_constraints import *
 from read_net_file import *
 from read_zonotope_file import read_zonotope
 import tensorflow as tf
@@ -144,8 +146,7 @@ parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for 
 parser.add_argument('--use_area_heuristic', type=str2bool, default=True,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
 parser.add_argument('--mean', nargs='+', type=float,  help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float,  help='the standard deviation used to normalize the data with')
-parser.add_argument('--data_dir', type=str, help='Directory which contains data')
-parser.add_argument('--data_root', type=str, help='Directory which contains data')
+parser.add_argument('--config', type=str, help='config location')
 parser.add_argument('--num_params', type=int, default=0, help='Number of transformation parameters')
 parser.add_argument('--num_tests', type=int, default=None, help='Number of images to test')
 parser.add_argument('--from_test', type=int, default=0, help='Number of images to test')
@@ -349,10 +350,11 @@ elif args.geometric:
     cver_box, cver_poly = [], []
 
     for i, test in enumerate(tests):
+        transform_attack_container = get_transform_attack_container(args.config)
         if args.test_idx is not None and i != args.test_idx:
             continue
-
-        attacks_file = os.path.join(args.data_dir, 'attack_{}.csv'.format(i))
+        transform_attack_i = transform_attack_container.get_transform_attack_for(i)
+        attacks = transform_attack_i.attacks
         if args.num_tests is not None and i >= args.num_tests:
             break
         print('Test {}:'.format(i))
@@ -395,34 +397,32 @@ elif args.geometric:
         attack_imgs, checked, attack_pass = [], [], 0
         cex_found = False
         if args.attack:
-            with open(attacks_file, 'r') as fin:
-                lines = fin.readlines()
-                for j in tqdm(range(0, len(lines), args.num_params + 1)):
-                    params = [float(line[:-1]) for line in lines[j:j + args.num_params]]
-                    tokens = lines[j + args.num_params].split(',')
-                    values = np.array(list(map(float, tokens)))
+            for j in tqdm(range(0, len(attacks), args.num_params + 1)):
+                params = [float(line[:-1]) for line in attacks[j:j + args.num_params]]
+                tokens = attacks[j + args.num_params].split(',')
+                values = np.array(list(map(float, tokens)))
 
-                    attack_lb = values[::2]
-                    attack_ub = values[1::2]
+                attack_lb = values[::2]
+                attack_ub = values[1::2]
 
-                    if is_trained_with_pytorch:
-                        normalize(attack_lb, means, stds, args.dataset, is_conv)
-                        normalize(attack_ub, means, stds, args.dataset, is_conv)
-                    else:
-                        attack_lb -= 0.5
-                        attack_ub -= 0.5
-                    attack_imgs.append((params, attack_lb, attack_ub))
-                    checked.append(False)
+                if is_trained_with_pytorch:
+                    normalize(attack_lb, means, stds, args.dataset, is_conv)
+                    normalize(attack_ub, means, stds, args.dataset, is_conv)
+                else:
+                    attack_lb -= 0.5
+                    attack_ub -= 0.5
+                attack_imgs.append((params, attack_lb, attack_ub))
+                checked.append(False)
 
-                    predict_label, _, _, _ = eran.analyze_box(
-                        attack_lb[:dim], attack_ub[:dim], 'deeppoly',
-                        args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0)
-                    if predict_label != int(test[0]):
-                        print('counter-example, params: ', params, ', predicted label: ', predict_label)
-                        cex_found = True
-                        break
-                    else:
-                        attack_pass += 1
+                predict_label, _, _, _ = eran.analyze_box(
+                    attack_lb[:dim], attack_ub[:dim], 'deeppoly',
+                    args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0)
+                if predict_label != int(test[0]):
+                    print('counter-example, params: ', params, ', predicted label: ', predict_label)
+                    cex_found = True
+                    break
+                else:
+                    attack_pass += 1
         print('tot attacks: ', len(attack_imgs))
         specs_file = os.path.join(args.data_dir, '{}.csv'.format(i))
         with open(specs_file, 'r') as fin:

@@ -98,7 +98,7 @@ class ERAN:
             if the analysis is succesfull (it could prove robustness for this box) then the index of the class that dominates is returned
             if the analysis couldn't prove robustness then -1 is returned
         """
-        assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
+        assert domain in ['deepzono', 'refinezono'], "domain isn't valid, must be 'deepzono' or 'refinezono'"
         nn = layers()
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
