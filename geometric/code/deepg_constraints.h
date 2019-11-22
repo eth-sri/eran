@@ -24,8 +24,8 @@ class TransformAttackContainer{
                                     int nChannels,
                                     string calc_type,
                                     string images,
-                                    string transformName,
-                                    string pixelTransformName,
+                                    SpatialTransformation& spatialTransformation,
+                                    PixelTransformation& pixelTransformation,
                                     bool debug,
                                     vector<vector<double> > splitPoints);
 

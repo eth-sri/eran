@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
     vector<vector<double>> splitPoints;
     string set = "test";
 
-    ifstream config(out_dir + "/config.txt");
+    ifstream config(out_dir);
     while (config >> name >> value) {
         if (name == "" && value == "") {
             continue;
@@ -391,20 +391,20 @@ int main(int argc, char** argv) {
 
 
 TransformAttackContainer::TransformAttackContainer(double noise,
-                                    int n_splits,
-                                    int inside_splits,
-                                    int nRows,
-                                    int nCols,
-                                    int nChannels,
-                                    string calc_type,
-                                    string images,
-                                    string transformName,
-                                    string pixelTransformName,
-                                    bool debug,
-                                    vector<vector<double> > splitPoints)
-                                    : spatialTransformation(*getSpatialTransformation(transformName)),
-                                    pixelTransformation(*getPixelTransformation(pixelTransformName))
-                                    {
+                                        int n_splits,
+                                        int inside_splits,
+                                        int nRows,
+                                        int nCols,
+                                        int nChannels,
+                                        string calc_type,
+                                        string images,
+                                        SpatialTransformation& spatial_transform,
+                                        PixelTransformation& pixel_transform,
+                                        bool debug,
+                                        vector<vector<double> > splitPoints)
+                                        : spatialTransformation(spatial_transform),
+                                        pixelTransformation(pixel_transform)
+                                        {
     this -> noise = noise;
     this -> n_splits = n_splits;
     this -> inside_splits = inside_splits;
@@ -420,7 +420,7 @@ TransformAttackContainer::TransformAttackContainer(double noise,
 }
 
 
-TransformAttackContainer* getTransformAttackContainer(string config_location) {
+TransformAttackContainer* getTransformAttackContainer(char* config_location) {
     double noise = 0;
     int n_splits = 1, inside_splits = 1;
     string calc_type = "baseline", dataset = "mnist", transformName, pixelTransformName;
@@ -485,7 +485,7 @@ TransformAttackContainer* getTransformAttackContainer(string config_location) {
 
     assert(dataset == "mnist" || dataset == "fashion" || dataset == "cifar10" || dataset == "imagenet");
 
-    string images = "datasets/" + dataset + "_" + set + ".csv";
+    string images = "../geometric/code/datasets/" + dataset + "_" + set + ".csv";
 
 	int nRows, nCols;
 	if (dataset == "cifar10") {
@@ -502,6 +502,9 @@ TransformAttackContainer* getTransformAttackContainer(string config_location) {
 
     int nChannels = (dataset == "mnist" || dataset == "fashion") ? 1 : 3;
 
+    SpatialTransformation& spatial_transform = *getSpatialTransformation(transformName);
+    PixelTransformation& pixel_transform = *getPixelTransformation(pixelTransformName);
+
     return new TransformAttackContainer(noise,
                                     n_splits,
                                     inside_splits,
@@ -509,24 +512,21 @@ TransformAttackContainer* getTransformAttackContainer(string config_location) {
                                     nCols,
                                     nChannels,
                                     calc_type,
-                                    transformName,
-                                    pixelTransformName,
                                     images,
+                                    spatial_transform,
+                                    pixel_transform,
                                     debug,
                                     splitPoints);
 }
 
-
 void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number) {
     double totalPolyRuntime = 0, totalBoxRuntime = 0;
-
     ifstream fin(images);
     string line;
-    for (size_t j = 0; j < image_number; j++){
+    for (size_t j = 0; j <= image_number; j++){
         getline(fin, line);
     }
     Image img = Image(nRows, nCols, nChannels, line, noise);
-
     HyperBox combinedDomain = HyperBox::concatenate(spatialTransformation.domain, pixelTransformation.domain);
 
     auto verificationChunks = combinedDomain.split(n_splits, splitPoints);
