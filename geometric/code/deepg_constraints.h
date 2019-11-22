@@ -45,6 +45,19 @@ class TransformAttackContainer{
         // ---- Methods
         void setTransformationsAndAttacksFor(int image_number);
 };
+TransformAttackContainer* getTransformAttackContainer(char* config);
 
-TransformAttackContainer* getTransformAttackContainer(string config);
+void setTransformationsAndAttacksFor(TransformAttackContainer& container, int image_number) {
+    container.setTransformationsAndAttacksFor(image_number);
+};
+
+int* getTransformDimension(TransformAttackContainer& container) {
+    int result[2] = {container.transform_vector.size(), container.transform_vector[0].size()};
+    return result;
+};
+
+int* getAttackDimension(TransformAttackContainer& container) {
+    int result[2] = {container.attack_vector.size(), container.attack_vector[0].size()};
+    return result;
+};
 }
