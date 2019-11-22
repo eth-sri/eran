@@ -349,12 +349,12 @@ elif args.geometric:
     correct_box, correct_poly = 0, 0
     cver_box, cver_poly = [], []
 
+    transform_attack_container = get_transform_attack_container(args.config)
     for i, test in enumerate(tests):
-        transform_attack_container = get_transform_attack_container(args.config)
+        set_transform_attack_for(transform_attack_container, i)
         if args.test_idx is not None and i != args.test_idx:
             continue
-        transform_attack_i = transform_attack_container.get_transform_attack_for(i)
-        attacks = transform_attack_i.attacks
+        attacks = get_attack(transform_attack_container)
         if args.num_tests is not None and i >= args.num_tests:
             break
         print('Test {}:'.format(i))
