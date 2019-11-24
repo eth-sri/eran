@@ -64,7 +64,8 @@ vector<pair<PointD, Image>> generateAttacks(
 }
 
 vector<pair<PointD, Image>> generateAttacksOutVector(
-        vector<vector<double>> out,
+        vector<double> &attack_param_vector,
+        vector<vector<double>> &attack_image_vector,
         const HyperBox& combinedDomain,
         const SpatialTransformation& spatialTransformation,
         const PixelTransformation& pixelTransformation,
@@ -92,10 +93,9 @@ vector<pair<PointD, Image>> generateAttacksOutVector(
             }
         }
         for (double param : params.x) {
-          vector<double> p {param};
-		  out.push_back(p);
+		  attack_param_vector.push_back(param);
         }
-        out.push_back(newImage.to_vector());
+        attack_image_vector.push_back(newImage.to_vector());
         //newImage.print_ascii();
         ret.emplace_back(params, newImage);
     }
@@ -542,11 +542,10 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
     Statistics counter;
 
 
-    vector<vector<double>> transform_vector;
-    vector<vector<double>> attack_vector;
     auto attacks = generateAttacksOutVector(
-            attack_vector, combinedDomain, spatialTransformation, pixelTransformation,
+            attack_param_vector, attack_image_vector, combinedDomain, spatialTransformation, pixelTransformation,
             interpolationTransformation, img, Constants::NUM_ATTACKS);
+
     vector<bool> checked(attacks.size(), false);
     vector<bool> checkedPoly(attacks.size(), false);
     vector<bool> checkedNumeric(attacks.size(), false);
@@ -626,6 +625,5 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
 
     sanityChecks(checked, checkedNumeric, checkedPoly, calc_type);
 
-    this -> transform_vector = transform_vector;
-    this -> attack_vector = attack_vector;
+    cout << attack_param_vector[0] << endl;
 }

@@ -354,7 +354,9 @@ elif args.geometric:
         set_transform_attack_for(transform_attack_container, i)
         if args.test_idx is not None and i != args.test_idx:
             continue
-        attacks = get_attack(transform_attack_container)
+        attack_params = get_attack_params(transform_attack_container)
+        print(attack_params[0])
+        print(len(attack_params))
         if args.num_tests is not None and i >= args.num_tests:
             break
         print('Test {}:'.format(i))

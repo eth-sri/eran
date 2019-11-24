@@ -40,7 +40,8 @@ class TransformAttackContainer{
         const InterpolationTransformation& interpolationTransformation = InterpolationTransformation();
 
         // ---- Members set by Methods
-        vector<vector<double> > transform_vector, attack_vector;
+        vector<double> attack_param_vector;
+        vector<vector<double> > transform_vector, attack_image_vector;
 
         // ---- Methods
         void setTransformationsAndAttacksFor(int image_number);
@@ -51,13 +52,24 @@ void setTransformationsAndAttacksFor(TransformAttackContainer& container, int im
     container.setTransformationsAndAttacksFor(image_number);
 };
 
-int* getTransformDimension(TransformAttackContainer& container) {
-    int result[2] = {container.transform_vector.size(), container.transform_vector[0].size()};
-    return result;
+double* get_attack_params(TransformAttackContainer& container) {
+    return container.attack_param_vector.data();
 };
 
-int* getAttackDimension(TransformAttackContainer& container) {
-    int result[2] = {container.attack_vector.size(), container.attack_vector[0].size()};
+int get_attack_params_dim(TransformAttackContainer& container) {
+    return container.attack_param_vector.size();
+};
+
+double* get_attack_images(TransformAttackContainer& container) {
+    return container.attack_image_vector.data();
+};
+
+int get_attack_images_dim(TransformAttackContainer& container) {
+    return container.attack_image_vector.size();
+};
+
+int* getTransformDimension(TransformAttackContainer& container) {
+    int result[2] = {container.transform_vector.size(), container.transform_vector[0].size()};
     return result;
 };
 }
