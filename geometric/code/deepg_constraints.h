@@ -40,8 +40,7 @@ class TransformAttackContainer{
         const InterpolationTransformation& interpolationTransformation = InterpolationTransformation();
 
         // ---- Members set by Methods
-        vector<double> attack_param_vector;
-        vector<vector<double> > transform_vector, attack_image_vector;
+        vector<vector<double> > transform_vector, attack_param_vector, attack_image_vector;
 
         // ---- Methods
         void setTransformationsAndAttacksFor(int image_number);
@@ -52,24 +51,33 @@ void setTransformationsAndAttacksFor(TransformAttackContainer& container, int im
     container.setTransformationsAndAttacksFor(image_number);
 };
 
-double* get_attack_params(TransformAttackContainer& container) {
+// this works because vectors are continuous in memory
+vector<double>* get_attack_params(TransformAttackContainer& container) {
     return container.attack_param_vector.data();
 };
 
-int get_attack_params_dim(TransformAttackContainer& container) {
+int get_attack_params_dim_0(TransformAttackContainer& container) {
     return container.attack_param_vector.size();
 };
 
-double* get_attack_images(TransformAttackContainer& container) {
+int get_attack_params_dim_1(TransformAttackContainer& container) {
+    return container.attack_param_vector[0].size();
+};
+
+vector<double>* get_attack_images(TransformAttackContainer& container) {
     return container.attack_image_vector.data();
 };
 
-int get_attack_images_dim(TransformAttackContainer& container) {
+int get_attack_images_dim_0(TransformAttackContainer& container) {
     return container.attack_image_vector.size();
+};
+
+int get_attack_images_dim_1(TransformAttackContainer& container) {
+    return container.attack_image_vector[0].size();
 };
 
 int* getTransformDimension(TransformAttackContainer& container) {
     int result[2] = {container.transform_vector.size(), container.transform_vector[0].size()};
     return result;
 };
-}
+} // end extern "C"

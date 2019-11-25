@@ -48,58 +48,71 @@ def get_transformation_dimensions(container):
     return dims
 
 
+def get_attack_params_dim_0(container):
+    try:
+        get_attack_params_dim_0_cpp = geometric_api.get_attack_params_dim_0
+        get_attack_params_dim_0_cpp.restype = c_int
+        get_attack_params_dim_0_cpp.argtypes = [TransformAttackContainerPtr]
+        dim = get_attack_params_dim_0_cpp(container)
+    except:
+        print('get_attack_params_dim did not work')
+    return dim
+
+
+def get_attack_params_dim_1(container):
+    try:
+        get_attack_params_dim_1_cpp = geometric_api.get_attack_params_dim_1
+        get_attack_params_dim_1_cpp.restype = c_int
+        get_attack_params_dim_1_cpp.argtypes = [TransformAttackContainerPtr]
+        dim = get_attack_params_dim_1_cpp(container)
+    except:
+        print('get_attack_params_dim did not work')
+    return dim
+
+
 def get_attack_params(container):
     try:
         get_attack_params_cpp = geometric_api.get_attack_params
-        get_attack_params_cpp.restype = POINTER(c_double)
+        get_attack_params_cpp.restype = POINTER(POINTER(c_double))
         get_attack_params_cpp.argtypes = [TransformAttackContainerPtr]
         pointer = get_attack_params_cpp(container)
     except:
         print('get_attack_params did not work')
-    length = get_attack_params_dim(container)
-    return pointer[:length]
+    dim_0 = get_attack_params_dim_0(container)
+    dim_1 = get_attack_params_dim_1(container)
+    return [p[:dim_1] for p in pointer[:dim_0]]
 
 
-def get_attack_params_dim(container):
+def get_attack_images_dim_0(container):
     try:
-        get_attack_params_dim_cpp = geometric_api.get_attack_params_dim
-        get_attack_params_dim_cpp.restype = c_int
-        get_attack_params_dim_cpp.argtypes = [TransformAttackContainerPtr]
-        dim = get_attack_params_dim_cpp(container)
+        get_attack_images_dim_0_cpp = geometric_api.get_attack_images_dim_0
+        get_attack_images_dim_0_cpp.restype = c_int
+        get_attack_images_dim_0_cpp.argtypes = [TransformAttackContainerPtr]
+        dim = get_attack_images_dim_0_cpp(container)
     except:
-        print('get_attack_params_dim did not work')
+        print('get_attack_images_dim did not work')
+    return dim
+
+
+def get_attack_images_dim_1(container):
+    try:
+        get_attack_images_dim_1_cpp = geometric_api.get_attack_images_dim_1
+        get_attack_images_dim_1_cpp.restype = c_int
+        get_attack_images_dim_1_cpp.argtypes = [TransformAttackContainerPtr]
+        dim = get_attack_images_dim_1_cpp(container)
+    except:
+        print('get_attack_images_dim did not work')
     return dim
 
 
 def get_attack_images(container):
     try:
         get_attack_images_cpp = geometric_api.get_attack_images
-        get_attack_images_cpp.restype = POINTER(c_double)
+        get_attack_images_cpp.restype = POINTER(POINTER(c_double))
         get_attack_images_cpp.argtypes = [TransformAttackContainerPtr]
         pointer = get_attack_images_cpp(container)
     except:
         print('get_attack_images did not work')
-    length = get_attack_images_dim(container)
-    return pointer[:length]
-
-
-def get_attack_images_dim(container):
-    try:
-        get_attack_images_dim_cpp = geometric_api.get_attack_images_dim
-        get_attack_images_dim_cpp.restype = c_int
-        get_attack_images_dim_cpp.argtypes = [TransformAttackContainerPtr]
-        dim = get_attack_images_dim_cpp(container)
-    except:
-        print('get_attack_images_dim did not work')
-    return dim
-
-
-def get_attack_dimensions(container):
-    try:
-        get_attack_dimensions_cpp = geometric_api.getAttackDimension
-        get_attack_dimensions_cpp.restype = (c_int * 2)
-        get_attack_dimensions_cpp.argtypes = [TransformAttackContainerPtr]
-        dims = get_attack_dimensions_cpp(container)
-    except:
-        print('get_attack_dimensions did not work')
-    return dims
+    dim_0 = get_attack_images_dim_0(container)
+    dim_1 = get_attack_images_dim_1(container)
+    return [p[:dim_1] for p in pointer[:dim_0]]

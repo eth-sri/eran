@@ -64,7 +64,7 @@ vector<pair<PointD, Image>> generateAttacks(
 }
 
 vector<pair<PointD, Image>> generateAttacksOutVector(
-        vector<double> &attack_param_vector,
+        vector<vector<double>> &attack_param_vector,
         vector<vector<double>> &attack_image_vector,
         const HyperBox& combinedDomain,
         const SpatialTransformation& spatialTransformation,
@@ -92,9 +92,11 @@ vector<pair<PointD, Image>> generateAttacksOutVector(
                 }
             }
         }
+        vector<double> p;
         for (double param : params.x) {
-		  attack_param_vector.push_back(param);
+		  p.push_back(param);
         }
+		attack_param_vector.push_back(p);
         attack_image_vector.push_back(newImage.to_vector());
         //newImage.print_ascii();
         ret.emplace_back(params, newImage);

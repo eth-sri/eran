@@ -357,6 +357,10 @@ elif args.geometric:
         attack_params = get_attack_params(transform_attack_container)
         print(attack_params[0])
         print(len(attack_params))
+        attack_images = get_attack_images(transform_attack_container)
+        print(attack_images[0][0])
+        print(len(attack_images))
+        print(len(attack_images[0]))
         if args.num_tests is not None and i >= args.num_tests:
             break
         print('Test {}:'.format(i))
@@ -399,9 +403,9 @@ elif args.geometric:
         attack_imgs, checked, attack_pass = [], [], 0
         cex_found = False
         if args.attack:
-            for j in tqdm(range(0, len(attacks), args.num_params + 1)):
-                params = [float(line[:-1]) for line in attacks[j:j + args.num_params]]
-                tokens = attacks[j + args.num_params].split(',')
+            for j in tqdm(range(0, len(attack_params))):
+                params = attack_params[j]
+                tokens = attack_images[j]
                 values = np.array(list(map(float, tokens)))
 
                 attack_lb = values[::2]
