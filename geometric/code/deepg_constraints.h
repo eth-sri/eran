@@ -41,6 +41,7 @@ class TransformAttackContainer{
 
         // ---- Members set by Methods
         vector<vector<double> > transform_vector, attack_param_vector, attack_image_vector;
+        vector<int> transform_vector_dim_1;
 
         // ---- Methods
         void setTransformationsAndAttacksFor(int image_number);
@@ -49,6 +50,22 @@ TransformAttackContainer* getTransformAttackContainer(char* config);
 
 void setTransformationsAndAttacksFor(TransformAttackContainer& container, int image_number) {
     container.setTransformationsAndAttacksFor(image_number);
+};
+
+vector<double>* get_transformations(TransformAttackContainer& container) {
+    return container.transform_vector.data();
+};
+
+int get_transformations_dim_0(TransformAttackContainer& container) {
+    return container.transform_vector.size();
+};
+
+int* get_transformations_dim_1(TransformAttackContainer& container) {
+    container.transform_vector_dim_1.clear();
+    for (const auto v:container.transform_vector) {
+        container.transform_vector_dim_1.push_back(v.size());
+    }
+    return container.transform_vector_dim_1.data();
 };
 
 // this works because vectors are continuous in memory
@@ -74,10 +91,5 @@ int get_attack_images_dim_0(TransformAttackContainer& container) {
 
 int get_attack_images_dim_1(TransformAttackContainer& container) {
     return container.attack_image_vector[0].size();
-};
-
-int* getTransformDimension(TransformAttackContainer& container) {
-    int result[2] = {container.transform_vector.size(), container.transform_vector[0].size()};
-    return result;
 };
 } // end extern "C"

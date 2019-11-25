@@ -26,26 +26,39 @@ def set_transform_attack_for(container, i):
         print('set_transform_attack_for did not work')
 
 
+def get_transformation_dim_0(container):
+    try:
+        get_transformations_dim_0_cpp = geometric_api.get_transformations_dim_0
+        get_transformations_dim_0_cpp.restype = c_int
+        get_transformations_dim_0_cpp.argtypes = [TransformAttackContainerPtr]
+        dim = get_transformations_dim_0_cpp(container)
+    except:
+        print('get_transformation_dim_0 did not work')
+    return dim
+
+
+def get_transformation_dim_1(container, dim_0):
+    try:
+        get_transformations_dim_1_cpp = geometric_api.get_transformations_dim_1
+        get_transformations_dim_1_cpp.restype = POINTER(c_int)
+        get_transformations_dim_1_cpp.argtypes = [TransformAttackContainerPtr]
+        pointer = get_transformations_dim_1_cpp(container)
+    except:
+        print('get_transformation_dim_1 did not work')
+    return pointer[:dim_0]
+
+
 def get_transformations(container):
     try:
-        get_transformation_dimensions_cpp = geometric_api.getTransformDimension
-        get_transformation_dimensions_cpp.restype = ndpointer(c_double, flags="C_CONTIGUOUS")
+        get_transformation_dimensions_cpp = geometric_api.get_transformations
+        get_transformation_dimensions_cpp.restype = POINTER(POINTER(c_double))
         get_transformation_dimensions_cpp.argtypes = [TransformAttackContainerPtr]
-        dims = get_transformation_dimensions_cpp(container)
+        pointer = get_transformation_dimensions_cpp(container)
     except:
-        print('get_transformation_dimensions did not work')
-    return dims
-
-
-def get_transformation_dimensions(container):
-    try:
-        get_transformation_dimensions_cpp = geometric_api.getTransformDimension
-        get_transformation_dimensions_cpp.restype = (c_int * 2)
-        get_transformation_dimensions_cpp.argtypes = [TransformAttackContainerPtr]
-        dims = get_transformation_dimensions_cpp(container)
-    except:
-        print('get_transformation_dimensions did not work')
-    return dims
+        print('get_transformations did not work')
+    dim_0 = get_transformation_dim_0(container)
+    dim_1 = get_transformation_dim_1(container, dim_0)
+    return [p[:dim_1[i]] for i, p in enumerate(pointer[:dim_0])]
 
 
 def get_attack_params_dim_0(container):

@@ -355,12 +355,7 @@ elif args.geometric:
         if args.test_idx is not None and i != args.test_idx:
             continue
         attack_params = get_attack_params(transform_attack_container)
-        print(attack_params[0])
-        print(len(attack_params))
         attack_images = get_attack_images(transform_attack_container)
-        print(attack_images[0][0])
-        print(len(attack_images))
-        print(len(attack_images[0]))
         if args.num_tests is not None and i >= args.num_tests:
             break
         print('Test {}:'.format(i))
@@ -405,8 +400,7 @@ elif args.geometric:
         if args.attack:
             for j in tqdm(range(0, len(attack_params))):
                 params = attack_params[j]
-                tokens = attack_images[j]
-                values = np.array(list(map(float, tokens)))
+                values = attack_images[j]
 
                 attack_lb = values[::2]
                 attack_ub = values[1::2]
@@ -430,120 +424,122 @@ elif args.geometric:
                 else:
                     attack_pass += 1
         print('tot attacks: ', len(attack_imgs))
-        specs_file = os.path.join(args.data_dir, '{}.csv'.format(i))
-        with open(specs_file, 'r') as fin:
-            lines = fin.readlines()
-            print('Number of lines: ', len(lines))
-            assert len(lines) % k == 0
 
-            spec_lb = np.zeros(args.num_params + dim)
-            spec_ub = np.zeros(args.num_params + dim)
+        lines = get_transformations(transform_attack_container)
+        lines.append([])
+        print('Number of lines: ', len(lines))
+        assert len(lines) % k == 0
 
-            expr_size = args.num_params
-            lexpr_cst, uexpr_cst = [], []
-            lexpr_weights, uexpr_weights = [], []
-            lexpr_dim, uexpr_dim = [], []
+        spec_lb = np.zeros(args.num_params + dim)
+        spec_ub = np.zeros(args.num_params + dim)
 
-            ver_chunks_box, ver_chunks_poly, tot_chunks = 0, 0, 0
+        expr_size = args.num_params
+        lexpr_cst, uexpr_cst = [], []
+        lexpr_weights, uexpr_weights = [], []
+        lexpr_dim, uexpr_dim = [], []
 
-            for i, line in enumerate(lines):
-                if i % k < args.num_params:
-                    # read specs for the parameters
-                    values = np.array(list(map(float, line[:-1].split(' '))))
-                    assert values.shape[0] == 2
-                    param_idx = i % k
-                    spec_lb[dim + param_idx] = values[0]
-                    spec_ub[dim + param_idx] = values[1]
-                    if args.debug:
-                        print('parameter %d: [%.4f, %.4f]' % (param_idx, values[0], values[1]))
-                elif i % k == args.num_params:
-                    # read interval bounds for image pixels
-                    values = np.array(list(map(float, line[:-1].split(','))))
-                    spec_lb[:dim] = values[::2]
-                    spec_ub[:dim] = values[1::2]
-                    # if args.debug:
-                    #     show_ascii_spec(spec_lb, spec_ub)
-                elif i % k < k - 1:
-                    # read polyhedra constraints for image pixels
-                    tokens = line[:-1].split(' ')
-                    assert len(tokens) == 2 + 2 * args.num_params + 1
+        ver_chunks_box, ver_chunks_poly, tot_chunks = 0, 0, 0
 
-                    bias_lower, weights_lower = float(tokens[0]), list(map(float, tokens[1:1 + args.num_params]))
-                    assert tokens[args.num_params + 1] == '|'
-                    bias_upper, weights_upper = float(tokens[args.num_params + 2]), list(
-                        map(float, tokens[3 + args.num_params:]))
+        for i, line in enumerate(lines):
+            if i % k < args.num_params:
+                # read specs for the parameters
+                values = line
+                print(len(values))
+                assert len(values) == 2
+                param_idx = i % k
+                spec_lb[dim + param_idx] = values[0]
+                spec_ub[dim + param_idx] = values[1]
+                if args.debug:
+                    print('parameter %d: [%.4f, %.4f]' % (param_idx, values[0], values[1]))
+            elif i % k == args.num_params:
+                # read interval bounds for image pixels
+                values = line
+                spec_lb[:dim] = values[::2]
+                spec_ub[:dim] = values[1::2]
+                # if args.debug:
+                #     show_ascii_spec(spec_lb, spec_ub)
+            elif i % k < k - 1:
+                # read polyhedra constraints for image pixels
+                tokens = line
+                print(len(tokens))
+                print(2 + 2 * args.num_params + 1)
+                assert len(tokens) == 2 + 2 * args.num_params + 1
 
-                    assert len(weights_lower) == args.num_params
-                    assert len(weights_upper) == args.num_params
+                bias_lower, weights_lower = tokens[0], tokens[1:1 + args.num_params]
+                assert tokens[args.num_params + 1] == '|'
+                bias_upper, weights_upper = tokens[args.num_params + 2], tokens[3 + args.num_params:]
 
-                    lexpr_cst.append(bias_lower)
-                    uexpr_cst.append(bias_upper)
-                    for j in range(args.num_params):
-                        lexpr_dim.append(dim + j)
-                        uexpr_dim.append(dim + j)
-                        lexpr_weights.append(weights_lower[j])
-                        uexpr_weights.append(weights_upper[j])
+                assert len(weights_lower) == args.num_params
+                assert len(weights_upper) == args.num_params
+
+                lexpr_cst.append(bias_lower)
+                uexpr_cst.append(bias_upper)
+                for j in range(args.num_params):
+                    lexpr_dim.append(dim + j)
+                    uexpr_dim.append(dim + j)
+                    lexpr_weights.append(weights_lower[j])
+                    uexpr_weights.append(weights_upper[j])
+            else:
+                assert (len(line) == 0)
+                for p_idx in range(args.num_params):
+                    lexpr_cst.append(spec_lb[dim + p_idx])
+                    for l in range(args.num_params):
+                        lexpr_weights.append(0)
+                        lexpr_dim.append(dim + l)
+                    uexpr_cst.append(spec_ub[dim + p_idx])
+                    for l in range(args.num_params):
+                        uexpr_weights.append(0)
+                        uexpr_dim.append(dim + l)
+                if (is_trained_with_pytorch):
+                    normalize(spec_lb[:dim], means, stds, args.dataset, is_conv)
+                    normalize(spec_ub[:dim], means, stds, args.dataset, is_conv)
+                normalize_poly(args.num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights,
+                               uexpr_dim, means, stds, args.dataset)
+
+                for attack_idx, (attack_params, attack_lb, attack_ub) in enumerate(attack_imgs):
+                    ok_attack = True
+                    for j in range(num_pixels):
+                        low, up = lexpr_cst[j], uexpr_cst[j]
+                        for idx in range(args.num_params):
+                            low += lexpr_weights[j * args.num_params + idx] * attack_params[idx]
+                            up += uexpr_weights[j * args.num_params + idx] * attack_params[idx]
+                        if low > attack_lb[j] + EPS or attack_ub[j] > up + EPS:
+                            ok_attack = False
+                    if ok_attack:
+                        checked[attack_idx] = True
+                        # print('checked ', attack_idx)
+                if args.debug:
+                    print('Running the analysis...')
+
+                t_begin = time.time()
+                perturbed_label_poly, _, _, _ = eran.analyze_box(
+                    spec_lb, spec_ub, 'deeppoly',
+                    args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0,
+                    lexpr_weights, lexpr_cst, lexpr_dim,
+                    uexpr_weights, uexpr_cst, uexpr_dim,
+                    expr_size)
+                perturbed_label_box, _, _, _ = eran.analyze_box(
+                    spec_lb[:dim], spec_ub[:dim], 'deeppoly',
+                    args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0)
+                t_end = time.time()
+
+                print('DeepG: ', perturbed_label_poly, '\tInterval: ', perturbed_label_box, '\tlabel: ', label,
+                      '[Time: %.4f]' % (t_end - t_begin))
+
+                tot_chunks += 1
+                if perturbed_label_box != label:
+                    ok_box = False
                 else:
-                    assert (line == 'SPEC_FINISHED\n')
-                    for p_idx in range(args.num_params):
-                        lexpr_cst.append(spec_lb[dim + p_idx])
-                        for l in range(args.num_params):
-                            lexpr_weights.append(0)
-                            lexpr_dim.append(dim + l)
-                        uexpr_cst.append(spec_ub[dim + p_idx])
-                        for l in range(args.num_params):
-                            uexpr_weights.append(0)
-                            uexpr_dim.append(dim + l)
-                    if (is_trained_with_pytorch):
-                        normalize(spec_lb[:dim], means, stds, args.dataset, is_conv)
-                        normalize(spec_ub[:dim], means, stds, args.dataset, is_conv)
-                    normalize_poly(args.num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights,
-                                   uexpr_dim, means, stds, args.dataset)
+                    ver_chunks_box += 1
 
-                    for attack_idx, (attack_params, attack_lb, attack_ub) in enumerate(attack_imgs):
-                        ok_attack = True
-                        for j in range(num_pixels):
-                            low, up = lexpr_cst[j], uexpr_cst[j]
-                            for idx in range(args.num_params):
-                                low += lexpr_weights[j * args.num_params + idx] * attack_params[idx]
-                                up += uexpr_weights[j * args.num_params + idx] * attack_params[idx]
-                            if low > attack_lb[j] + EPS or attack_ub[j] > up + EPS:
-                                ok_attack = False
-                        if ok_attack:
-                            checked[attack_idx] = True
-                            # print('checked ', attack_idx)
-                    if args.debug:
-                        print('Running the analysis...')
+                if perturbed_label_poly != label:
+                    ok_poly = False
+                else:
+                    ver_chunks_poly += 1
 
-                    t_begin = time.time()
-                    perturbed_label_poly, _, _, _ = eran.analyze_box(
-                        spec_lb, spec_ub, 'deeppoly',
-                        args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0,
-                        lexpr_weights, lexpr_cst, lexpr_dim,
-                        uexpr_weights, uexpr_cst, uexpr_dim,
-                        expr_size)
-                    perturbed_label_box, _, _, _ = eran.analyze_box(
-                        spec_lb[:dim], spec_ub[:dim], 'deeppoly',
-                        args.timeout_lp, args.timeout_milp, args.use_area_heuristic, 0)
-                    t_end = time.time()
-
-                    print('DeepG: ', perturbed_label_poly, '\tInterval: ', perturbed_label_box, '\tlabel: ', label,
-                          '[Time: %.4f]' % (t_end - t_begin))
-
-                    tot_chunks += 1
-                    if perturbed_label_box != label:
-                        ok_box = False
-                    else:
-                        ver_chunks_box += 1
-
-                    if perturbed_label_poly != label:
-                        ok_poly = False
-                    else:
-                        ver_chunks_poly += 1
-
-                    lexpr_cst, uexpr_cst = [], []
-                    lexpr_weights, uexpr_weights = [], []
-                    lexpr_dim, uexpr_dim = [], []
+                lexpr_cst, uexpr_cst = [], []
+                lexpr_weights, uexpr_weights = [], []
+                lexpr_dim, uexpr_dim = [], []
 
         total += 1
         if ok_box:

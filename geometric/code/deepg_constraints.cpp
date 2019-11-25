@@ -522,6 +522,9 @@ TransformAttackContainer* getTransformAttackContainer(char* config_location) {
 }
 
 void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number) {
+    transform_vector.clear();
+    attack_param_vector.clear();
+    attack_image_vector.clear();
     double totalPolyRuntime = 0, totalBoxRuntime = 0;
     ifstream fin(images);
     string line;
@@ -626,6 +629,4 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
     }
 
     sanityChecks(checked, checkedNumeric, checkedPoly, calc_type);
-
-    cout << attack_param_vector[0] << endl;
 }
