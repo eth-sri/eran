@@ -15,6 +15,7 @@ from ai_milp import *
 import argparse
 
 #ZONOTOPE_EXTENSION = '.zt'
+EPS = 10**(-9)
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -400,7 +401,7 @@ elif args.geometric:
         if args.attack:
             for j in tqdm(range(0, len(attack_params))):
                 params = attack_params[j]
-                values = attack_images[j]
+                values = np.array(attack_images[j])
 
                 attack_lb = values[::2]
                 attack_ub = values[1::2]
@@ -444,7 +445,6 @@ elif args.geometric:
             if i % k < args.num_params:
                 # read specs for the parameters
                 values = line
-                print(len(values))
                 assert len(values) == 2
                 param_idx = i % k
                 spec_lb[dim + param_idx] = values[0]
@@ -461,13 +461,10 @@ elif args.geometric:
             elif i % k < k - 1:
                 # read polyhedra constraints for image pixels
                 tokens = line
-                print(len(tokens))
-                print(2 + 2 * args.num_params + 1)
-                assert len(tokens) == 2 + 2 * args.num_params + 1
+                assert len(tokens) == 2 + 2 * args.num_params
 
                 bias_lower, weights_lower = tokens[0], tokens[1:1 + args.num_params]
-                assert tokens[args.num_params + 1] == '|'
-                bias_upper, weights_upper = tokens[args.num_params + 2], tokens[3 + args.num_params:]
+                bias_upper, weights_upper = tokens[args.num_params + 1], tokens[2 + args.num_params:]
 
                 assert len(weights_lower) == args.num_params
                 assert len(weights_upper) == args.num_params
@@ -557,13 +554,13 @@ elif args.geometric:
         assert not cex_found or not ok_box, 'ERROR! Found counter-example, but image was verified with box!'
         assert not cex_found or not ok_poly, 'ERROR! Found counter-example, but image was verified with poly!'
 
-        print('Attacks found: %.2f percent, %d/%d' % (100.0 * attacked / total, attacked, total))
-        print('[Box]  Provably robust: %.2f percent, %d/%d' % (100.0 * correct_box / total, correct_box, total))
-        print('[Poly] Provably robust: %.2f percent, %d/%d' % (100.0 * correct_poly / total, correct_poly, total))
-        print('Empirically robust: %.2f percent, %d/%d' % (100.0 * (total - attacked) / total, total - attacked, total))
-        print('[Box]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_box)))
-        print('[Poly]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_poly)))
-        print('Average time: ', tot_time / total)
+    print('Attacks found: %.2f percent, %d/%d' % (100.0 * attacked / total, attacked, total))
+    print('[Box]  Provably robust: %.2f percent, %d/%d' % (100.0 * correct_box / total, correct_box, total))
+    print('[Poly] Provably robust: %.2f percent, %d/%d' % (100.0 * correct_poly / total, correct_poly, total))
+    print('Empirically robust: %.2f percent, %d/%d' % (100.0 * (total - attacked) / total, total - attacked, total))
+    print('[Box]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_box)))
+    print('[Poly]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_poly)))
+    print('Average time: ', tot_time / total)
 else:
     for i, test in enumerate(tests):
         if(dataset=='mnist'):

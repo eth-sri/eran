@@ -33,18 +33,15 @@ Interval Polyhedra::evaluate(PointD p) {
 }
 
 
-std::vector<std::vector<double> > Polyhedra::to_vector() {
-  std::vector<std::vector<double>> result;
-  std::vector<double> lower_result;
-  std::vector<double> upper_result;
-  lower_result.push_back(biasLower);
+std::vector<double> Polyhedra::to_vector() {
+  std::vector<double> result;
+  result.push_back(biasLower);
   for (size_t i = 0; i < wLower.size(); ++i) {
-    lower_result.push_back(wLower[i]);
+    result.push_back(wLower[i]);
   }
-  result.push_back(lower_result);
-  upper_result.push_back(biasUpper);
+  result.push_back(biasUpper);
   for (size_t i = 0; i < wUpper.size(); ++i) {
-    upper_result.push_back(wUpper[i]);
+    result.push_back(wUpper[i]);
   }
   return result;
 }

@@ -1,7 +1,6 @@
 
 from geometric_constraints_h import *
 from ctypes import *
-from numpy.ctypeslib import ndpointer
 
 
 def get_transform_attack_container(config):

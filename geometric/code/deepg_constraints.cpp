@@ -596,9 +596,7 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
                     spatialTransformation, pixelTransformation, interpolationTransformation,
                     transformedImage, counter);
             for (auto &poly : polys) {
-                for(vector<double> p : poly.to_vector()){
-                    transform_vector.push_back(p);
-                }
+                transform_vector.push_back(poly.to_vector());
             }
 
             for (size_t i = 0; i < attacks.size(); ++i) {
@@ -615,9 +613,7 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
             vector<Polyhedra> polys = abstractWithCustomDP(
                     hbox, img, spatialTransformation, interpolationTransformation, transformedImage);
             for (auto &poly : polys) {
-                for(vector<double> p : poly.to_vector()){
-                    transform_vector.push_back(p);
-                }
+                transform_vector.push_back(poly.to_vector());
             }
             for (size_t i = 0; i < attacks.size(); ++i) {
                 if (hbox.inside(attacks[i].first) && checkImagePoly(attacks[i].second, polys, attacks[i].first)) {
