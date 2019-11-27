@@ -14,18 +14,19 @@ from functools import reduce
 import config
 
 
-def calc_bounds(man, element, nn, nlb, nub, destroy=True):
+def calc_bounds(man, element, nn, nlb, nub, is_refine_layer = False, destroy=True):
     layerno = nn.calc_layerno()
     bounds = box_for_layer(man, element, layerno)
     num_neurons = get_num_neurons_in_layer(man, element, layerno)
     itv = [bounds[i] for i in range(num_neurons)]
     lbi = [x.contents.inf.contents.val.dbl for x in itv]
     ubi = [x.contents.sup.contents.val.dbl for x in itv]
-    nlb.append(lbi)
-    nub.append(ubi)
+    if is_refine_layer:
+        nlb.append(lbi)
+        nub.append(ubi)
     if destroy:
         elina_interval_array_free(bounds,num_neurons)
-        return
+        return lbi, ubi
     return layerno, bounds, num_neurons, lbi, ubi
 
 
@@ -202,9 +203,11 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_first_relu_layer(man, element, *self.get_arguments())
-        if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+        calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
+
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -227,8 +230,10 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
             """
         ffn_handle_first_sigmoid_layer(man, element, *self.get_arguments())
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+            lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
+        if testing:
+            return element, lb, ub
         return element
 
 
@@ -251,8 +256,10 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
             """
         ffn_handle_first_tanh_layer(man, element, *self.get_arguments())
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+            lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
+        if testing:
+            return element, lb, ub
         return element
 
 
@@ -275,7 +282,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, destroy = False)
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True, destroy = False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
         #print("lbi ", timeout_milp, "ubi ", timeout_lp)
         if refine:
@@ -299,6 +306,8 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
 
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -321,8 +330,10 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
             """
         ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_area_heuristic)
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+            calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -345,8 +356,10 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
             """
         ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_area_heuristic)
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+            calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -383,7 +396,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present,  use_area_heuristic)
-        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, destroy=False)
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
 
         if(refine):
@@ -408,6 +421,8 @@ class DeeppolyReluNodeLast(DeeppolyNode):
 
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -444,8 +459,10 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
         """
         ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_area_heuristic)
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+            lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
+        if testing:
+            return element, lb, ub
         return element
 
 
@@ -482,8 +499,10 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
         """
         ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_area_heuristic)
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+            lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
+        if testing:
+            return element, lb, ub
         return element
 
 
@@ -553,7 +572,7 @@ class DeeppolyConv2dNodeIntermediate:
             conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         else:
             conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, destroy=False)
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
 
         if(refine):
@@ -575,6 +594,8 @@ class DeeppolyConv2dNodeIntermediate:
 
         elina_interval_array_free(bounds,num_neurons)
         nn.conv_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -598,9 +619,10 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
             abstract element after the transformer 
         """
         conv_handle_first_layer(man, element, *self.get_arguments())
-        if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+        calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
         nn.conv_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -642,9 +664,10 @@ class DeeppolyMaxpool:
             abstract element after the transformer 
         """
         handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
-        if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+        calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
         nn.maxpool_counter += 1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -668,11 +691,12 @@ class DeeppolyResadd:
              handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
         else:
              handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
-        if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub)
+        calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
         # print("Residual ", nn.layertypes[layerno],layerno)
         nn.residual_counter +=  + 1
 
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -719,7 +743,7 @@ class DeeppolySub:
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
         layerno = nn.calc_layerno()
         #handle_sub_layer(man, element, layerno, self.bias, self.is_minuend)
-        nn.ffn_counter+=1
+        #nn.ffn_counter+=1
         return element
 
 
@@ -743,5 +767,5 @@ class DeeppolyMul:
     def transformer(self, nn, man, element, nlb, nub, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
         layerno = nn.calc_layerno()
         #handle_mul_layer(man, element, layerno, self.bias)
-        nn.ffn_counter+=1
+        #nn.ffn_counter+=1
         return element

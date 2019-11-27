@@ -340,10 +340,10 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             filter_size = nn.filter_size[nn.conv_counter]
             numfilters = nn.numfilters[nn.conv_counter]
-            out_shape = nn.out_shapes[nn.conv_counter]# + nn.maxpool_counter]
-            padding = nn.padding[nn.conv_counter]# + nn.maxpool_counter]
-            strides = nn.strides[nn.conv_counter]# + nn.maxpool_counter]
-            input_shape = nn.input_shape[nn.conv_counter]# +nn.maxpool_counter]
+            out_shape = nn.out_shapes[nn.conv_counter + nn.maxpool_counter]
+            padding = nn.padding[nn.conv_counter + nn.maxpool_counter]
+            strides = nn.strides[nn.conv_counter + nn.maxpool_counter]
+            input_shape = nn.input_shape[nn.conv_counter +nn.maxpool_counter]
             num_neurons = np.prod(out_shape)
 
             index = nn.predecessors[i+1][0]
@@ -366,7 +366,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
 
-            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, out_shape, nlb[i],nub[i], nlb[i-1], nlb[i-1],use_milp)
+            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, out_shape, nlb[i],nub[i], nlb[i-1], nub[i-1],use_milp)
             start_counter.append(counter)
             nn.maxpool_counter+=1
 
@@ -383,7 +383,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
 
         else:
-            print('layertype:', nn.layertypes[i], 'not supported')
+            print('layertype:', nn.layertypes[i], 'not supported for refine')
             return
     nn.ffn_counter = ffn_counter
     nn.conv_counter = conv_counter
@@ -394,7 +394,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
 def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, output_size, nlb, nub, use_milp, candidate_vars, timeout):
 
-    layerno = nn.ffn_counter +  nn.conv_counter + nn.residual_counter
+    layerno = nn.calc_layerno()
     abs_layer_count = nn.calc_layerno()
 
     is_conv = False

@@ -28,8 +28,6 @@ class layers:
         self.conv_counter = 0
         self.residual_counter = 0
         self.maxpool_counter = 0
-        self.maxpool_lb = []
-        self.maxpool_ub = []
         self.specLB = []
         self.specUB = []
         self.original = []
@@ -81,12 +79,24 @@ class Analyzer:
         element = self.ir_list[0].transformer(self.man)
         nlb = []
         nub = []
+        testing_nlb = []
+        testing_nub = []
         for i in range(1, len(self.ir_list)):
-            print(self.ir_list[i])
-            if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
+            #print(self.ir_list[i])
+            if self.testing:
+                if self.domain == 'deepzono' or self.domain == 'refinezono':
+                    element, test_lb, test_ub = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
+                else:
+                    element, test_lb, test_ub = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
+                testing_nlb.append(test_lb)
+                testing_nub.append(test_ub)
             else:
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
+                if self.domain == 'deepzono' or self.domain == 'refinezono':
+                    element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
+                else:
+                    element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
+        if self.testing:
+            return element, testing_nlb, testing_nub
         return element, nlb, nub
     
     

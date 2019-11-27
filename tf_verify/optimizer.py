@@ -128,29 +128,37 @@ class Optimizer:
             elif self.operations[i] == "Add":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
+                nn.layertypes.append('Add')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "Sub":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoSub(*self.resources[i][domain]))
+                nn.layertypes.append('Sub')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "Mul":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoMul(*self.resources[i][domain]))
+                nn.layertypes.append('Mul')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
-                #nn.pool_size.append(window_size)
-                #nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
-                #nn.strides.append([strides[0],strides[1]])
-                #nn.out_shapes.append(output_shape)
-                #nn.padding.append([pad_top, pad_left])
-                #nn.layertypes.append('MaxPooling2D')
-                #nn.numlayer+=1
+                nn.pool_size.append(window_size)
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.out_shapes.append(output_shape)
+                nn.padding.append([pad_top, pad_left])
+                nn.layertypes.append('MaxPooling2D')
+                nn.numlayer+=1
                 output.append(DeepzonoMaxpool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape))
                 i += 1
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
+                nn.layertypes.append('Resadd')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
@@ -160,17 +168,25 @@ class Optimizer:
                 i += 1
             elif self.operations[i] == "Sigmoid":
                 output.append(DeepzonoSigmoid(*self.resources[i][domain]))
+                nn.layertypes.append('Sigmoid')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "Tanh":
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
+                nn.layertypes.append('Tanh')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "Gather":
                 image_shape, indexes, axis,  input_names, output_name, output_shape = self.resources[i][domain]
                 calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
                 output.append(DeepzonoGather(calculated_indexes, input_names, output_name, output_shape))
+                nn.layertypes.append('Gather')
+                nn.numlayers += 1
                 i += 1
             elif self.operations[i] == "Reshape":
                 output.append(DeepzonoGather(*self.resources[i][domain]))
+                nn.layertypes.append('Gather')
+                nn.numlayers += 1
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
@@ -415,13 +431,13 @@ class Optimizer:
 
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
-                #nn.pool_size.append(window_size)
-                #nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
-                #nn.strides.append([strides[0],strides[1]])
-                #nn.out_shapes.append(output_shape)
-                #nn.padding.append([pad_top, pad_left])
-                #nn.layertypes.append('MaxPooling2D')
-                #nn.numlayer+=1
+                nn.pool_size.append(window_size)
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.out_shapes.append(output_shape)
+                nn.padding.append([pad_top, pad_left])
+                nn.layertypes.append('MaxPooling2D')
+                nn.numlayer+=1
                 output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
                 i += 1
 
@@ -491,11 +507,13 @@ class Optimizer:
                     _,output_name,output_shape = self.resources[i+1][domain]
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, True))
                     nn.layertypes.append('Resadd')
+                    nn.numlayers += 1
                     i += 2
                 else:
                     input_names,output_name,output_shape = self.resources[i][domain]
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, False))
                     nn.layertypes.append('Resaddnorelu')
+                    nn.numlayers += 1
                     i += 1
                 nn.numlayer+=1
 

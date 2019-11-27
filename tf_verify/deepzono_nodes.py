@@ -184,16 +184,19 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp,
     return element
 
 
-def add_bounds(man, element, nlb, nub, num_vars, start_offset):
+def add_bounds(man, element, nlb, nub, num_vars, start_offset, is_refine_layer = False):
     dimension = elina_abstract0_dimension(man, element)
     var_in_element = dimension.intdim + dimension.realdim
     bounds = elina_abstract0_to_box(man, element)
     itv = [bounds[i] for i in range(start_offset, num_vars+start_offset)]
     lbi = [x.contents.inf.contents.val.dbl for x in itv]
     ubi = [x.contents.sup.contents.val.dbl for x in itv]
-    nlb.append(lbi)
-    nub.append(ubi)
     elina_interval_array_free(bounds, var_in_element)
+    if is_refine_layer:
+        nlb.append(lbi)
+        nub.append(ubi)
+    else:
+        return lbi, ubi
 
 
 class DeepzonoInput:
@@ -336,8 +339,10 @@ class DeepzonoMatmul:
         #if self.refine == 'True':
         #    refine_after_affine(self, man, element, nlb, nub)
 
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        nn.ffn_counter += 1
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        if testing:
+            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -380,8 +385,10 @@ class DeepzonoAdd:
         """
         offset, old_length = self.abstract_information
         element = ffn_add_bias_zono(man, True, element, offset, self.bias, old_length)
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        nn.ffn_counter += 1
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -425,8 +432,10 @@ class DeepzonoSub:
         """
         offset, old_length = self.abstract_information
         element = ffn_sub_bias_zono(man, True, element, offset, self.bias, self.is_minuend, old_length)
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        nn.ffn_counter += 1
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -469,8 +478,10 @@ class DeepzonoMul:
         """
         offset, old_length = self.abstract_information
         element = ffn_mul_bias_zono(man, True, element, offset, self.bias, old_length)
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        nn.ffn_counter += 1
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -519,8 +530,11 @@ class DeepzonoAffine(DeepzonoMatmul):
         element = ffn_matmult_zono(man, destructive, element, start_offset, weights, self.bias, num_vars, expr_offset, expr_size)
         #if self.refine == 'True':
         #    refine_after_affine(self, man, element, nlb, nub)
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         nn.last_layer = 'Affine'
+        nn.ffn_counter += 1
+        if testing:
+            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -599,8 +613,9 @@ class DeepzonoConv:
         """
         offset, old_length  = self.abstract_information
         element = conv_matmult_zono(*self.get_arguments(man, element))
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        if testing:
+            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+            return remove_dimensions(man, element, offset, old_length), lb, ub
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -653,8 +668,11 @@ class DeepzonoConvbias(DeepzonoConv):
         has_bias = True
         element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, out_size, pad_top, pad_left, has_bias)
 
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         nn.last_layer='Conv2D'
+        nn.conv_counter += 1
+        if testing:
+            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+            return remove_dimensions(man, element, offset, old_length), lb, ub
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -715,7 +733,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
             abstract element after the transformer
         """
         offset, length = self.abstract_information
-        add_bounds(man, element, nlb, nub, length, offset)
+        add_bounds(man, element, nlb, nub, length, offset, is_refine_layer=True)
         if refine==True:
             element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp, timeout_milp)
         else:
@@ -725,6 +743,8 @@ class DeepzonoRelu(DeepzonoNonlinearity):
            nn.ffn_counter+=1
         elif nn.last_layer == 'Conv2D':
            nn.conv_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -749,8 +769,9 @@ class DeepzonoSigmoid(DeepzonoNonlinearity):
         """
         offset, old_length = self.abstract_information
         element = sigmoid_zono_layerwise(*self.get_arguments(man, element))
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset)
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -775,8 +796,9 @@ class DeepzonoTanh(DeepzonoNonlinearity):
         """
         offset, old_length = self.abstract_information
         element = tanh_zono_layerwise(*self.get_arguments(man, element))
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset)
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
@@ -832,8 +854,9 @@ class DeepzonoMaxpool:
         h, w    = self.window_size
         H, W, C = self.input_shape
         element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)
+        if testing:
+            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -913,8 +936,12 @@ class DeepzonoResadd:
         src_offset = self.abstract_information[2]
         zono_add(man, element, dst_offset, src_offset, num_var)
 
-        if testing or refine:
-            add_bounds(man, element, nlb, nub, self.output_length, dst_offset)
+        add_bounds(man, element, nlb, nub, self.output_length, dst_offset, is_refine_layer=True)
+        if testing:
+            if dst_offset == src_offset:
+                return element, nlb[-1], nub[-1]
+            else:
+                return remove_dimensions(man, element, src_offset, num_var), nlb[-1], nub[-1]
         if dst_offset == src_offset:
             return element
         else:
