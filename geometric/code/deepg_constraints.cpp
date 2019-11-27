@@ -393,7 +393,6 @@ int main(int argc, char** argv) {
 
 
 TransformAttackContainer::TransformAttackContainer(double noise,
-                                        int n_splits,
                                         int inside_splits,
                                         int nRows,
                                         int nCols,
@@ -403,16 +402,17 @@ TransformAttackContainer::TransformAttackContainer(double noise,
                                         SpatialTransformation& spatial_transform,
                                         PixelTransformation& pixel_transform,
                                         bool debug,
-                                        vector<vector<double> > splitPoints)
+                                        HyperBox combinedDomain,
+                                        vector<HyperBox> verificationChunks)
                                         : spatialTransformation(spatial_transform),
                                         pixelTransformation(pixel_transform)
                                         {
     this -> noise = noise;
-    this -> n_splits = n_splits;
     this -> inside_splits = inside_splits;
     this -> calc_type = calc_type;
     this -> debug = debug;
-    this -> splitPoints = splitPoints;
+    this -> combinedDomain = combinedDomain;
+    this -> verificationChunks = verificationChunks;
     this -> spatialTransformation = spatialTransformation;
     this -> pixelTransformation = pixelTransformation;
     this -> images = images;
@@ -507,8 +507,10 @@ TransformAttackContainer* getTransformAttackContainer(char* config_location) {
     SpatialTransformation& spatial_transform = *getSpatialTransformation(transformName);
     PixelTransformation& pixel_transform = *getPixelTransformation(pixelTransformName);
 
+    HyperBox combinedDomain = HyperBox::concatenate(spatial_transform.domain, pixel_transform.domain);
+    auto verificationChunks = combinedDomain.split(n_splits, splitPoints);
+
     return new TransformAttackContainer(noise,
-                                    n_splits,
                                     inside_splits,
                                     nRows,
                                     nCols,
@@ -518,29 +520,36 @@ TransformAttackContainer* getTransformAttackContainer(char* config_location) {
                                     spatial_transform,
                                     pixel_transform,
                                     debug,
-                                    splitPoints);
+                                    combinedDomain,
+                                    verificationChunks);
 }
 
 void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number) {
+    cout << "enter set transformation and attacks for i" << endl;
     transform_vector.clear();
     attack_param_vector.clear();
     attack_image_vector.clear();
+    transform_pointers.clear();
+    attack_param_pointers.clear();
+    attack_image_pointers.clear();
     double totalPolyRuntime = 0, totalBoxRuntime = 0;
     ifstream fin(images);
     string line;
     for (size_t j = 0; j <= image_number; j++){
         getline(fin, line);
     }
+    cout << "got lines" << endl;
     Image img = Image(nRows, nCols, nChannels, line, noise);
-    HyperBox combinedDomain = HyperBox::concatenate(spatialTransformation.domain, pixelTransformation.domain);
+    cout << "created image" << endl;
+    cout << "created hyperbox" << endl;
 
-    auto verificationChunks = combinedDomain.split(n_splits, splitPoints);
     if (debug) {
         cout << "All verification chunks:" << endl;
         for (HyperBox& hbox : verificationChunks) {
             cout << "hbox: " << hbox << endl;
         }
     }
+    cout << "created chunks" << endl;
 
     std::vector<int> counts_picture;
     // iteration over images
@@ -550,7 +559,7 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
     auto attacks = generateAttacksOutVector(
             attack_param_vector, attack_image_vector, combinedDomain, spatialTransformation, pixelTransformation,
             interpolationTransformation, img, Constants::NUM_ATTACKS);
-
+    cout << "created attacks" << endl;
     vector<bool> checked(attacks.size(), false);
     vector<bool> checkedPoly(attacks.size(), false);
     vector<bool> checkedNumeric(attacks.size(), false);
@@ -621,7 +630,25 @@ void TransformAttackContainer::setTransformationsAndAttacksFor(int image_number)
                 }
             }
         }
+        vector<double> end_spec;
+        transform_vector.push_back(end_spec);
         counts_picture.push_back(counter.total_counts());
+    }
+
+    transform_pointers.resize(transform_vector.size());
+    attack_param_pointers.resize(attack_param_vector.size());
+    attack_image_pointers.resize(attack_image_vector.size());
+
+    for (int i = 0; i < transform_vector.size(); i++) {
+        transform_pointers[i] = transform_vector[i].data();
+    }
+
+    for (int i = 0; i < attack_param_vector.size(); i++) {
+        attack_param_pointers[i] = attack_param_vector[i].data();
+    }
+
+    for (int i = 0; i < attack_image_vector.size(); i++) {
+        attack_image_pointers[i] = attack_image_vector[i].data();
     }
 
     sanityChecks(checked, checkedNumeric, checkedPoly, calc_type);

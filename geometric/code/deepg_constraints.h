@@ -17,7 +17,6 @@ class TransformAttackContainer{
     public:
         // ---- Constructors
         TransformAttackContainer(double noise,
-                                    int n_splits,
                                     int inside_splits,
                                     int nRows,
                                     int nCols,
@@ -27,20 +26,23 @@ class TransformAttackContainer{
                                     SpatialTransformation& spatialTransformation,
                                     PixelTransformation& pixelTransformation,
                                     bool debug,
-                                    vector<vector<double> > splitPoints);
+                                    HyperBox combinedDomain,
+                                    vector<HyperBox> verificationChunks);
 
         // ---- Members set by Constructor
         double noise;
-        int n_splits, inside_splits, nRows, nCols, nChannels;
+        int inside_splits, nRows, nCols, nChannels;
         string calc_type, images;
         bool debug;
-        vector<vector<double> > splitPoints;
+        HyperBox combinedDomain;
+        vector<HyperBox> verificationChunks;
         SpatialTransformation& spatialTransformation;
         PixelTransformation& pixelTransformation;
         const InterpolationTransformation& interpolationTransformation = InterpolationTransformation();
 
         // ---- Members set by Methods
         vector<vector<double> > transform_vector, attack_param_vector, attack_image_vector;
+        vector<double*> transform_pointers, attack_param_pointers, attack_image_pointers;
         vector<int> transform_vector_dim_1;
 
         // ---- Methods
@@ -52,8 +54,8 @@ void setTransformationsAndAttacksFor(TransformAttackContainer& container, int im
     container.setTransformationsAndAttacksFor(image_number);
 };
 
-vector<double>* get_transformations(TransformAttackContainer& container) {
-    return container.transform_vector.data();
+double** get_transformations(TransformAttackContainer& container) {
+    return container.transform_pointers.data();
 };
 
 int get_transformations_dim_0(TransformAttackContainer& container) {
@@ -69,8 +71,8 @@ int* get_transformations_dim_1(TransformAttackContainer& container) {
 };
 
 // this works because vectors are continuous in memory
-vector<double>* get_attack_params(TransformAttackContainer& container) {
-    return container.attack_param_vector.data();
+double** get_attack_params(TransformAttackContainer& container) {
+    return container.attack_param_pointers.data();
 };
 
 int get_attack_params_dim_0(TransformAttackContainer& container) {
@@ -81,8 +83,8 @@ int get_attack_params_dim_1(TransformAttackContainer& container) {
     return container.attack_param_vector[0].size();
 };
 
-vector<double>* get_attack_images(TransformAttackContainer& container) {
-    return container.attack_image_vector.data();
+double** get_attack_images(TransformAttackContainer& container) {
+    return container.attack_image_pointers.data();
 };
 
 int get_attack_images_dim_0(TransformAttackContainer& container) {
