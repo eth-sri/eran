@@ -15,7 +15,7 @@ from functools import reduce
 from config import config
 
 
-def calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy=True, use_krelu = True):
+def calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy=True, use_krelu = False):
     layerno = nn.calc_layerno()
     bounds = box_for_layer(man, element, layerno)
     num_neurons = get_num_neurons_in_layer(man, element, layerno)
@@ -205,7 +205,7 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_first_relu_layer(man, element, *self.get_arguments())
-        calc_bounds(man, element, nn, nlb, nub, relu_groups)
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, use_krelu=refine)
         nn.ffn_counter+=1
         return element
 
@@ -275,7 +275,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy = False, use_krelu=refine)
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy = False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
         #print("lbi ", timeout_milp, "ubi ", timeout_lp)
         if refine:
@@ -289,13 +289,16 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
             else:
                 timeout = timeout_lp
 
-            #resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+            if nn.is_ffn():
+                resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
 
-            #for j in indices:
-            #    update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+                for j in indices:
+                    update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
 
-            #nlb[-1] = resl
-            #nub[-1] = resu
+                nlb[-1] = resl
+                nub[-1] = resu
+
+            encode_krelu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, relu_groups, False, 'refinepoly')
 
 
 
@@ -383,7 +386,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
             abstract element after the transformer 
         """
         ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present,  use_area_heuristic)
-        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy=False, use_krelu=refine)
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
 
         if(refine):
@@ -396,14 +399,16 @@ class DeeppolyReluNodeLast(DeeppolyNode):
                 timeout = timeout_milp
             else:
                 timeout = timeout_lp
-            #resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
-            #for i in indices:
-            #    update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
 
-            #print("resl ", resl, "resu ", resu)
-            #nlb[-1] = resl
-            #nub[-1] = resu
-            #encode_2reLu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, False, 'refinepoly')
+            if nn.is_ffn():
+                resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
+                for j in indices:
+                    update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+
+                #print("resl ", resl, "resu ", resu)
+                nlb[-1] = resl
+                nub[-1] = resu
+            encode_krelu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, relu_groups, False, 'refinepoly')
 
         elina_interval_array_free(bounds,num_neurons)
         nn.ffn_counter+=1
@@ -550,25 +555,28 @@ class DeeppolyConv2dNodeIntermediate:
             conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
         else:
             conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
-        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy=False, use_krelu=refine)
+        layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
 
         if(refine):
-            #use_milp = config.use_milp
-            #if use_milp:
-            #    timeout = timeout_milp
-            #else:
-            #    timeout = timeout_lp
-            numconvslayers = sum('Conv2D' in l for l in nn.layertypes)
+            use_milp = config.use_milp
+            if use_milp:
+                timeout = timeout_milp
+            else:
+                timeout = timeout_lp
+            #numconvslayers = sum('Conv2D' in l for l in nn.layertypes)
             #if numconvslayers-nn.conv_counter <= 1:
+            if nn.is_ffn():
 
-            #    resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, use_milp,  candidate_vars, timeout)
+                resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, num_neurons, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
 
-            #    nlb[-1] = resl
-            #    nub[-1] = resu
+                nlb[-1] = resl
+                nub[-1] = resu
 
-            #    for j in indices:
-            #        update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+                for j in indices:
+                    update_bounds_for_neuron(man,element,layerno,j,resl[j],resu[j])
+
+            encode_krelu_cons(nn, man, element, 0, layerno, num_neurons, lbi, ubi, relu_groups, False, 'refinepoly')
 
         elina_interval_array_free(bounds,num_neurons)
         nn.conv_counter+=1

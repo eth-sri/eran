@@ -307,17 +307,17 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             for j in range(1,num_error_terms):
                 lower_bound = lower_bound - abs(nn.zonotope[i][j])
                 upper_bound = upper_bound + abs(nn.zonotope[i][j])
-            var_name = "x" + str(counter+i)  
+            var_name = "x" + str(counter+i)
             var = model.addVar(vtype=GRB.CONTINUOUS, lb = lower_bound, ub=upper_bound, name=var_name)
             var_list.append(var)
             expr = LinExpr()
             expr += -1 * var_list[counter + i]
             for j in range(num_error_terms-1):
-                expr.addTerms(nn.zonotope[i][j+1],var_list[j])        
-       
+                expr.addTerms(nn.zonotope[i][j+1],var_list[j])
+
             expr.addConstant(nn.zonotope[i][0])
             model.addConstr(expr, GRB.EQUAL, 0)
-        
+
     else:
         for i in range(num_pixels):
             var_name = "x" + str(i)
@@ -350,7 +350,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
-            
+
             counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
 
 
@@ -438,14 +438,14 @@ def solver_call(ind):
 
     obj = LinExpr()
     obj += model.getVars()[Cache.output_counter+ind]
-    print (f"{ind} {model.getVars()[Cache.output_counter+ind].VarName}")
+    #print (f"{ind} {model.getVars()[Cache.output_counter+ind].VarName}")
 
     model.setObjective(obj, GRB.MINIMIZE)
     model.reset()
     model.optimize()
     runtime += model.RunTime
     soll = Cache.lbi[ind] if model.SolCount==0 else model.objbound
-    print (f"{ind} {model.status} lb ({Cache.lbi[ind]}, {soll}) {model.RunTime}s")
+    #print (f"{ind} {model.status} lb ({Cache.lbi[ind]}, {soll}) {model.RunTime}s")
     sys.stdout.flush()
 
     model.setObjective(obj, GRB.MAXIMIZE)
@@ -453,7 +453,7 @@ def solver_call(ind):
     model.optimize()
     runtime += model.RunTime
     solu = Cache.ubi[ind] if model.SolCount==0 else model.objbound
-    print (f"{ind} {model.status} ub ({Cache.ubi[ind]}, {solu}) {model.RunTime}s")
+    #print (f"{ind} {model.status} ub ({Cache.ubi[ind]}, {solu}) {model.RunTime}s")
     sys.stdout.flush()
 
     soll = max(soll, Cache.lbi[ind])
@@ -523,7 +523,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     var_idxs = candidate_vars[:num_candidates]
     for v in var_idxs:
         refined[v] = True
-        print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
+        #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
     with multiprocessing.Pool(NUMPROCESSES) as pool:
        solver_result = pool.map(solver_call, var_idxs)
     solvetime = 0
@@ -549,7 +549,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
             var_idxs = var_idxs[:50]
     for v in var_idxs:
         refined[v] = True
-        print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
+        #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
 
     with multiprocessing.Pool(NUMPROCESSES) as pool:
        solver_result = pool.map(solver_call, var_idxs)

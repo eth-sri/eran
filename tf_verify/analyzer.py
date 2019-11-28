@@ -41,6 +41,9 @@ class layers:
     def calc_layerno(self):
         return self.ffn_counter + self.conv_counter + self.residual_counter + self.maxpool_counter
 
+    def is_ffn(self):
+        return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
+
 class Analyzer:
     def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic):
         """
@@ -116,10 +119,7 @@ class Analyzer:
         dominant_class = -1
         if(self.domain=='refinepoly'):
 
-            relu_needed = []
-            for i in range(self.nn.numlayer-1):
-                relu_needed.append(1)
-            relu_needed.append(1)
+            relu_needed = [1] * self.nn.numlayer
             self.nn.ffn_counter = 0
             self.nn.conv_counter = 0
             self.nn.maxpool_counter = 0
@@ -181,7 +181,3 @@ class Analyzer:
 
         elina_abstract0_free(self.man, element)
         return dominant_class, nlb, nub
-    
-    
-    
-    
