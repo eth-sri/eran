@@ -138,7 +138,7 @@ class Optimizer:
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
-                if nn.layertypes[len(nn.layertypes)-1]=='Affine':
+                if nn.layertypes[-1]=='Affine':
                     nn.layertypes[-1] = 'ReLU'
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1

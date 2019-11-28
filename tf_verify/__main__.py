@@ -10,6 +10,8 @@ import csv
 import time
 from deepzono_milp import *
 import argparse
+from config import config
+
 
 #ZONOTOPE_EXTENSION = '.zt'
 
@@ -20,6 +22,13 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def isnetworkfile(fname):
+    _, ext = os.path.splitext(fname)
+    if ext not in ['.pyt', '.meta', '.tf','.onnx']:
+        raise argparse.ArgumentTypeError('only .pyt, .tf, .onnx, and .meta formats supported')
+    return fname
 
 
 def parse_acasxu_spec(text):
@@ -49,7 +58,7 @@ def show_ascii_spec(lb, ub):
 
 
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--netname', type=str, default=None, help='the network name, the extension can be only .pyt, .tf and .meta')
+parser.add_argument('--netname', type=isnetworkfile, required=True, default=None, help='the network name, the extension can be only .pyt, .tf and .meta')
 parser.add_argument('--epsilon', type=float, default=0, help='the epsilon for L_infinity perturbation')
 parser.add_argument('--zonotope', type=str, default=None, help='file to specify the zonotope matrix')
 #parser.add_argument('--specnumber', type=int, default=9, help='the property number for the acasxu networks')
@@ -58,11 +67,27 @@ parser.add_argument('--dataset', type=str, default=None, help='the dataset, can 
 parser.add_argument('--complete', type=str2bool, default=False,  help='flag specifying where to use complete verification or not')
 parser.add_argument('--timeout_lp', type=float, default=1,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=1,  help='timeout for the MILP solver')
+parser.add_argument('--numprocesses_milp', type=int, default=8,  help='number of processes to use for MILP solver')
+parser.add_argument('--numproc_krelu', type=int, default=12,  help='number of processes for krelu')
 parser.add_argument('--use_area_heuristic', type=str2bool, default=True,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
+parser.add_argument('--use_milp', type=str2bool, default=True,  help='whether to use milp or not')
+parser.add_argument('--dyn_krelu', action='store_true', help='dynamically select parameter k')
+parser.add_argument('--use_2relu', action='store_true', help='use 2-relu')
+parser.add_argument('--use_3relu', action='store_true', help='use 3-relu')
 parser.add_argument('--mean', nargs='+', type=float,  help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float,  help='the standard deviation used to normalize the data with')
 
+
+# Logging options
+parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
+parser.add_argument('--logname', type=str, default=None, help='Directory of log files in `logdir`, if not specified timestamp is used')
+
+
 args = parser.parse_args()
+for k, v in vars(args).items():
+    setattr(config, k, v)
+config.json = vars(args)
+
 
 #if len(sys.argv) < 4 or len(sys.argv) > 5:
 #    print('usage: python3.6 netname epsilon domain dataset')

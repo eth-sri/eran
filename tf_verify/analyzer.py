@@ -8,7 +8,8 @@ from elina_manager import *
 from deeppoly_nodes import *
 from deepzono_nodes import *
 from functools import reduce
-import ctypes
+import gc
+from config import config
 
 class layers:
     def __init__(self):
@@ -67,6 +68,7 @@ class Analyzer:
         self.timeout_milp = timeout_milp
         self.specnumber = specnumber
         self.use_area_heuristic = use_area_heuristic
+        self.relu_groups = []
 
     
     def __del__(self):
@@ -82,9 +84,11 @@ class Analyzer:
         nub = []
         for i in range(1, len(self.ir_list)):
             if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
             else:
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic)
+                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic)
+
+        gc.collect()
         return element, nlb, nub
     
     
@@ -110,18 +114,54 @@ class Analyzer:
         #elina_interval_array_free(bounds,output_size)
     
         dominant_class = -1
+        if(self.domain=='refinepoly'):
+
+            relu_needed = []
+            for i in range(self.nn.numlayer-1):
+                relu_needed.append(1)
+            relu_needed.append(1)
+            self.nn.ffn_counter = 0
+            self.nn.conv_counter = 0
+            self.nn.maxpool_counter = 0
+            self.nn.residual_counter = 0
+            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False,relu_needed)
+            #model.setParam('Timeout',1000)
+            num_var = len(var_list)
+            output_size = num_var - counter
+
+
         if self.specnumber==0:
             for i in range(output_size):
                 flag = True
+                label = i
                 for j in range(output_size):
                     if self.domain == 'deepzono' or self.domain == 'refinezono':
                         if i!=j and not self.is_greater(self.man, element, i, j):
                             flag = False
                             break
                     else:
-                        if i!=j and not self.is_greater(self.man, element, i, j, self.use_area_heuristic):
-                            flag = False
-                            break
+                        if label!=j and not self.is_greater(self.man, element, label, j, self.use_area_heuristic):
+
+                            if(self.domain=='refinepoly'):
+                                obj = LinExpr()
+                                obj += 1*var_list[counter+label]
+                                obj += -1*var_list[counter + j]
+                                model.setObjective(obj,GRB.MINIMIZE)
+                                model.optimize()
+                                if model.Status!=2:
+                                    model.write("final.mps")
+                                    print (f"Model failed to solve, {model.Status}")
+                                    flag = False
+                                    break
+                                elif(model.objval<0):
+                                    flag = False
+                                    break
+
+                            else:
+                                flag = False
+                                break
+
+
                 if flag:
                     dominant_class = i
                     break
