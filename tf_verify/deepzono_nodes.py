@@ -162,6 +162,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
             else:
                use_milp = 0
                timeout = timeout_lp
+        use_milp = use_milp and config.use_milp
         lbi = nlb[layerno]
         ubi = nub[layerno]
         candidate_vars = []
