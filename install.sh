@@ -47,14 +47,15 @@ export GUROBI_HOME="$(pwd)/gurobi811/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 cd gurobi811/linux64/src/build
-grep -F "C++FLAGS =" Makefile | sed -ie 's/$/& .fPIC'
+sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
 sudo cp ../../lib/libgurobi81.so /usr/lib
 cd ../../../../
 
-git clone https://gitlab.inf.ethz.ch:OU-VECHEV/geometric.git
-cd geometric/code
+git clone https://github.com/eth-sri/deepg.git
+cd deepg/code
+mkdir build
 make shared_object
 sudo cp build/libgeometric.so /usr/lib
 cd ../..
@@ -62,6 +63,4 @@ cd ../..
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib
 
 ldconfig
-
-
 
