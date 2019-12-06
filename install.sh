@@ -41,13 +41,23 @@ make
 make install
 cd ..
 
-wget https://packages.gurobi.com/8.1/gurobi8.1.0_linux64.tar.gz
-tar -xvf gurobi8.1.0_linux64.tar.gz
-cd gurobi810/linux64
-python3 setup.py install
-cp lib/libgurobi81.so /usr/lib
-BASEDIR=$(dirname $0)
-cd ../../
+wget https://packages.gurobi.com/8.1/gurobi8.1.1_linux64.tar.gz
+tar -xvf gurobi8.1.1_linux64.tar.gz
+export GUROBI_HOME="$(pwd)/gurobi811/linux64"
+export PATH="${PATH}:${GUROBI_HOME}/bin"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
+cd gurobi811/linux64/src/build
+grep -F "C++FLAGS =" Makefile | sed -ie 's/$/& .fPIC'
+make
+cp libgurobi_c++.a ../../lib/
+sudo cp ../../lib/libgurobi81.so /usr/lib
+cd ../../../../
+
+git clone https://gitlab.inf.ethz.ch:OU-VECHEV/geometric.git
+cd geometric/code
+make shared_object
+sudo cp build/libgeometric.so /usr/lib
+cd ../..
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib
 

@@ -47,6 +47,7 @@ class TransformAttackContainer{
 
         // ---- Methods
         void setTransformationsAndAttacksFor(int image_number);
+        void setTransformationsAndAttacksFor(int image_number, bool verbose);
 };
 TransformAttackContainer* getTransformAttackContainer(char* config);
 

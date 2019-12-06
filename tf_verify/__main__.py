@@ -353,9 +353,9 @@ elif args.geometric:
     if args.config:
         transform_attack_container = get_transform_attack_container(args.config)
         for i, test in enumerate(tests):
-            set_transform_attack_for(transform_attack_container, i)
             if args.test_idx is not None and i != args.test_idx:
                 continue
+            set_transform_attack_for(transform_attack_container, i)
             attack_params = get_attack_params(transform_attack_container)
             attack_images = get_attack_images(transform_attack_container)
             if args.num_tests is not None and i >= args.num_tests:
@@ -363,14 +363,14 @@ elif args.geometric:
             print('Test {}:'.format(i))
 
             if args.dataset == 'mnist' or args.dataset == 'fashion':
-                image = np.float64(test[1:len(test)])
+                image = np.float64(test[1:len(test)])/np.float64(255)
                 n_rows, n_cols, n_channels = 28, 28, 1
             else:
                 n_rows, n_cols, n_channels = 32, 32, 3
                 if is_trained_with_pytorch:
-                    image = np.float64(test[1:len(test)])
+                    image = np.float64(test[1:len(test)])/np.float64(255)
                 else:
-                    image = np.float64(test[1:len(test)]) - 0.5
+                    image = np.float64(test[1:len(test)])/np.float64(255) - 0.5
 
             spec_lb = np.copy(image)
             spec_ub = np.copy(image)
@@ -566,14 +566,14 @@ elif args.geometric:
             print('Test {}:'.format(i))
 
             if args.dataset == 'mnist' or args.dataset == 'fashion':
-                image = np.float64(test[1:len(test)])
+                image = np.float64(test[1:len(test)])/np.float64(255)
                 n_rows, n_cols, n_channels = 28, 28, 1
             else:
                 n_rows, n_cols, n_channels = 32, 32, 3
                 if is_trained_with_pytorch:
-                    image = np.float64(test[1:len(test)])
+                    image = np.float64(test[1:len(test)])/np.float64(255)
                 else:
-                    image = np.float64(test[1:len(test)]) - 0.5
+                    image = np.float64(test[1:len(test)])/np.float64(255) - 0.5
 
             spec_lb = np.copy(image)
             spec_ub = np.copy(image)
