@@ -129,19 +129,19 @@ class Optimizer:
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
                 nn.layertypes.append('Add')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Sub":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoSub(*self.resources[i][domain]))
                 nn.layertypes.append('Sub')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Mul":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoMul(*self.resources[i][domain]))
                 nn.layertypes.append('Mul')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
@@ -158,7 +158,7 @@ class Optimizer:
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
                 nn.layertypes.append('Resadd')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
@@ -169,24 +169,24 @@ class Optimizer:
             elif self.operations[i] == "Sigmoid":
                 output.append(DeepzonoSigmoid(*self.resources[i][domain]))
                 nn.layertypes.append('Sigmoid')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Tanh":
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
                 nn.layertypes.append('Tanh')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Gather":
                 image_shape, indexes, axis,  input_names, output_name, output_shape = self.resources[i][domain]
                 calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
                 output.append(DeepzonoGather(calculated_indexes, input_names, output_name, output_shape))
                 nn.layertypes.append('Gather')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Reshape":
                 output.append(DeepzonoGather(*self.resources[i][domain]))
                 nn.layertypes.append('Gather')
-                nn.numlayers += 1
+                nn.numlayer += 1
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
@@ -205,12 +205,12 @@ class Optimizer:
         """
         Returns a dict mapping output-names to the number of times that output is used by the nodes in the ir_list.
         This functions is a helper function for organizing the sections of an abstract elements when we have a ResNet or later an RNN.
-        
+
         Arguments
         ---------
         ir_list : iterable
             list of Deepzono-Nodes
-        
+
         Return
         ------
         use_dict : dict
@@ -228,14 +228,14 @@ class Optimizer:
         """
         This function plans which Deepzono-Node-output occupies which section of an abstract element. If a DeepzonoDuplicate-Node should be needed, then this function will add it.
         This is needed when we have a ResNet or later RNNs.
-        
+
         Arguments
         ---------
         ir_list : list
             list of Nodes, where each node has the fields output_length, input_names, and output_name (see DeepzonoNodes.py for examples)
-        use_dict : dict 
+        use_dict : dict
             maps the output_name of each node in ir_list to the number of times the node's output will be used
-        
+
         Return
         ------
         ir_list : list
@@ -300,15 +300,15 @@ class Optimizer:
             - Placholder         (only at the beginning)
                 - MatMul -> Add -> Relu
                 - Conv2D -> Add -> Relu    (not as last layer)
-                - MaxPool         (only as intermediate layer)    
-        
+                - MaxPool         (only as intermediate layer)
+
         Arguments
         ---------
         specLB : numpy.ndarray
             1D array with the lower bound of the input spec
         specUB : numpy.ndarray
             1D array with the upper bound of the input spec
-        
+
         Return
         ------
         output : list
@@ -507,13 +507,13 @@ class Optimizer:
                     _,output_name,output_shape = self.resources[i+1][domain]
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, True))
                     nn.layertypes.append('Resadd')
-                    nn.numlayers += 1
+                    nn.numlayer += 1
                     i += 2
                 else:
                     input_names,output_name,output_shape = self.resources[i][domain]
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, False))
                     nn.layertypes.append('Resaddnorelu')
-                    nn.numlayers += 1
+                    nn.numlayer += 1
                     i += 1
                 nn.numlayer+=1
 

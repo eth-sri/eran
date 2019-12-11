@@ -383,8 +383,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
 
         else:
-            print('layertype:', nn.layertypes[i], 'not supported for refine')
-            return
+            assert 0, 'layertype:' + nn.layertypes[i] + 'not supported for refine'
     nn.ffn_counter = ffn_counter
     nn.conv_counter = conv_counter
     nn.residual_counter = residual_counter

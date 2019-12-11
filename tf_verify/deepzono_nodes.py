@@ -340,9 +340,9 @@ class DeepzonoMatmul:
         #    refine_after_affine(self, man, element, nlb, nub)
 
         nn.ffn_counter += 1
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         if testing:
-            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
+            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length,is_refine_layer=False)
+            return remove_dimensions(man, element, offset, old_length), lb, ub
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -385,10 +385,10 @@ class DeepzonoAdd:
         """
         offset, old_length = self.abstract_information
         element = ffn_add_bias_zono(man, True, element, offset, self.bias, old_length)
-        nn.ffn_counter += 1
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        #nn.ffn_counter += 1
         if testing:
-            return element, nlb[-1], nub[-1]
+            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+            return element, lb, ub
         return element
 
 
@@ -433,7 +433,7 @@ class DeepzonoSub:
         offset, old_length = self.abstract_information
         element = ffn_sub_bias_zono(man, True, element, offset, self.bias, self.is_minuend, old_length)
         nn.ffn_counter += 1
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         if testing:
             return element, nlb[-1], nub[-1]
         return element
@@ -670,9 +670,9 @@ class DeepzonoConvbias(DeepzonoConv):
 
         nn.last_layer='Conv2D'
         nn.conv_counter += 1
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         if testing:
-            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
-            return remove_dimensions(man, element, offset, old_length), lb, ub
+            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
 
 
@@ -855,6 +855,7 @@ class DeepzonoMaxpool:
         H, W, C = self.input_shape
         element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
         add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)
+        nn.maxpool_counter += 1
         if testing:
             return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
@@ -936,12 +937,12 @@ class DeepzonoResadd:
         src_offset = self.abstract_information[2]
         zono_add(man, element, dst_offset, src_offset, num_var)
 
-        add_bounds(man, element, nlb, nub, self.output_length, dst_offset, is_refine_layer=True)
         if testing:
+            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, dst_offset)
             if dst_offset == src_offset:
-                return element, nlb[-1], nub[-1]
+                return element, lb, ub
             else:
-                return remove_dimensions(man, element, src_offset, num_var), nlb[-1], nub[-1]
+                return remove_dimensions(man, element, src_offset, num_var), lb, ub
         if dst_offset == src_offset:
             return element
         else:
