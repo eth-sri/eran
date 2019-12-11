@@ -143,7 +143,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<use_milp>```: specifies whether to use MILP (default is true).
 
-* ```<numprocesses_milp>```: specifies howmany processes to use for MILP (default is 8).
+* ```<numprocesses_milp>```: specifies how many processes to use for MILP (default is 8).
 
 * ```<use_2relu>```: specifies whether to use 2-ReLU (default is false).
 
@@ -151,7 +151,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<dyn_krelu>```: specifies whether to dynamically select parameter k for k-ReLU (default is false).
 
-* ```<numproc_krelu>```: specifies howmany processes to use for k-ReLU (default is 12).
+* ```<numproc_krelu>```: specifies how many processes to use for k-ReLU (default is 12).
 
 * Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
 
