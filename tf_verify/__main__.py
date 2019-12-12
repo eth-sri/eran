@@ -116,12 +116,15 @@ def denormalize(image, means, stds, dataset):
                 count = count+1
 
 
-def get_tests(dataset):
+def get_tests(dataset, geometric):
     if (dataset == 'acasxu'):
         specfile = '../data/acasxu/specs/acasxu_prop' + str(specnumber) + '_spec.txt'
         tests = open(specfile, 'r').read()
     else:
-        csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+        if geometric:
+            csvfile = open('../geometric/code/dataset/{}_test.csv'.format(dataset), 'r')
+        else:
+            csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
         tests = csv.reader(csvfile, delimiter=',')
     return tests
 
@@ -269,7 +272,7 @@ total_images = 0
 
 
 if dataset:
-    tests = get_tests(dataset)
+    tests = get_tests(dataset, args.geometric)
 
 
 if dataset=='acasxu':

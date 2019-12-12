@@ -168,25 +168,19 @@ class Optimizer:
                 i += 1
             elif self.operations[i] == "Sigmoid":
                 output.append(DeepzonoSigmoid(*self.resources[i][domain]))
-                nn.layertypes.append('Sigmoid')
-                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Tanh":
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
-                nn.layertypes.append('Tanh')
-                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Gather":
                 image_shape, indexes, axis,  input_names, output_name, output_shape = self.resources[i][domain]
                 calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
                 output.append(DeepzonoGather(calculated_indexes, input_names, output_name, output_shape))
                 nn.layertypes.append('Gather')
-                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Reshape":
                 output.append(DeepzonoGather(*self.resources[i][domain]))
                 nn.layertypes.append('Gather')
-                nn.numlayer += 1
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
@@ -319,6 +313,7 @@ class Optimizer:
         domain = 'deeppoly'
 
         i = 0
+        print(self.operations)
         while i < len(self.operations):
             #print(self.operations[i])
             if self.operations[i] == "Placeholder":
@@ -507,13 +502,11 @@ class Optimizer:
                     _,output_name,output_shape = self.resources[i+1][domain]
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, True))
                     nn.layertypes.append('Resadd')
-                    nn.numlayer += 1
                     i += 2
                 else:
                     input_names,output_name,output_shape = self.resources[i][domain]
                     output.append(DeeppolyResadd(input_names,output_name,output_shape, False))
                     nn.layertypes.append('Resaddnorelu')
-                    nn.numlayer += 1
                     i += 1
                 nn.numlayer+=1
 
@@ -537,7 +530,7 @@ class Optimizer:
                 output.append(DeeppolyMul(*self.resources[i][domain]))
                 i += 1
             else:
-                assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
+                assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network: " + str(self.operations)
 
             # for testing, getting the corresponding layer in the tensorflow or onnx model
             output_info.append(self.resources[i-1][domain][-2:])

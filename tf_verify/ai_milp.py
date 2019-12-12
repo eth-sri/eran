@@ -3,7 +3,8 @@ import numpy as np
 import time
 
 def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
-
+    print(out_shape)
+    print(len(lbi))
     num_out_neurons = np.prod(out_shape)
     num_in_neurons = input_shape[0]*input_shape[1]*input_shape[2]
 

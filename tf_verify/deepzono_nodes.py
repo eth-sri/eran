@@ -669,7 +669,6 @@ class DeepzonoConvbias(DeepzonoConv):
         element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, out_size, pad_top, pad_left, has_bias)
 
         nn.last_layer='Conv2D'
-        nn.conv_counter += 1
         add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         if testing:
             return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
@@ -733,7 +732,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
             abstract element after the transformer
         """
         offset, length = self.abstract_information
-        add_bounds(man, element, nlb, nub, length, offset, is_refine_layer=True)
+        add_bounds(man, element, nlb, nub, self.output_length, offset, is_refine_layer=True)
         if refine==True:
             element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp, timeout_milp)
         else:
@@ -744,7 +743,12 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         elif nn.last_layer == 'Conv2D':
            nn.conv_counter+=1
         if testing:
-            return element, nlb[-1], nub[-1]
+            if refine:
+                return element, nlb[-1], nub[-1]
+            else:
+                lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset)
+                return element, lb, ub
+
         return element
 
 
@@ -769,7 +773,7 @@ class DeepzonoSigmoid(DeepzonoNonlinearity):
         """
         offset, old_length = self.abstract_information
         element = sigmoid_zono_layerwise(*self.get_arguments(man, element))
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        add_bounds(man, element, nlb, nub, self.output_length, offset, is_refine_layer=True)
         if testing:
             return element, nlb[-1], nub[-1]
         return element
@@ -796,7 +800,7 @@ class DeepzonoTanh(DeepzonoNonlinearity):
         """
         offset, old_length = self.abstract_information
         element = tanh_zono_layerwise(*self.get_arguments(man, element))
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
+        add_bounds(man, element, nlb, nub, self.output_length, offset, is_refine_layer=True)
         if testing:
             return element, nlb[-1], nub[-1]
         return element
