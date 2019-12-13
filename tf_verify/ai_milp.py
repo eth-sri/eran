@@ -2,7 +2,7 @@ from gurobipy import *
 import numpy as np
 import time
 
-def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
+def handle_conv(model,var_list,start_counter, filters, biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
     print(out_shape)
     print(len(lbi))
     num_out_neurons = np.prod(out_shape)
@@ -318,6 +318,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
 
     start_counter = []
     start_counter.append(0)
+    print(nn.layertypes)
+    print([len(lb) for lb in nlb])
     for i in range(numlayer):
         if(nn.layertypes[i] in ['SkipCat']):
             continue
@@ -350,13 +352,13 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
 
-            counter = handle_conv(model, var_list, counter, filters,biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
-
-            if(relu_needed[i] and nn.layertypes[i]=='Conv2D'):
-               counter = handle_relu(model, var_list, i, counter, num_neurons, nlb[i], nub[i], use_milp)
-            start_counter.append(counter)
+            counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
 
             nn.conv_counter+=1
+
+            if(relu_needed[i] and nn.layertypes[i]=='Conv2D'):
+                counter = handle_relu(model, var_list, i, counter, num_neurons, nlb[i], nub[i], use_milp)
+            start_counter.append(counter)
 
 
         elif(nn.layertypes[i]=='MaxPooling2D'):

@@ -532,7 +532,6 @@ class DeepzonoAffine(DeepzonoMatmul):
         #    refine_after_affine(self, man, element, nlb, nub)
         add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         nn.last_layer = 'Affine'
-        nn.ffn_counter += 1
         if testing:
             return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
@@ -732,7 +731,6 @@ class DeepzonoRelu(DeepzonoNonlinearity):
             abstract element after the transformer
         """
         offset, length = self.abstract_information
-        add_bounds(man, element, nlb, nub, self.output_length, offset, is_refine_layer=True)
         if refine==True:
             element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp, timeout_milp)
         else:
