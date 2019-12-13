@@ -157,13 +157,15 @@ class Optimizer:
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
-                nn.layertypes.append('Resadd')
+                nn.layertypes.append('Resaddnorelu')
                 nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
                 if nn.layertypes[len(nn.layertypes)-1]=='Affine':
                     nn.layertypes[-1] = 'ReLU'
+                if nn.layertypes[len(nn.layertypes)-1]=='Resadd':
+                    nn.layertypes[-1] = 'Resadd'
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Sigmoid":

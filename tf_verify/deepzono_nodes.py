@@ -939,10 +939,12 @@ class DeepzonoResadd:
         src_offset = self.abstract_information[2]
         zono_add(man, element, dst_offset, src_offset, num_var)
 
+        add_bounds(man, element, nlb, nub, self.output_length, dst_offset)
+
+        nn.residual_counter += 1
         if testing:
-            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, dst_offset)
             if dst_offset == src_offset:
-                return element, lb, ub
+                return element, nlb[-1], nub[-1]
             else:
                 return remove_dimensions(man, element, src_offset, num_var), lb, ub
         if dst_offset == src_offset:

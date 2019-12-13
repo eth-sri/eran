@@ -281,6 +281,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, numlayer, use_milp, relu_needed):
     nn.residual_couter = 0
     nn.maxpool_counter = 0
     var_list = []
+    print([l for l in nn.layertypes])
+    print([len(p) for p in nn.predecessors])
 
     # TODO zonotope
     if UB_N0 is None:
