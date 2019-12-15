@@ -1,4 +1,5 @@
 numpy
 tensorflow
 onnx
+pycddlib
 tqdm

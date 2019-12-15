@@ -8,7 +8,8 @@ from elina_manager import *
 from deeppoly_nodes import *
 from deepzono_nodes import *
 from functools import reduce
-import ctypes
+import gc
+from config import config
 
 class layers:
     def __init__(self):
@@ -38,6 +39,9 @@ class layers:
     def calc_layerno(self):
         return self.ffn_counter + self.conv_counter + self.residual_counter + self.maxpool_counter
 
+    def is_ffn(self):
+        return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
+
 class Analyzer:
     def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing = False):
         """
@@ -66,6 +70,7 @@ class Analyzer:
         self.specnumber = specnumber
         self.use_area_heuristic = use_area_heuristic
         self.testing = testing
+        self.relu_groups = []
 
     
     def __del__(self):
@@ -82,11 +87,10 @@ class Analyzer:
         testing_nlb = []
         testing_nub = []
         for i in range(1, len(self.ir_list)):
-            print(self.ir_list[i])
             if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
             else:
-                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
 
             if isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds
@@ -94,6 +98,7 @@ class Analyzer:
                 testing_nub.append(test_ub)
             else:
                 element = element_test_bounds
+        gc.collect()
         if self.testing:
             return element, testing_nlb, testing_nub
         return element, nlb, nub
@@ -116,18 +121,51 @@ class Analyzer:
             output_size = reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
     
         dominant_class = -1
+        if(self.domain=='refinepoly'):
+
+            relu_needed = [1] * self.nn.numlayer
+            self.nn.ffn_counter = 0
+            self.nn.conv_counter = 0
+            self.nn.maxpool_counter = 0
+            self.nn.residual_counter = 0
+            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False,relu_needed)
+            #model.setParam('Timeout',1000)
+            num_var = len(var_list)
+            output_size = num_var - counter
+
+
         if self.specnumber==0:
             for i in range(output_size):
                 flag = True
+                label = i
                 for j in range(output_size):
                     if self.domain == 'deepzono' or self.domain == 'refinezono':
                         if i!=j and not self.is_greater(self.man, element, i, j):
                             flag = False
                             break
                     else:
-                        if i!=j and not self.is_greater(self.man, element, i, j, self.use_area_heuristic):
-                            flag = False
-                            break
+                        if label!=j and not self.is_greater(self.man, element, label, j, self.use_area_heuristic):
+
+                            if(self.domain=='refinepoly'):
+                                obj = LinExpr()
+                                obj += 1*var_list[counter+label]
+                                obj += -1*var_list[counter + j]
+                                model.setObjective(obj,GRB.MINIMIZE)
+                                model.optimize()
+                                if model.Status!=2:
+                                    model.write("final.mps")
+                                    print (f"Model failed to solve, {model.Status}")
+                                    flag = False
+                                    break
+                                elif(model.objval<0):
+                                    flag = False
+                                    break
+
+                            else:
+                                flag = False
+                                break
+
+
                 if flag:
                     dominant_class = i
                     break
