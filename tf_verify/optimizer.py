@@ -92,8 +92,6 @@ class Optimizer:
                     nn.filters.append(filters)
 
                     nn.biases.append(bias)
-                    nn.layertypes.append('Conv2D')
-                    nn.numlayer+=1
                     output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
                     i += 2
                 else:
@@ -106,10 +104,10 @@ class Optimizer:
                     nn.out_shapes.append(output_shape)
                     nn.filters.append(filters)
 
-                    nn.layertypes.append('Conv2D')
-                    nn.numlayer+=1
                     output.append(DeepzonoConv(image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape))
                     i += 1
+                nn.layertypes.append('Conv2DNoReLU')
+                nn.numlayer+=1
             elif self.operations[i] == "Conv":
                 filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
@@ -121,7 +119,7 @@ class Optimizer:
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
-                nn.layertypes.append('Conv2D')
+                nn.layertypes.append('Conv2DNoReLU')
                 nn.numlayer+=1
                 output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape))
                 i += 1
@@ -157,13 +155,15 @@ class Optimizer:
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
-                nn.layertypes.append('Resadd')
+                nn.layertypes.append('Resaddnorelu')
                 nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
                 if nn.layertypes[-1]=='Affine':
                     nn.layertypes[-1] = 'ReLU'
+                if nn.layertypes[-1][-6:].lower() == 'norelu':
+                    nn.layertypes[-1] = nn.layertypes[-1][:-6]
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Sigmoid":

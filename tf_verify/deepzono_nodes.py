@@ -170,7 +170,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
             if((lbi[i]<0 and ubi[i]>0) or (lbi[i]>0)):
                  candidate_vars.append(i)
         #TODO handle residual layers here
-        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, length, layerno, layerno, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
+        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, layerno, layerno, length, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
         nlb[-1] = resl
         nub[-1] = resu
 

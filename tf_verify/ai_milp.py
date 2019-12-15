@@ -356,6 +356,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             print(len(nlb))
             print(len(relu_groups))
             print(i)
+            print(nn.layertypes)
+            print(relu_needed)
             if(nn.layertypes[i]=='ReLU' and relu_needed[i]):
                 if(use_milp):
                      counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
@@ -412,10 +414,15 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             counter2 = start_counter[index2]
             counter = handle_residual(model,var_list,counter1,counter2,nlb[i],nub[i])
             if(relu_needed[i] and nn.layertypes[i]=='Resadd'):
-               if(use_milp):
-                   counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i],use_milp)
-               else:
-                   counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i], use_milp)
+                print(len(nlb))
+                print(len(relu_groups))
+                print(i)
+                print(nn.layertypes)
+                print(relu_needed)
+                if(use_milp):
+                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i],use_milp)
+                else:
+                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i], use_milp)
 
             start_counter.append(counter)
             nn.residual_counter +=1
