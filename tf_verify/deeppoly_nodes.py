@@ -677,7 +677,7 @@ class DeeppolyMaxpool:
         """
         handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
         if refine or testing:
-            calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.maxpool_counter += 1
         if testing:
             return element, nlb[-1], nub[-1]

@@ -87,6 +87,7 @@ class Analyzer:
         testing_nlb = []
         testing_nub = []
         for i in range(1, len(self.ir_list)):
+            print(self.ir_list[i])
             if self.domain == 'deepzono' or self.domain == 'refinezono':
                 element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
             else:

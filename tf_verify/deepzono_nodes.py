@@ -170,7 +170,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
             if((lbi[i]<0 and ubi[i]>0) or (lbi[i]>0)):
                  candidate_vars.append(i)
         #TODO handle residual layers here
-        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, length, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
+        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, length, layerno, layerno, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
         nlb[-1] = resl
         nub[-1] = resu
 
@@ -538,34 +538,13 @@ class DeepzonoAffine(DeepzonoMatmul):
         element = ffn_matmult_zono(man, destructive, element, start_offset, weights, self.bias, num_vars, expr_offset, expr_size)
         #if self.refine == 'True':
         #    refine_after_affine(self, man, element, nlb, nub)
-        dimension = elina_abstract0_dimension(man,element)
-        var_in_element = dimension.intdim + dimension.realdim
-        bounds = elina_abstract0_to_box(man,element)
-        lbi = []
-        ubi = []
-        for i in range(num_vars):
-            inf = bounds[i+start_offset].contents.inf
-            sup = bounds[i+start_offset].contents.sup
-            lbi.append(inf.contents.val.dbl)
-            ubi.append(sup.contents.val.dbl)
-
-        candidate_vars = []
-        widths = []
-        for i in range(num_vars):
-            if (lbi[i] < 0 and ubi[i] > 0):
-                candidate_vars.append(i)
-                widths.append(ubi[i] - lbi[i])
-        widths = np.asarray(widths)
-        num_candidates = len(candidate_vars)
+        lbi, ubi = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         # print("num candidates here ", num_candidates)
-        sorted_width_indices = np.argsort(widths)
         encode_krelu_cons(nn, man, element, start_offset, nn.ffn_counter + nn.conv_counter, num_vars, lbi, ubi, relu_groups, False, 'refinezono')
 
         nlb.append(lbi)
         nub.append(ubi) 
 
-        elina_interval_array_free(bounds,var_in_element)
-        #add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         nn.last_layer = 'Affine'
         if testing:
             return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
@@ -768,7 +747,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         """
         offset, length = self.abstract_information
         if refine==True:
-            element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, timeout_lp, timeout_milp)
+            element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp)
         else:
             element = relu_zono_layerwise(*self.get_arguments(man, element))
 
