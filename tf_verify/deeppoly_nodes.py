@@ -458,7 +458,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
                     abstract element after the transformer 
         """
         ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_area_heuristic)
-        if testing or refine:
+        if testing:
             lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         if testing:
@@ -498,7 +498,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
                     abstract element after the transformer 
         """
         ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_area_heuristic)
-        if testing or refine:
+        if testing:
             lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
         if testing:
@@ -664,7 +664,8 @@ class DeeppolyMaxpool:
             abstract element after the transformer 
         """
         handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
-        calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
+        if refine or testing:
+            calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
         nn.maxpool_counter += 1
         if testing:
             return element, nlb[-1], nub[-1]

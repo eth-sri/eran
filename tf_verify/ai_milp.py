@@ -52,19 +52,18 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
     binary_counter = start
     maxpool_counter = start
     if(use_milp==1):
-        maxpool_counter = start + num_neurons
         for j in range(num_neurons):
-            var_name = "x" + str(start+j)
+            var_name = "x" + str(maxpool_counter)
             var = model.addVar(vtype=GRB.BINARY, name=var_name)
-
             var_list.append(var)
+            maxpool_counter += 1
     o1 = out_shape[0]
     o2 = out_shape[1]
     o3 = out_shape[2]
     output_size = o1*o2*o3
 
     for j in range(output_size):
-        var_name = "x" + str(maxpool_counter+j)
+        var_name = "x" + str(maxpool_counter + j)
         var = model.addVar(vtype=GRB.CONTINUOUS, lb = lbi[j], ub=ubi[j],  name=var_name)
         var_list.append(var)
 

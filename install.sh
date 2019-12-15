@@ -51,8 +51,9 @@ sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
 sudo cp ../../lib/libgurobi81.so /usr/lib
-cd ../../../../
-
+cd ../../
+sudo python3 setup.py install
+cd ../../
 git clone https://github.com/eth-sri/deepg.git
 cd deepg/code
 mkdir build

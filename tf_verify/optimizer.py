@@ -157,32 +157,36 @@ class Optimizer:
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
-                nn.layertypes.append('Resaddnorelu')
+                nn.layertypes.append('Resadd')
                 nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
                 if nn.layertypes[len(nn.layertypes)-1]=='Affine':
                     nn.layertypes[-1] = 'ReLU'
-                if nn.layertypes[len(nn.layertypes)-1]=='Resadd':
-                    nn.layertypes[-1] = 'Resadd'
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Sigmoid":
                 output.append(DeepzonoSigmoid(*self.resources[i][domain]))
+                nn.layertypes.append('Sigmoid')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Tanh":
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
+                nn.layertypes.append('Tanh')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Gather":
                 image_shape, indexes, axis,  input_names, output_name, output_shape = self.resources[i][domain]
                 calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
                 output.append(DeepzonoGather(calculated_indexes, input_names, output_name, output_shape))
                 nn.layertypes.append('Gather')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Reshape":
                 output.append(DeepzonoGather(*self.resources[i][domain]))
                 nn.layertypes.append('Gather')
+                nn.numlayer += 1
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
@@ -544,8 +548,11 @@ class Optimizer:
         output_index_store = {}
         index_o = 0
         for node in output:
-            output_index_store[node.output_name] = index_o
-            index_o += 1
+            if isinstance(node, DeepzonoRelu):
+                output_index_store[node.output_name] = index_o - 1
+            else:
+                output_index_store[node.output_name] = index_o
+                index_o += 1
         for node in output:
             predecessors = (c_size_t * len(node.input_names))()
             i = 0
@@ -553,7 +560,8 @@ class Optimizer:
                 predecessors[i] = output_index_store[input_name]
                 i += 1
             node.predecessors = predecessors
-            nn.predecessors.append(predecessors)
+            if not isinstance(node, DeepzonoRelu):
+                nn.predecessors.append(predecessors)
 
     def get_gather_indexes(self, input_shape, indexes, axis):
         size = np.prod(input_shape)

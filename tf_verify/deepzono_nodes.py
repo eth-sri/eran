@@ -856,11 +856,15 @@ class DeepzonoMaxpool:
         h, w    = self.window_size
         H, W, C = self.input_shape
         element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
-        add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)
+
+        if refine or testing:
+            add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)
         nn.maxpool_counter += 1
+
+        element = remove_dimensions(man, element, offset, old_length)
         if testing:
-            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
-        return remove_dimensions(man, element, offset, old_length)
+            return element, nlb[-1], nub[-1]
+        return element
 
 
 
@@ -939,18 +943,18 @@ class DeepzonoResadd:
         src_offset = self.abstract_information[2]
         zono_add(man, element, dst_offset, src_offset, num_var)
 
-        add_bounds(man, element, nlb, nub, self.output_length, dst_offset)
+        if refine or testing:
+            add_bounds(man, element, nlb, nub, self.output_length, dst_offset, is_refine_layer=True)
 
         nn.residual_counter += 1
+
+        if dst_offset != src_offset:
+            element = remove_dimensions(man, element, src_offset, num_var)
+
         if testing:
-            if dst_offset == src_offset:
-                return element, nlb[-1], nub[-1]
-            else:
-                return remove_dimensions(man, element, src_offset, num_var), lb, ub
-        if dst_offset == src_offset:
-            return element
+            return element, nlb[-1], nub[-1]
         else:
-            return remove_dimensions(man, element, src_offset, num_var)
+            return element
 
 
 class DeepzonoGather:

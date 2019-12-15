@@ -122,7 +122,7 @@ def get_tests(dataset, geometric):
         tests = open(specfile, 'r').read()
     else:
         if geometric:
-            csvfile = open('../geometric/code/dataset/{}_test.csv'.format(dataset), 'r')
+            csvfile = open('../geometric/code/datasets/{}_test.csv'.format(dataset), 'r')
         else:
             csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
         tests = csv.reader(csvfile, delimiter=',')
@@ -366,7 +366,7 @@ elif args.geometric:
             print('Test {}:'.format(i))
 
             if args.dataset == 'mnist' or args.dataset == 'fashion':
-                image = np.float64(test[1:len(test)])/np.float64(255)
+                image = np.float64(test[1:len(test)])
                 n_rows, n_cols, n_channels = 28, 28, 1
             else:
                 n_rows, n_cols, n_channels = 32, 32, 3
@@ -569,14 +569,14 @@ elif args.geometric:
             print('Test {}:'.format(i))
 
             if args.dataset == 'mnist' or args.dataset == 'fashion':
-                image = np.float64(test[1:len(test)])/np.float64(255)
+                image = np.float64(test[1:len(test)])
                 n_rows, n_cols, n_channels = 28, 28, 1
             else:
                 n_rows, n_cols, n_channels = 32, 32, 3
                 if is_trained_with_pytorch:
-                    image = np.float64(test[1:len(test)])/np.float64(255)
+                    image = np.float64(test[1:len(test)])
                 else:
-                    image = np.float64(test[1:len(test)])/np.float64(255) - 0.5
+                    image = np.float64(test[1:len(test)]) - 0.5
 
             spec_lb = np.copy(image)
             spec_ub = np.copy(image)
