@@ -353,11 +353,6 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
 
             counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
 
-            print(len(nlb))
-            print(len(relu_groups))
-            print(i)
-            print(nn.layertypes)
-            print(relu_needed)
             if(nn.layertypes[i]=='ReLU' and relu_needed[i]):
                 if(use_milp):
                      counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)

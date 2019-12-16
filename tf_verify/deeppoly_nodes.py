@@ -233,7 +233,7 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
             """
         ffn_handle_first_sigmoid_layer(man, element, *self.get_arguments())
         if testing:
-            lb, ub = calc_bounds(man, element, nn, nlb, nub)
+            lb, ub = calc_bounds(man, element, nn, nlb, nub, relu_groups)
         nn.ffn_counter+=1
         if testing:
             return element, lb, ub
@@ -259,7 +259,7 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
             """
         ffn_handle_first_tanh_layer(man, element, *self.get_arguments())
         if testing:
-            lb, ub = calc_bounds(man, element, nn, nlb, nub)
+            lb, ub = calc_bounds(man, element, nn, nlb, nub, relu_groups)
         nn.ffn_counter+=1
         if testing:
             return element, lb, ub
@@ -338,7 +338,7 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
             """
         ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_area_heuristic)
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
         if testing:
             return element, nlb[-1], nub[-1]
@@ -364,7 +364,7 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
             """
         ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_area_heuristic)
         if testing or refine:
-            calc_bounds(man, element, nn, nlb, nub, is_refine_layer=True)
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
         if testing:
             return element, nlb[-1], nub[-1]

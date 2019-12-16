@@ -144,8 +144,11 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
     
     offset, length = self.abstract_information
     layerno = nn.calc_layerno()
+    lbi = nlb[-1]
+    ubi = nub[-1]
     if layerno==0 or nn.last_layer=='Conv2D':
-        element = relu_zono_layerwise(man,True,element,offset, length) 
+        element = relu_zono_layerwise(man,True,element,offset, length)
+        encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, True, 'refinezono')
     else:
         is_conv = False
         timeout = timeout_milp
@@ -163,8 +166,6 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
                use_milp = 0
                timeout = timeout_lp
         use_milp = use_milp and config.use_milp
-        lbi = nlb[layerno]
-        ubi = nub[layerno]
         candidate_vars = []
         for i in range(length):
             if((lbi[i]<0 and ubi[i]>0) or (lbi[i]>0)):
@@ -627,6 +628,7 @@ class DeepzonoConv:
         """
         offset, old_length  = self.abstract_information
         element = conv_matmult_zono(*self.get_arguments(man, element))
+        relu_groups.append([])
         if testing:
             lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
             return remove_dimensions(man, element, offset, old_length), lb, ub
@@ -683,6 +685,7 @@ class DeepzonoConvbias(DeepzonoConv):
         element = conv_matmult_zono(man, destructive, element, start_offset, filters, bias, input_size, expr_offset, filter_size, num_filters, strides, out_size, pad_top, pad_left, has_bias)
 
         nn.last_layer='Conv2D'
+        relu_groups.append([])
         add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         if testing:
             return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
@@ -876,6 +879,7 @@ class DeepzonoMaxpool:
             add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)
         nn.maxpool_counter += 1
 
+        relu_groups.append([])
         element = remove_dimensions(man, element, offset, old_length)
         if testing:
             return element, nlb[-1], nub[-1]
@@ -960,6 +964,7 @@ class DeepzonoResadd:
 
         if refine or testing:
             add_bounds(man, element, nlb, nub, self.output_length, dst_offset, is_refine_layer=True)
+            relu_groups.append([])
 
         nn.residual_counter += 1
 

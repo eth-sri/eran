@@ -240,13 +240,15 @@ for dataset in datasets:
             else:
                 tested_file.write(', '.join([dataset, network, domain, '\neran', str(pred_eran), '\nmodel', str(pred_model)]) + '\n')
                 tested_file.flush()
+                print(len(nlb))
+                print(len(pred))
                 for i in range(len(nlb)):
                     pred_eran = np.asarray([(l+u)/2 for l, u in zip(nlb[i], nub[i])])
-                    offset = 1
-                    if is_onnx:
-                        offset = 2
-                    pred_model = np.asarray(pred[i + offset]).reshape(-1)
-                    difference = pred_eran - pred_model
+                    offset = len(pred) - len(nlb)
+                    pred_model = np.asarray(pred[i + offset])
+                    if is_onnx and pred_model.ndim == 4:
+                        pred_model = pred_model.transpose(0, 2, 3, 1)
+                    difference = pred_eran - pred_model.reshape(-1)
                     if not np.all([abs(elem) < .001 for elem in difference]):
                         tested_file.write(', '.join([dataset, network, domain, 'started divergence at layer', str(i), 'outputname', str(output_info[i+1][0]), '\ndifference', str(difference)]) + '\n\n\n')
                         tested_file.flush()
