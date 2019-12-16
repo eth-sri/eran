@@ -850,6 +850,20 @@ class DeepzonoMaxpool:
         h, w    = self.window_size
         H, W, C = self.input_shape
         element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
+        start_offset = offset+old_length
+        dimension = elina_abstract0_dimension(man,element)
+        var_in_element = dimension.intdim + dimension.realdim
+        bounds = elina_abstract0_to_box(man,element)
+        num_out_neurons = self.output_shape[0]*self.output_shape[1]*self.output_shape[2]
+        lbi = []
+        ubi = []
+        for i in range(num_out_neurons):
+            inf = bounds[i+start_offset].contents.inf
+            sup = bounds[i+start_offset].contents.sup
+            lbi.append(inf.contents.val.dbl)
+            ubi.append(sup.contents.val.dbl)
+        nlb.append(lbi)
+        nub.append(ubi)
         return remove_dimensions(man, element, offset, old_length)
 
 
