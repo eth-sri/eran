@@ -193,12 +193,17 @@ Similarly, for the ACAS Xu networks, ERAN will output whether the property has b
 Publications
 -------------
 
-*  [Fast and Effective Robustness Certification](https://www.sri.inf.ethz.ch/publications/singh2018effective). 
+*  [Beyond the Single Neuron Convex Barrier for Neural Network Certification](https://www.sri.inf.ethz.ch/publications/singh2019krelu).
+    
+    Gagandeep Singh, Rupanshu Ganvir, Markus Püschel, and Martin Vechev. 
+   
+    NeurIPS 2019.
 
-    Gagandeep Singh, Timon Gehr, Matthew Mirman, Markus Püschel, and Martin Vechev. 
+*  [Boosting Robustness Certification of Neural Networks](https://www.sri.inf.ethz.ch/publications/singh2019refinement).
 
-    NIPS 2018.
+    Gagandeep Singh, Timon Gehr, Markus Püschel, and Martin Vechev. 
 
+    ICLR 2019.
 
 
 *  [An Abstract Domain for Certifying Neural Networks](https://www.sri.inf.ethz.ch/publications/singh2019domain).
@@ -207,11 +212,13 @@ Publications
 
     POPL 2019.
 
-*  [Boosting Robustness Certification of Neural Networks](https://www.sri.inf.ethz.ch/publications/singh2019refinement).
 
-    Gagandeep Singh, Timon Gehr, Markus Püschel, and Martin Vechev. 
+*  [Fast and Effective Robustness Certification](https://www.sri.inf.ethz.ch/publications/singh2018effective). 
 
-    ICLR 2019.
+    Gagandeep Singh, Timon Gehr, Matthew Mirman, Markus Püschel, and Martin Vechev. 
+
+    NeurIPS 2018.
+
 
 
 
