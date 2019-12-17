@@ -749,13 +749,14 @@ class DeeppolySub:
         strides : numpy.ndarray
             1D array of ints with 2 entries [height, width] representing the stride in these directions
         """
-        self.bias = np.ascontiguousarray(bias, dtype=np.uintp)
+        self.bias = np.ascontiguousarray(bias, dtype=np.float64)
         self.is_minuend = is_minuend
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
         layerno = nn.calc_layerno()
-        #handle_sub_layer(man, element, layerno, self.bias, self.is_minuend)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
+        ffn_handle_intermediate_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, use_area_heuristic)
         nn.ffn_counter+=1
         return element
 
@@ -774,11 +775,12 @@ class DeeppolyMul:
         strides : numpy.ndarray
             1D array of ints with 2 entries [height, width] representing the stride in these directions
         """
-        self.bias = np.ascontiguousarray(bias, dtype=np.uintp)
+        self.bias = np.ascontiguousarray(bias, dtype=np.float64)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
         layerno = nn.calc_layerno()
-        #handle_mul_layer(man, element, layerno, self.bias)
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
+        ffn_handle_intermediate_mul_layer(man, element, self.bias, num_neurons, self.predecessors, use_area_heuristic)
         nn.ffn_counter+=1
         return element
