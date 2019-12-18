@@ -529,11 +529,21 @@ class Optimizer:
                 i+=1
 
             elif self.operations[i] == "Sub":
-                output.append(DeeppolySub(*self.resources[i][domain]))
+                if i == 1:
+                    output.append(DeeppolySubNodeFirst(*self.resources[i][domain]))
+                else:
+                    output.append(DeeppolySubNodeIntermediate(*self.resources[i][domain]))
+                nn.layertypes.append('Mul')
+                nn.numlayer += 1
                 i += 1
 
             elif self.operations[i] == "Mul":
-                output.append(DeeppolyMul(*self.resources[i][domain]))
+                if i == 1:
+                    output.append(DeeppolyMulNodeFirst(*self.resources[i][domain]))
+                else:
+                    output.append(DeeppolyMulNodeIntermediate(*self.resources[i][domain]))
+                nn.layertypes.append('Mul')
+                nn.numlayer += 1
                 i += 1
             else:
                 assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network: " + str(self.operations)

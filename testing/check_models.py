@@ -144,7 +144,7 @@ for dataset in datasets:
                 continue
 
         if args.parser_only:
-            tested_file.write(', '.join([dataset, network, 'ERAN parsed successfully\n']))
+            tested_file.write(', '.join([dataset, network, 'ERAN parsed successfully\n', str(eran.optimizer.operations), '\n']))
             tested_file.flush()
             continue
 
@@ -206,8 +206,6 @@ for dataset in datasets:
 
             if is_onnx:
                 input = input.transpose(0, 3, 1, 2)
-
-            if is_onnx:
                 for name, shape in output_info:
                     out_node = helper.ValueInfoProto(type = helper.TypeProto())
                     out_node.name = name

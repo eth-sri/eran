@@ -148,7 +148,6 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
     ubi = nub[-1]
     if layerno==0 or nn.last_layer=='Conv2D':
         element = relu_zono_layerwise(man,True,element,offset, length)
-        encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, True, 'refinezono')
     else:
         is_conv = False
         timeout = timeout_milp
@@ -441,10 +440,10 @@ class DeepzonoSub:
         """
         offset, old_length = self.abstract_information
         element = ffn_sub_bias_zono(man, True, element, offset, self.bias, self.is_minuend, old_length)
-        nn.ffn_counter += 1
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
-        if testing:
-            return element, nlb[-1], nub[-1]
+        #nn.ffn_counter += 1
+        #if testing:
+        #    lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        #    return element, lb, ub
         return element
 
 
@@ -487,10 +486,10 @@ class DeepzonoMul:
         """
         offset, old_length = self.abstract_information
         element = ffn_mul_bias_zono(man, True, element, offset, self.bias, old_length)
-        nn.ffn_counter += 1
-        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
-        if testing:
-            return element, nlb[-1], nub[-1]
+        #nn.ffn_counter += 1
+        #if testing:
+        #    lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
+        #    return element, lb, ub
         return element
 
 

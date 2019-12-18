@@ -735,7 +735,7 @@ class DeeppolyGather:
         return element
 
 
-class DeeppolySub:
+class DeeppolySubNodeFirst:
     def __init__(self, bias, is_minuend, input_names, output_name, output_shape):
         """
         collects the information needed for the handle_gather_layer transformer and brings it into the required shape
@@ -754,14 +754,46 @@ class DeeppolySub:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
-        layerno = nn.calc_layerno()
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        ffn_handle_intermediate_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, use_area_heuristic)
+        ffn_handle_first_sub_layer(man, element, self.bias, self.is_minuend, len(self.bias.reshape(-1)), self.predecessors)
+        if refine or testing:
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 
-class DeeppolyMul:
+class DeeppolySubNodeIntermediate:
+    def __init__(self, bias, is_minuend, input_names, output_name, output_shape):
+        """
+        collects the information needed for the handle_gather_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        indexes : numpy.ndarray
+            1D array of ints with 3 entries [height, width, channels] representing the shape of the of the image that is passed to the conv-layer
+        window_size : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the window's size in these directions
+        strides : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the stride in these directions
+        """
+        self.bias = np.ascontiguousarray(bias.reshape(-1), dtype=np.float64)
+        self.is_minuend = is_minuend
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+        layerno = nn.calc_layerno()
+        num_neurons = get_num_neurons_in_layer(man, element, layerno)
+        ffn_handle_intermediate_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, use_area_heuristic)
+        if refine or testing:
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
+        nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
+        return element
+
+
+class DeeppolyMulNodeFirst:
     def __init__(self, bias, input_names, output_name, output_shape):
         """
         collects the information needed for the handle_gather_layer transformer and brings it into the required shape
@@ -779,8 +811,38 @@ class DeeppolyMul:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
-        layerno = nn.calc_layerno()
-        num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        ffn_handle_intermediate_mul_layer(man, element, self.bias, num_neurons, self.predecessors, use_area_heuristic)
+        ffn_handle_first_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors)
+        if refine or testing:
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
+        return element
+
+
+
+class DeeppolyMulNodeIntermediate:
+    def __init__(self, bias, input_names, output_name, output_shape):
+        """
+        collects the information needed for the handle_gather_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        indexes : numpy.ndarray
+            1D array of ints with 3 entries [height, width, channels] representing the shape of the of the image that is passed to the conv-layer
+        window_size : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the window's size in these directions
+        strides : numpy.ndarray
+            1D array of ints with 2 entries [height, width] representing the stride in these directions
+        """
+        self.bias = np.ascontiguousarray(bias.reshape(-1), dtype=np.float64)
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+        ffn_handle_intermediate_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors, use_area_heuristic)
+        if refine or testing:
+            calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
+        nn.ffn_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
