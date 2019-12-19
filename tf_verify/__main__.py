@@ -273,18 +273,21 @@ else:
     elif(dataset=='acasxu'):
         num_pixels = 5
     if is_onnx:
-        is_trained_with_pytorch = True
         model, is_conv = read_onnx_net(netname)
         # this is to have different defaults for mnist and cifar10
-        if dataset == 'cifar10':
-            means=[0.485, 0.456, 0.406]
-            stds=[0.225, 0.225, 0.225]
-        else:
-            means = [0]
-            stds = [1]
     else:
         model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
     eran = ERAN(model, is_onnx=is_onnx)
+
+if not is_trained_with_pytorch:
+    if dataset == 'cifar10':
+        means = [0.485, 0.456, 0.406]
+        stds = [0.225, 0.225, 0.225]
+    else:
+        means = [0]
+        stds = [1]
+
+is_trained_with_pytorch = is_trained_with_pytorch or is_onnx
 
 if args.mean:
     means = args.mean
