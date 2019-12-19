@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, '../ELINA/python_interface/')
-sys.path.insert(0, '../geometric/code/')
+sys.path.insert(0, '../deepg/code/')
 import numpy as np
 import os
 from eran import ERAN
@@ -131,7 +131,7 @@ def get_tests(dataset, geometric):
         tests = open(specfile, 'r').read()
     else:
         if geometric:
-            csvfile = open('../geometric/code/datasets/{}_test.csv'.format(dataset), 'r')
+            csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
         else:
             csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
         tests = csv.reader(csvfile, delimiter=',')
