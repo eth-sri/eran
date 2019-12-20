@@ -48,7 +48,6 @@ class Optimizer:
         
         i = 0
         while i < nbr_op:
-            output_info.append(self.resources[i][domain][-2:])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
                 if specUB is None:
@@ -93,14 +92,22 @@ class Optimizer:
                     nn.filters.append(filters)
 
                     nn.biases.append(bias)
-                    nn.layertypes.append('Conv2D')
-                    nn.numlayer+=1
                     output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
                     i += 2
                 else:
                     filters, image_shape, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                    nn.numfilters.append(filters.shape[3])
+                    nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                    nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                    nn.strides.append([strides[0],strides[1]])
+                    nn.padding.append([pad_top, pad_left])
+                    nn.out_shapes.append(output_shape)
+                    nn.filters.append(filters)
+
                     output.append(DeepzonoConv(image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape))
                     i += 1
+                nn.layertypes.append('Conv2DNoReLU')
+                nn.numlayer+=1
             elif self.operations[i] == "Conv":
                 filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
@@ -112,52 +119,80 @@ class Optimizer:
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
-                nn.layertypes.append('Conv2D')
+                nn.layertypes.append('Conv2DNoReLU')
                 nn.numlayer+=1
                 output.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape))
                 i += 1
             elif self.operations[i] == "Add":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoAdd(*self.resources[i][domain]))
+                nn.layertypes.append('Add')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Sub":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoSub(*self.resources[i][domain]))
+                nn.layertypes.append('Sub')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Mul":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoMul(*self.resources[i][domain]))
+                nn.layertypes.append('Mul')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                nn.pool_size.append(window_size)
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.out_shapes.append(output_shape)
+                nn.padding.append([pad_top, pad_left])
+                nn.layertypes.append('MaxPooling2D')
+                nn.numlayer+=1
                 output.append(DeepzonoMaxpool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape))
                 i += 1
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
                 output.append(DeepzonoResadd(*self.resources[i][domain]))
+                nn.layertypes.append('Resaddnorelu')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
                 if nn.layertypes[-1]=='Affine':
                     nn.layertypes[-1] = 'ReLU'
+                if nn.layertypes[-1][-6:].lower() == 'norelu':
+                    nn.layertypes[-1] = nn.layertypes[-1][:-6]
                 output.append(DeepzonoRelu(*self.resources[i][domain]))
                 i += 1
             elif self.operations[i] == "Sigmoid":
                 output.append(DeepzonoSigmoid(*self.resources[i][domain]))
+                nn.layertypes.append('Sigmoid')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Tanh":
                 output.append(DeepzonoTanh(*self.resources[i][domain]))
+                nn.layertypes.append('Tanh')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Gather":
                 image_shape, indexes, axis,  input_names, output_name, output_shape = self.resources[i][domain]
                 calculated_indexes = self.get_gather_indexes(image_shape, indexes, axis)
                 output.append(DeepzonoGather(calculated_indexes, input_names, output_name, output_shape))
+                nn.layertypes.append('Gather')
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Reshape":
                 output.append(DeepzonoGather(*self.resources[i][domain]))
+                nn.layertypes.append('Gather')
+                nn.numlayer += 1
                 i += 1
             else:
                 assert 0, "the optimizer for Deepzono doesn't know of the operation type " + self.operations[i]
+
+            # for testing, getting the corresponding layer in the tensorflow or onnx model
+            output_info.append(self.resources[i-1][domain][-2:])
 
         use_dict = self.deepzono_get_dict(output)
         self.set_predecessors(nn, output)
@@ -170,12 +205,12 @@ class Optimizer:
         """
         Returns a dict mapping output-names to the number of times that output is used by the nodes in the ir_list.
         This functions is a helper function for organizing the sections of an abstract elements when we have a ResNet or later an RNN.
-        
+
         Arguments
         ---------
         ir_list : iterable
             list of Deepzono-Nodes
-        
+
         Return
         ------
         use_dict : dict
@@ -193,14 +228,14 @@ class Optimizer:
         """
         This function plans which Deepzono-Node-output occupies which section of an abstract element. If a DeepzonoDuplicate-Node should be needed, then this function will add it.
         This is needed when we have a ResNet or later RNNs.
-        
+
         Arguments
         ---------
         ir_list : list
             list of Nodes, where each node has the fields output_length, input_names, and output_name (see DeepzonoNodes.py for examples)
-        use_dict : dict 
+        use_dict : dict
             maps the output_name of each node in ir_list to the number of times the node's output will be used
-        
+
         Return
         ------
         ir_list : list
@@ -265,15 +300,15 @@ class Optimizer:
             - Placholder         (only at the beginning)
                 - MatMul -> Add -> Relu
                 - Conv2D -> Add -> Relu    (not as last layer)
-                - MaxPool         (only as intermediate layer)    
-        
+                - MaxPool         (only as intermediate layer)
+
         Arguments
         ---------
         specLB : numpy.ndarray
             1D array with the lower bound of the input spec
         specUB : numpy.ndarray
             1D array with the upper bound of the input spec
-        
+
         Return
         ------
         output : list
@@ -285,7 +320,6 @@ class Optimizer:
 
         i = 0
         while i < len(self.operations):
-            output_info.append(self.resources[i][domain][-2:])
             #print(self.operations[i])
             if self.operations[i] == "Placeholder":
                 input_names, output_name, output_shape = self.resources[i][domain]
@@ -397,6 +431,13 @@ class Optimizer:
 
             elif self.operations[i] == "MaxPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                nn.pool_size.append(window_size)
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.out_shapes.append(output_shape)
+                nn.padding.append([pad_top, pad_left])
+                nn.layertypes.append('MaxPooling2D')
+                nn.numlayer+=1
                 output.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
                 i += 1
 
@@ -487,14 +528,27 @@ class Optimizer:
                 i+=1
 
             elif self.operations[i] == "Sub":
-                output.append(DeeppolySub(*self.resources[i][domain]))
+                if i == 1:
+                    output.append(DeeppolySubNodeFirst(*self.resources[i][domain]))
+                else:
+                    output.append(DeeppolySubNodeIntermediate(*self.resources[i][domain]))
+                nn.layertypes.append('Mul')
+                nn.numlayer += 1
                 i += 1
 
             elif self.operations[i] == "Mul":
-                output.append(DeeppolyMul(*self.resources[i][domain]))
+                if i == 1:
+                    output.append(DeeppolyMulNodeFirst(*self.resources[i][domain]))
+                else:
+                    output.append(DeeppolyMulNodeIntermediate(*self.resources[i][domain]))
+                nn.layertypes.append('Mul')
+                nn.numlayer += 1
                 i += 1
             else:
-                assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network"
+                assert 0, "the Deeppoly analyzer doesn't support the operation: '" + self.operations[i] + "' of this network: " + str(self.operations)
+
+            # for testing, getting the corresponding layer in the tensorflow or onnx model
+            output_info.append(self.resources[i-1][domain][-2:])
 
         self.set_predecessors(nn, output)
         return output, output_info
@@ -503,8 +557,11 @@ class Optimizer:
         output_index_store = {}
         index_o = 0
         for node in output:
-            output_index_store[node.output_name] = index_o
-            index_o += 1
+            if isinstance(node, DeepzonoRelu):
+                output_index_store[node.output_name] = index_o - 1
+            else:
+                output_index_store[node.output_name] = index_o
+                index_o += 1
         for node in output:
             predecessors = (c_size_t * len(node.input_names))()
             i = 0
@@ -512,7 +569,8 @@ class Optimizer:
                 predecessors[i] = output_index_store[input_name]
                 i += 1
             node.predecessors = predecessors
-            nn.predecessors.append(predecessors)
+            if not isinstance(node, DeepzonoRelu):
+                nn.predecessors.append(predecessors)
 
     def get_gather_indexes(self, input_shape, indexes, axis):
         size = np.prod(input_shape)

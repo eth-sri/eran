@@ -68,10 +68,10 @@ class ERAN:
         nn.specUB = specUB
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list, output_info = self.optimizer.get_deepzono(nn,specLB, specUB)
-            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size)
-            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing)
         dominant_class, nlb, nub = analyzer.analyze()
         if testing:
             return dominant_class, nn, nlb, nub, output_info
@@ -79,7 +79,7 @@ class ERAN:
             return dominant_class, nn, nlb, nub
 
 
-    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0):
+    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0, testing = False):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
 
@@ -98,12 +98,12 @@ class ERAN:
             if the analysis is succesfull (it could prove robustness for this box) then the index of the class that dominates is returned
             if the analysis couldn't prove robustness then -1 is returned
         """
-        assert domain in ['deepzono', 'refinezono', 'deeppoly', 'refinepoly'], "domain isn't valid, must be 'deepzono' or 'deeppoly'"
+        assert domain in ['deepzono', 'refinezono'], "domain isn't valid, must be 'deepzono' or 'refinezono'"
         nn = layers()
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list, output_info   = self.optimizer.get_deepzono(nn, zonotope)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0
             #execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)

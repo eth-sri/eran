@@ -29,8 +29,6 @@ class layers:
         self.conv_counter = 0
         self.residual_counter = 0
         self.maxpool_counter = 0
-        self.maxpool_lb = []
-        self.maxpool_ub = []
         self.specLB = []
         self.specUB = []
         self.original = []
@@ -45,7 +43,7 @@ class layers:
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing = False):
         """
         Arguments
         ---------
@@ -71,6 +69,7 @@ class Analyzer:
         self.timeout_milp = timeout_milp
         self.specnumber = specnumber
         self.use_area_heuristic = use_area_heuristic
+        self.testing = testing
         self.relu_groups = []
 
     
@@ -85,13 +84,23 @@ class Analyzer:
         element = self.ir_list[0].transformer(self.man)
         nlb = []
         nub = []
+        testing_nlb = []
+        testing_nub = []
         for i in range(1, len(self.ir_list)):
             if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb,nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp)
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
             else:
-                element = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic)
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
 
+            if isinstance(element_test_bounds, tuple):
+                element, test_lb, test_ub = element_test_bounds
+                testing_nlb.append(test_lb)
+                testing_nub.append(test_ub)
+            else:
+                element = element_test_bounds
         gc.collect()
+        if self.testing:
+            return element, testing_nlb, testing_nub
         return element, nlb, nub
     
     
@@ -110,11 +119,6 @@ class Analyzer:
             output_size = self.ir_list[-1].output_length
         else:
             output_size = reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
-
-        #bounds = elina_abstract0_to_box(self.man,element)
-        #for i in range(output_size):
-        #    print("inf", bounds[i].contents.inf.contents.val.dbl, "sup", bounds[i].contents.sup.contents.val.dbl)
-        #elina_interval_array_free(bounds,output_size)
     
         dominant_class = -1
         if(self.domain=='refinepoly'):

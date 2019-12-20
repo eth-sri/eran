@@ -47,7 +47,7 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_s
     return start
 
 
-def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, lbi, ubi, lbi_prev, ubi_prev, use_milp):
+def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, output_shape, lbi, ubi, lbi_prev, ubi_prev, use_milp):
 
     use_milp = use_milp and config.use_milp
 
@@ -62,9 +62,9 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
             var = model.addVar(vtype=GRB.BINARY, name=var_name)
 
             var_list.append(var)
-    o1 = int(input_shape[0]/pool_size[0])
-    o2 = int(input_shape[1]/pool_size[1])
-    o3 = int(input_shape[2]/pool_size[2])
+    o1 = output_shape[0]
+    o2 = output_shape[1]
+    o3 = output_shape[2]
     output_size = o1*o2*o3
 
     for j in range(output_size):
@@ -200,7 +200,7 @@ def handle_residual(model, var_list, branch1_counter, branch2_counter, lbi, ubi)
     return start
 
 
-def handle_relu(model,var_list,layerno,affine_counter,num_neurons,lbi,ubi, relu_groupsi,use_milp):
+def handle_relu(model,var_list, layerno, affine_counter, num_neurons, lbi, ubi, relu_groupsi, use_milp):
     use_milp = use_milp and config.use_milp
 
     start= len(var_list)
@@ -353,7 +353,6 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
 
             counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
 
-
             if(nn.layertypes[i]=='ReLU' and relu_needed[i]):
                 if(use_milp):
                      counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
@@ -369,16 +368,16 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             filter_size = nn.filter_size[nn.conv_counter]
             numfilters = nn.numfilters[nn.conv_counter]
-            out_shape = nn.out_shapes[nn.conv_counter]
-            padding = nn.padding[nn.conv_counter]
-            strides = nn.strides[nn.conv_counter]
+            out_shape = nn.out_shapes[nn.conv_counter + nn.maxpool_counter]
+            padding = nn.padding[nn.conv_counter + nn.maxpool_counter]
+            strides = nn.strides[nn.conv_counter + nn.maxpool_counter]
             input_shape = nn.input_shape[nn.conv_counter +nn.maxpool_counter]
             num_neurons = np.prod(out_shape)
 
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
 
-            counter = handle_conv(model, var_list, counter, filters,biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
+            counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
 
             if(relu_needed[i] and nn.layertypes[i]=='Conv2D'):
                if(use_milp):
@@ -394,9 +393,13 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
         elif(nn.layertypes[i]=='MaxPooling2D'):
             pool_size = nn.pool_size[nn.maxpool_counter]
             input_shape = nn.input_shape[nn.conv_counter + nn.maxpool_counter]
-            maxpool_lb = nn.maxpool_lb[nn.maxpool_counter]
-            maxpool_ub = nn.maxpool_ub[nn.maxpool_counter]
-            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, nlb[i],nub[i],maxpool_lb,maxpool_ub,use_milp)
+            out_shape = nn.out_shapes[nn.conv_counter + nn.maxpool_counter]
+
+            index = nn.predecessors[i+1][0]
+            counter = start_counter[index]
+
+            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, out_shape, nlb[i],nub[i], nlb[i-1], nub[i-1],use_milp)
+            start_counter.append(counter)
             nn.maxpool_counter+=1
 
         elif nn.layertypes[i] in ['Resadd', 'Resaddnorelu']:
@@ -406,18 +409,17 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             counter2 = start_counter[index2]
             counter = handle_residual(model,var_list,counter1,counter2,nlb[i],nub[i])
             if(relu_needed[i] and nn.layertypes[i]=='Resadd'):
-               if(use_milp):
-                   counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i],use_milp)
-               else:
-                   counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i], use_milp)
+                if(use_milp):
+                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i],use_milp)
+                else:
+                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i], use_milp)
 
             start_counter.append(counter)
             nn.residual_counter +=1
 
 
         else:
-            print('layertype:', nn.layertypes[i], 'not supported')
-            return
+            assert 0, 'layertype:' + nn.layertypes[i] + 'not supported for refine'
     nn.ffn_counter = ffn_counter
     nn.conv_counter = conv_counter
     nn.residual_counter = residual_counter
@@ -474,7 +476,9 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     numlayer = nn.numlayer
 
     candidate_length = len(candidate_vars)
-    next_layer = nn.ffn_counter +  nn.conv_counter + nn.residual_counter + nn.maxpool_counter + 1
+    widths = np.zeros(candidate_length)
+    avg_weight = np.zeros(candidate_length)
+    next_layer = nn.calc_layerno() + 1
 
     # HEURISTIC 2
     # in case of relu, the gradients are wrt to neurons after relu
@@ -504,6 +508,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
             #num_candidates = num_candidates
 
 
+    neuron_map = [0]*len(lbi)
 
     model.setParam(GRB.Param.TimeLimit, timeout)
     model.setParam(GRB.Param.Threads, 2)

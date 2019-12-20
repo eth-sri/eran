@@ -1,13 +1,14 @@
 import sys
 sys.path.insert(0, '../ELINA/python_interface/')
 sys.path.insert(1, '../tf_verify/')
+import traceback
 import numpy as np
 import os
 from eran import ERAN
 from read_net_file import *
 import tensorflow as tf
 import csv
-from deepzono_milp import *
+from ai_milp import *
 import onnxruntime.backend as rt
 import argparse
 from onnx import helper
@@ -26,61 +27,15 @@ parser.set_defaults(new_only=False)
 parser.set_defaults(failed_only=False)
 args = parser.parse_args()
 
-def normalize(image, means, stds):
-    if(dataset=='mnist'):
+
+def normalize(image, means, stds, dataset):
+    if dataset == 'mnist' or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
-    elif(dataset=='cifar10'):
-        count = 0
-        tmp = np.zeros(3072)
-        for i in range(1024):
-            tmp[count] = (image[count] - means[0])/stds[0]
-            count = count + 1
-            tmp[count] = (image[count] - means[1])/stds[1]
-            count = count + 1
-            tmp[count] = (image[count] - means[2])/stds[2]
-            count = count + 1
+    else:
+        for i in range(3072):
+            image[i] = (image[i] - means[i % 3]) / stds[i % 3]
 
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
-
-def denormalize(image, means, stds):
-    if(dataset=='mnist'):
-        for i in range(len(image)):
-            image[i] = image[i]*stds[0] + means[0]
-    elif(dataset=='cifar10'):
-        count = 0
-        tmp = np.zeros(3072)
-        for i in range(1024):
-            tmp[count] = image[count]*stds[0] + means[0]
-            count = count + 1
-            tmp[count] = image[count]*stds[1] + means[1]
-            count = count + 1
-            tmp[count] = image[count]*stds[2] + means[2]
-            count = count + 1
-
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
 
 domains = args.domain
 non_layer_operation_types = ['NoOp', 'Assign', 'Const', 'RestoreV2', 'SaveV2', 'PlaceholderWithDefault', 'IsVariableInitialized', 'Placeholder', 'Identity']
@@ -98,7 +53,7 @@ else:
 
 for dataset in datasets:
     if args.network:
-        assert args.dataset, "if you define specific network(s), you must difine their dataset."
+        assert args.dataset, "if you define specific network(s), you must define their dataset."
         networks = args.network
         dataset_folder = ''
     else:
@@ -158,7 +113,7 @@ for dataset in datasets:
             try:
                 eran = ERAN(out_tensor, sess)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e)]) + '\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -184,12 +139,12 @@ for dataset in datasets:
             try:
                 eran = ERAN(model, is_onnx=is_onnx)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e)]) + '\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
         if args.parser_only:
-            tested_file.write(', '.join([dataset, network, 'ERAN parsed successfully\n']))
+            tested_file.write(', '.join([dataset, network, 'ERAN parsed successfully\n', str(eran.optimizer.operations), '\n']))
             tested_file.flush()
             continue
 
@@ -230,9 +185,9 @@ for dataset in datasets:
             test_input = np.copy(image)
 
             if is_trained_with_pytorch or is_onnx:
-                normalize(specLB, means, stds)
-                normalize(specUB, means, stds)
-                normalize(test_input, means, stds)
+                normalize(specLB, means, stds, dataset)
+                normalize(specUB, means, stds, dataset)
+                normalize(test_input, means, stds, dataset)
 
             print(', '.join([dataset, network, domain]), 'testing now')
 
@@ -240,7 +195,7 @@ for dataset in datasets:
                 label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, True, testing=True)
 
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error message: ' + str(e)]) + '\n')
+                tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -251,8 +206,6 @@ for dataset in datasets:
 
             if is_onnx:
                 input = input.transpose(0, 3, 1, 2)
-
-            if is_onnx:
                 for name, shape in output_info:
                     out_node = helper.ValueInfoProto(type = helper.TypeProto())
                     out_node.name = name
@@ -266,28 +219,33 @@ for dataset in datasets:
                 runnable = rt.prepare(model, 'CPU')
                 pred = runnable.run(input)
                 #print(pred)
-                pred = pred[-1]
             else:
                 if not (is_saved_tf_model or is_pb_file):
                     input = np.array(test_input, dtype=np.float32)
                 output_names = [e[0] for e in output_info]
                 pred = sess.run(get_out_tensors(output_names), {sess.graph.get_operations()[0].name + ':0': input})
                 #print(pred)
-                pred = pred[-1]
             pred_eran = np.asarray([(i+j)/2 for i, j in zip(nlb[-1], nub[-1])])
-            pred = np.asarray(pred).reshape(-1)
-            if len(pred_eran) != len(pred):
-                tested_file.write(', '.join([dataset, network, domain, 'predictions have not the same number of labels. ERAN: ' + len(pred_eran) + ' model: ' + len(pred)]) + '\n')
+            pred_model = np.asarray(pred[-1]).reshape(-1)
+            if len(pred_eran) != len(pred_model):
+                tested_file.write(', '.join([dataset, network, domain, 'predictions have not the same number of labels. ERAN: ' + str(len(pred_eran)) + ' model: ' + str(len(pred_model))]) + '\n\n\n')
                 tested_file.flush()
                 continue
-            difference = pred_eran - pred
+            difference = pred_eran - pred_model
             if np.all([abs(elem) < .001 for elem in difference]):
                 tested_file.write(', '.join([dataset, network, domain, 'success']) + '\n')
                 tested_file.flush()
             else:
-                i = 0
-                if is_onnx:
-                    i = 1
-
-                tested_file.write(', '.join([dataset, network, domain, str(pred_eran), str(pred)]) + '\n')
+                tested_file.write(', '.join([dataset, network, domain, '\neran', str(pred_eran), '\nmodel', str(pred_model)]) + '\n')
                 tested_file.flush()
+                for i in range(len(nlb)):
+                    pred_eran = np.asarray([(l+u)/2 for l, u in zip(nlb[i], nub[i])])
+                    offset = len(pred) - len(nlb)
+                    pred_model = np.asarray(pred[i + offset])
+                    if is_onnx and pred_model.ndim == 4:
+                        pred_model = pred_model.transpose(0, 2, 3, 1)
+                    difference = pred_eran - pred_model.reshape(-1)
+                    if not np.all([abs(elem) < .001 for elem in difference]):
+                        tested_file.write(', '.join([dataset, network, domain, 'started divergence at layer', str(i), 'outputname', str(output_info[i+1][0]), '\ndifference', str(difference)]) + '\n\n\n')
+                        tested_file.flush()
+                        break
