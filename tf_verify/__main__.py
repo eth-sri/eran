@@ -363,8 +363,8 @@ if dataset=='acasxu':
 
 elif zonotope_bool:
     perturbed_label, nn, nlb, nub = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_area_heuristic)
-    print("nlb ",nlb[len(nlb)-1])
-    #print("nub ",nub)
+    print("nlb ",nlb[-1])
+    print("nub ",nub[-1])
     if(perturbed_label!=-1):
          print("Verified")
     elif(complete==True):
@@ -384,7 +384,7 @@ elif config.geometric:
     if config.geometric_config:
         transform_attack_container = get_transform_attack_container(config.geometric_config)
         for i, test in enumerate(tests):
-            if config.test_idx and i != config.test_idx:
+            if config.test_idx is not None and i != config.test_idx:
                 continue
 
             if config.from_test and i < config.from_test:
@@ -403,9 +403,9 @@ elif config.geometric:
             else:
                 n_rows, n_cols, n_channels = 32, 32, 3
                 if is_trained_with_pytorch:
-                    image = np.float64(test[1:len(test)])/np.float64(255)
+                    image = np.float64(test[1:len(test)])
                 else:
-                    image = np.float64(test[1:len(test)])/np.float64(255) - 0.5
+                    image = np.float64(test[1:len(test)]) - 0.5
 
             spec_lb = np.copy(image)
             spec_ub = np.copy(image)
@@ -592,7 +592,7 @@ elif config.geometric:
 
     else:
         for i, test in enumerate(tests):
-            if config.test_idx and i != config.test_idx:
+            if config.test_idx is not None and i != config.test_idx:
                 continue
 
             if config.from_test and i < config.from_test:
@@ -811,7 +811,7 @@ elif config.geometric:
     print('Average time: ', tot_time / total)
 else:
     for i, test in enumerate(tests):
-        if config.test_idx and i != config.test_idx:
+        if config.test_idx is not None and i != config.test_idx:
             continue
 
         if config.from_test and i < config.from_test:
