@@ -354,10 +354,12 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
 
             if(nn.layertypes[i]=='ReLU' and relu_needed[i]):
+                if relu_groups is None:
+                    counter = handle_relu(model, var_list, i, counter, len(weights), nlb[i], nub[i], [], use_milp)
                 if(use_milp):
-                     counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
+                    counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
                 else:
-                     counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
+                    counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
 
             start_counter.append(counter)
             nn.ffn_counter+=1
@@ -380,7 +382,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
 
             if(relu_needed[i] and nn.layertypes[i]=='Conv2D'):
-               if(use_milp):
+               if use_milp or (relu_groups is None):
                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], [], use_milp)
                else:
                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i], use_milp)
@@ -409,6 +411,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             counter2 = start_counter[index2]
             counter = handle_residual(model,var_list,counter1,counter2,nlb[i],nub[i])
             if(relu_needed[i] and nn.layertypes[i]=='Resadd'):
+                if relu_groups is None:
+                    counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], [],use_milp)
                 if(use_milp):
                     counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i],use_milp)
                 else:
@@ -596,7 +600,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub, is_max=True):
     relu_needed = [1] * numlayer
     input_size = len(LB_N0)
 
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups[i], numlayer, True,relu_needed)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True,relu_needed)
 
     num_var = len(var_list)
     output_size = num_var - counter
