@@ -3,7 +3,7 @@ import multiprocessing
 
 class config:
     use_milp = True # Whether to use MILP
-    numprocesses_milp = multiprocessing.cpu_count() # number of processes to use for MILP solver
+    numproc_milp = multiprocessing.cpu_count() # number of processes to use for MILP solver
     dyn_krelu = False # dynamically select parameter k
     use_2relu = False # use 2-relu
     use_3relu = False # use 3-relu

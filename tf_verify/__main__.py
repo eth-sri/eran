@@ -156,7 +156,7 @@ parser.add_argument('--dataset', type=str, default=config.dataset, help='the dat
 parser.add_argument('--complete', type=str2bool, default=config.complete,  help='flag specifying where to use complete verification or not')
 parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
-parser.add_argument('--numprocesses_milp', type=int, default=config.numprocesses_milp,  help='number of processes to use for MILP solver')
+parser.add_argument('--numproc_milp', type=int, default=config.numproc_milp,  help='number of processes to use for MILP solver')
 parser.add_argument('--numproc_krelu', type=int, default=config.numproc_krelu,  help='number of processes for krelu')
 parser.add_argument('--use_area_heuristic', type=str2bool, default=config.use_area_heuristic,  help='whether to use area heuristic for the DeepPoly ReLU approximation')
 parser.add_argument('--use_milp', type=str2bool, default=config.use_milp,  help='whether to use milp or not')

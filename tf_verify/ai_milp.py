@@ -521,7 +521,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     model.update()
     model.reset()
 
-    NUMPROCESSES = config.numprocesses_milp
+    NUMPROCESSES = config.numproc_milp
     Cache.model = model
     Cache.output_counter = output_counter
     Cache.lbi = lbi
