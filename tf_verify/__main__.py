@@ -4,7 +4,6 @@ sys.path.insert(0, '../deepg/code/')
 import numpy as np
 import os
 from eran import ERAN
-from geometric_constraints import *
 from read_net_file import *
 from read_zonotope_file import read_zonotope
 import tensorflow as tf
@@ -378,6 +377,7 @@ elif zonotope_bool:
 
 
 elif config.geometric:
+    from geometric_constraints import *
     total, attacked, standard_correct, tot_time = 0, 0, 0, 0
     correct_box, correct_poly = 0, 0
     cver_box, cver_poly = [], []
