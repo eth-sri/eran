@@ -61,7 +61,7 @@ def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
 
 
 def normalize(image, means, stds, dataset, is_conv):
-    if(dataset=='mnist'):
+    if dataset == 'mnist'  or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
     elif(dataset=='cifar10'):
@@ -96,7 +96,7 @@ def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, u
 
 
 def denormalize(image, means, stds, dataset):
-    if(dataset=='mnist'):
+    if dataset == 'mnist'  or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = image[i]*stds[0] + means[0]
     elif(dataset=='cifar10'):
@@ -146,12 +146,12 @@ def init_domain(d):
         return d
 
 parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--netname', type=isnetworkfile, default=config.netname, help='the network name, the extension can be only .pyt, .tf and .meta')
+parser.add_argument('--netname', type=isnetworkfile, default=config.netname, help='the network name, the extension can be only .pb, .pyt, .tf, .meta, and .onnx')
 parser.add_argument('--epsilon', type=float, default=config.epsilon, help='the epsilon for L_infinity perturbation')
 parser.add_argument('--zonotope', type=str, default=config.zonotope, help='file to specify the zonotope matrix')
 #parser.add_argument('--specnumber', type=int, default=9, help='the property number for the acasxu networks')
 parser.add_argument('--domain', type=str, default=config.domain, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
-parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, or acasxu')
+parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
 parser.add_argument('--complete', type=str2bool, default=config.complete,  help='flag specifying where to use complete verification or not')
 parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
@@ -220,7 +220,7 @@ elif not config.geometric:
 dataset = config.dataset
 
 if zonotope_bool==False:
-   assert dataset in ['mnist','cifar10','acasxu'], "only mnist, cifar10, and acasxu datasets are supported"
+   assert dataset in ['mnist', 'cifar10', 'acasxu', 'fashion'], "only mnist, cifar10, acasxu, and fashion datasets are supported"
 
 
 specnumber = 9

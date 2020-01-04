@@ -107,7 +107,7 @@ def prepare_model(model):
 			N = shape_map[node.input[1]][1 - transB]
 			shape_map[node.output[0]] = [M, N]
 
-		elif node.op_type in ["Add", "BiasAdd", "Sub", "Mul"]:
+		elif node.op_type in ["Add", "Sub", "Mul"]:
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 			if node.input[0] in constants_map and node.input[1] in constants_map:
 				if node.op_type == "Add":
@@ -475,14 +475,14 @@ class ONNXTranslator:
 			return self.shape_map[name]
 
 
-	def matmul_resources(self, op):
+	def matmul_resources(self, node):
 		"""
 		checks which one of the direct ancestor tf.Operations is a constant and returns the underlying onnx as a numpy.ndarray inside a tuple. The matrix is manipulated in a way that it can be
 		used as the left multiplier in the matrix multiplication.
 
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "MatMul"
 
 		Return
@@ -490,7 +490,7 @@ class ONNXTranslator:
 		output : tuple
 		    tuple with the matrix (of type numpy.ndarray) as its only item
 		"""
-		inputs = op.input
+		inputs = node.input
 		left   = inputs[0]
 		right  = inputs[1]
 
@@ -513,14 +513,14 @@ class ONNXTranslator:
 			matrix = matrix[:, inverse_perm]
 		return matrix
 
-	def gemm_resources(self, op):
+	def gemm_resources(self, node):
 		"""
 		checks which one of the direct ancestor tf.Operations is a constant and returns the underlying onnx as a numpy.ndarray inside a tuple. The matrix is manipulated in a way that it can be
 		used as the left multiplier in the matrix multiplication.
 
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "Gemm"
 
 		Return
@@ -528,7 +528,7 @@ class ONNXTranslator:
 		output : tuple
 		    tuple with the matrix and bias (of type numpy.ndarray) and is_left used to calculate the output shape
 		"""
-		inputs = op.input
+		inputs = node.input
 		left   = inputs[0]
 		right  = inputs[1]
 		bias  = self.constants_map[inputs[2]]
@@ -537,7 +537,7 @@ class ONNXTranslator:
 		transB = False
 		alpha = 1.0
 		beta = 1.0
-		for att in op.attribute:
+		for att in node.attribute:
 			if 'transA' == att.name:
 				transA = att.i == 1
 			elif 'transB' == att.name:
@@ -547,7 +547,7 @@ class ONNXTranslator:
 			elif 'beta' == att.name:
 				beta = att.f
 			else:
-				assert 0, "Unkown attribute " + att.name + " for operation type " + op.op_type
+				assert 0, "Unkown attribute " + att.name + " for operation type " + node.op_type
 
 
 		if left in self.constants_map:
@@ -558,13 +558,13 @@ class ONNXTranslator:
 			matrix = self.reshape_adjust(left, matrix)
 		return matrix * alpha, bias * beta
 
-	def add_resources(self, op):
+	def add_resources(self, node):
 		"""
 		checks which one of the direct ancestor tf.Operations is a constant and returns the underlying onnx as a numpy.ndarray inside a tuple.
 
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "Add"
 
 		Return
@@ -572,7 +572,7 @@ class ONNXTranslator:
 		output : tuple
 		    tuple with the addend (of type numpy.ndarray) as its only item
 		"""
-		inputs = op.input
+		inputs = node.input
 		left = inputs[0]
 		right = inputs[1]
 
@@ -583,13 +583,13 @@ class ONNXTranslator:
 		return addend,
 
 
-	def sub_resources(self, op):
+	def sub_resources(self, node):
 		"""
 		checks which one of the direct ancestors is a constant and returns the underlying onnx as a numpy.ndarray and a bool is_minuend, whether the returned ndarray is the minuend, inside a tuple.
 
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "Sub"
 
 		Return
@@ -597,7 +597,7 @@ class ONNXTranslator:
 		output : tuple
 		    tuple with the addend (of type numpy.ndarray) and left_constant
 		"""
-		inputs = op.input
+		inputs = node.input
 		left   = inputs[0]
 		right  = inputs[1]
 
@@ -610,13 +610,13 @@ class ONNXTranslator:
 		return addend, is_minuend
 		
 		
-	def conv_resources(self, op):
+	def conv_resources(self, node):
 		"""
-		Extracts the filter, the stride of the filter, and the padding from op as well as the shape of the input coming into op
+		Extracts the filter, the stride of the filter, and the padding from node as well as the shape of the input coming into node
 		
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "Conv"
 		
 		Return 
@@ -624,14 +624,14 @@ class ONNXTranslator:
 		output : tuple
 		    has 4 entries (numpy.ndarray, numpy.ndarray, numpy.ndarray, str)
 		"""
-		inputs  = op.input
+		inputs  = node.input
 		image   = inputs[0]
-		filters = self.constants_map[op.input[1]].transpose(1,2,3,0)
-		bias = self.constants_map[op.input[2]]
+		filters = self.constants_map[node.input[1]].transpose(1, 2, 3, 0)
+		bias = self.constants_map[node.input[2]]
 
 		image_shape = self.get_shape(image)[1:]
 		pads = [0, 0, 0, 0]
-		for attribute in op.attribute:
+		for attribute in node.attribute:
 			if attribute.name == 'strides':
 				strides = attribute.ints
 			elif attribute.name == 'pads':
@@ -648,13 +648,13 @@ class ONNXTranslator:
 		return filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape
 	
 	
-	def maxpool_resources(self, op):
+	def maxpool_resources(self, node):
 		"""
 		Extracts the incoming image size (heigth, width, channels), the size of the maxpool window (heigth, width), and the strides of the window (heigth, width)
 		
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "MaxPool"
 		
 		Return
@@ -662,7 +662,7 @@ class ONNXTranslator:
 		output : tuple
 		    has 4 entries - (list, numpy.ndarray, numpy.ndarray, numpy.ndarray, int, int, str)
 		"""
-		image       = op.inputs[0]
+		image       = node.inputs[0]
 		
 		image_shape = self.get_shape(image)[1:]
 
@@ -672,7 +672,7 @@ class ONNXTranslator:
 		pads = [0, 0, 0, 0]
 		dilations = None
 
-		for attribute in op.attribute:
+		for attribute in node.attribute:
 			if attribute.name == 'kernel_shape':
 				kernel_shape = attribute.ints
 			if attribute.name == 'strides':
@@ -708,13 +708,13 @@ class ONNXTranslator:
 		return ()
 
 
-	def gather_resources(self, op):
+	def gather_resources(self, node):
 		"""
 		Extracts the indexes in the image which have to be gathered.
 
 		Arguments
 		---------
-		op : ONNX.Node
+		node : ONNX.Node
 		    must have op_type "Gather"
 
 		Return
@@ -722,21 +722,21 @@ class ONNXTranslator:
 		output : tuple
 		    has 4 entries - (list, numpy.ndarray, numpy.ndarray, numpy.ndarray, int, int, str)
 		"""
-		inputs  = op.input
+		inputs  = node.input
 		image   = inputs[0]
-		if op.output[0] in self.constants_map:
+		if node.output[0] in self.constants_map:
 			only_shape = True
 			image_shape, indexes, axis = None, None, None
 		else:
 			only_shape = False
 			image_shape = self.get_shape(image)[1:]
-			indexes = self.constants_map[op.input[1]]
-			axis = op.attribute[0].i
+			indexes = self.constants_map[node.input[1]]
+			axis = node.attribute[0].i
 		return only_shape, image_shape, indexes, axis
 
 
-	def expand_resources(self, op):
-		if op.output[0] in self.constants_map:
+	def expand_resources(self, node):
+		if node.output[0] in self.constants_map:
 			only_shape = True
 			image_shape, to_expand = None, None
 		else:
