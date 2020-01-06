@@ -748,7 +748,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
             abstract element after the transformer
         """
         offset, length = self.abstract_information
-        if refine==True:
+        if refine:
             element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp)
         else:
             element = relu_zono_layerwise(*self.get_arguments(man, element))
