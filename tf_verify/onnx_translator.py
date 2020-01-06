@@ -379,14 +379,6 @@ class ONNXTranslator:
 					assert 0, "we don't support the ressub yet"
 					operation_types[-1] = "Ressub"
 					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
-
-			elif node.op_type == "BiasAdd":
-				if self.get_kind(node.input[1]) == 'Constant':
-					deeppoly_res = self.add_resources(node) + in_out_info
-					deepzono_res = deeppoly_res
-					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-				else:
-					assert 0, "this bias add doesn't meet our assumption (bias is constant)"
 			elif node.op_type == "Conv":
 				filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape = self.conv_resources(node)
 				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left) + in_out_info
@@ -400,9 +392,6 @@ class ONNXTranslator:
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "Placeholder":
 				assert 0, "Placeholder is not in the ONNX graph"
-				deeppoly_res = in_out_info
-				deepzono_res = in_out_info
-				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type in ["Relu", "Sigmoid", "Tanh"]:
 				deeppoly_res = self.nonlinearity_resources(node) + in_out_info
 				deepzono_res = deeppoly_res
