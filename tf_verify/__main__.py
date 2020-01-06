@@ -69,13 +69,12 @@ def normalize(image, means, stds, dataset, is_conv):
         for i in range(3072):
             tmp[i] = (image[i] - means[i % 3]) / stds[i % 3]
 
-        if(is_conv):
+        if not is_conv:
             for i in range(3072):
                 image[i] = tmp[i]
         else:
-            count = 0
             for i in range(3072):
-                image[i] = (tmp[i % 1024 + (i % 3) * 1024] - means[i % 3]) / stds[i % 3]
+                image[i] = tmp[i % 1024 + (i % 3) * 1024]
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
