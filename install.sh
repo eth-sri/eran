@@ -41,18 +41,18 @@ make
 make install
 cd ..
 
-wget https://packages.gurobi.com/8.1/gurobi8.1.1_linux64.tar.gz
-tar -xvf gurobi8.1.1_linux64.tar.gz
-cd gurobi811/linux64/src/build
+wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
+tar -xvf gurobi9.0.0_linux64.tar.gz
+cd gurobi900/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
-cp ../../lib/libgurobi81.so /usr/lib
+cp ../../lib/libgurobi90.so /usr/lib
 cd ../..
 python3 setup.py install
 cd ../..
 
-export GUROBI_HOME="$(pwd)/gurobi811/linux64"
+export GUROBI_HOME="$(pwd)/gurobi900/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 

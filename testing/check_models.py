@@ -113,7 +113,7 @@ for dataset in datasets:
             try:
                 eran = ERAN(out_tensor, sess)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -126,20 +126,13 @@ for dataset in datasets:
                 num_pixels = 5
             if is_onnx:
                 model, is_conv = read_onnx_net(netname)
-                # this is a hack and should be done nicer
-                if dataset == 'cifar10':
-                    means=[0.485, 0.456, 0.406]
-                    stds=[0.225, 0.225, 0.225]
-                else:
-                    means = [0]
-                    stds = [1]
             else:
                 sess = tf.Session()
                 model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
             try:
                 eran = ERAN(model, is_onnx=is_onnx)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error trace: ' + +traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
@@ -172,13 +165,7 @@ for dataset in datasets:
                 continue
 
 
-            if(dataset=='mnist'):
-                image= np.float64(test[1:len(test)])/np.float64(255)
-            else:
-                if is_trained_with_pytorch or is_onnx:
-                    image= (np.float64(test[1:len(test)])/np.float64(255))
-                else:
-                    image= (np.float64(test[1:len(test)])/np.float64(255)) - 0.5
+            image= np.float64(test[1:len(test)])/np.float64(255)
 
             specLB = np.copy(image)
             specUB = np.copy(image)
@@ -195,7 +182,7 @@ for dataset in datasets:
                 label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, True, testing=True)
 
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error message: ' + str(e), 'trace: '+traceback.format_exc()]) + '\n\n\n')
+                tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error trace: '+traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 

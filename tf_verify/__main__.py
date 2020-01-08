@@ -29,8 +29,8 @@ def str2bool(v):
 
 def isnetworkfile(fname):
     _, ext = os.path.splitext(fname)
-    if ext not in ['.pyt', '.meta', '.tf','.onnx']:
-        raise argparse.ArgumentTypeError('only .pyt, .tf, .onnx, and .meta formats supported')
+    if ext not in ['.pyt', '.meta', '.tf','.onnx', '.pb']:
+        raise argparse.ArgumentTypeError('only .pyt, .tf, .onnx, .pb, and .meta formats supported')
     return fname
 
 
