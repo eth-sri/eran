@@ -390,7 +390,7 @@ elif config.geometric:
 
             if config.num_tests is not None and i >= config.num_tests:
                 break
-            set_transform_attack_for(transform_attack_container, i)
+            set_transform_attack_for(transform_attack_container, i, config.attack, config.debug)
             attack_params = get_attack_params(transform_attack_container)
             attack_images = get_attack_images(transform_attack_container)
             print('Test {}:'.format(i))
