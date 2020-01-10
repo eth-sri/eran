@@ -499,7 +499,7 @@ class ONNXTranslator:
 			if config.debug:
 				print('reshape adjust ', str(shape_in), 'to', str(shape_out))
 			indexes = reshape_nhwc(shape_in, shape_out)
-			indexes = indexes.reshape(-1)
+			indexes = indexes[0]
 			inverse_perm = np.arange(len(indexes))[np.argsort(indexes)]
 			if is_right:
 				matrix = matrix[inverse_perm, :]

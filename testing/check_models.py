@@ -132,7 +132,7 @@ for dataset in datasets:
             try:
                 eran = ERAN(model, is_onnx=is_onnx)
             except Exception as e:
-                tested_file.write(', '.join([dataset, network, 'ERAN parse error trace: ' + +traceback.format_exc()]) + '\n\n\n')
+                tested_file.write(', '.join([dataset, network, 'ERAN parse error trace: ' + traceback.format_exc()]) + '\n\n\n')
                 tested_file.flush()
                 continue
 
