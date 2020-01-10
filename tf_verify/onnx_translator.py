@@ -1,7 +1,7 @@
 import numpy as np
 import onnx
 from onnx import numpy_helper
-
+from config import config
 
 def onnxshape_to_intlist(onnxshape):
 	"""
@@ -486,20 +486,25 @@ class ONNXTranslator:
 
 		if left in self.constants_map:
 			matrix = self.constants_map[left]
-			matrix = self.reshape_adjust(right, matrix)
+			matrix = self.reshape_adjust(right, matrix, True)
 		else:
 			matrix = self.constants_map[right].transpose()
 			matrix = self.reshape_adjust(left, matrix)
 		return matrix,
 
-	def reshape_adjust(self, element, matrix):
+	def reshape_adjust(self, element, matrix, is_right=False):
 		if self.get_kind(element) == 'Reshape':
 			shape_in = self.get_shape(self.output_node_map[element].input[0])
 			shape_out = self.get_shape(self.output_node_map[element].output[0])
+			if config.debug:
+				print('reshape adjust ', str(shape_in), 'to', str(shape_out))
 			indexes = reshape_nhwc(shape_in, shape_out)
 			indexes = indexes.reshape(-1)
 			inverse_perm = np.arange(len(indexes))[np.argsort(indexes)]
-			matrix = matrix[:, inverse_perm]
+			if is_right:
+				matrix = matrix[inverse_perm, :]
+			else:
+				matrix = matrix[:, inverse_perm]
 		return matrix
 
 	def gemm_resources(self, node):
@@ -541,7 +546,7 @@ class ONNXTranslator:
 
 		if left in self.constants_map:
 			matrix = self.constants_map[left] if not transA else self.constants_map[left].transpose()
-			matrix = self.reshape_adjust(right, matrix)
+			matrix = self.reshape_adjust(right, matrix, True)
 		else:
 			matrix = self.constants_map[right].transpose() if not transB else self.constants_map[right]
 			matrix = self.reshape_adjust(left, matrix)
