@@ -171,11 +171,6 @@ for dataset in datasets:
             specUB = np.copy(image)
             test_input = np.copy(image)
 
-            if is_trained_with_pytorch or is_onnx:
-                normalize(specLB, means, stds, dataset)
-                normalize(specUB, means, stds, dataset)
-                normalize(test_input, means, stds, dataset)
-
             print(', '.join([dataset, network, domain]), 'testing now')
 
             try:

@@ -39,6 +39,7 @@ class ERAN:
             translator = TFTranslator(model, session)
         operations, resources = translator.translate()
         self.optimizer  = Optimizer(operations, resources)
+        print('This network has ' + str(self.optimizer.get_neuron_count()) + ' neurons.')
     
     
     def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0, lexpr_weights= None, lexpr_cst=None, lexpr_dim=None, uexpr_weights=None, uexpr_cst=None, uexpr_dim=None, expr_size=0, testing = False):
