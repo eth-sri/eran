@@ -2,14 +2,12 @@
 @author: Adrian Hoffmann
 '''
 
-import numpy as np
 from elina_abstract0 import *
 from elina_manager import *
 from deeppoly_nodes import *
 from deepzono_nodes import *
 from functools import reduce
 import gc
-from config import config
 
 class layers:
     def __init__(self):
