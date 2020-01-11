@@ -627,10 +627,11 @@ class DeepzonoConv:
         """
         offset, old_length  = self.abstract_information
         element = conv_matmult_zono(*self.get_arguments(man, element))
+        nn.last_layer='Conv2D'
         relu_groups.append([])
+        add_bounds(man, element, nlb, nub, self.output_length, offset+old_length, is_refine_layer=True)
         if testing:
-            lb, ub = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
-            return remove_dimensions(man, element, offset, old_length), lb, ub
+            return remove_dimensions(man, element, offset, old_length), nlb[-1], nub[-1]
         return remove_dimensions(man, element, offset, old_length)
 
 
