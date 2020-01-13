@@ -12,6 +12,7 @@ from ai_milp import *
 import onnxruntime.backend as rt
 import argparse
 from onnx import helper
+from config import config
 
 
 parser = argparse.ArgumentParser(description='ERAN sanity check',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -174,7 +175,7 @@ for dataset in datasets:
             print(', '.join([dataset, network, domain]), 'testing now')
 
             try:
-                label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, True, testing=True)
+                label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, config.use_area_heuristic, testing=True)
 
             except Exception as e:
                 tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error trace: '+traceback.format_exc()]) + '\n\n\n')
