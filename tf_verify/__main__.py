@@ -350,6 +350,8 @@ if dataset=='acasxu':
                             else:
                                flag = False
                                break
+                        elif config.debug:
+                            print('split', i, j, k, l, m)
     end = time.time()
     if(flag):
         print("acasxu property ", specnumber, "Verified")

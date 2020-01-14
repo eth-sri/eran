@@ -356,7 +356,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             if(nn.layertypes[i]=='ReLU' and relu_needed[i]):
                 if relu_groups is None:
                     counter = handle_relu(model, var_list, i, counter, len(weights), nlb[i], nub[i], [], use_milp)
-                if(use_milp):
+                elif(use_milp):
                     counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
                 else:
                     counter = handle_relu(model,var_list,i,counter,len(weights),nlb[i],nub[i], relu_groups[i], use_milp)
@@ -413,7 +413,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, re
             if(relu_needed[i] and nn.layertypes[i]=='Resadd'):
                 if relu_groups is None:
                     counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], [],use_milp)
-                if(use_milp):
+                elif(use_milp):
                     counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i],use_milp)
                 else:
                     counter = handle_relu(model,var_list,i,counter,num_neurons,nlb[i],nub[i], relu_groups[i], use_milp)

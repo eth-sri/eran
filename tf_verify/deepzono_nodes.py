@@ -176,7 +176,8 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
 
         lbi = nlb[layerno]
         ubi = nub[layerno]
-        encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, True, 'refinezono')
+        if config.use_2relu or config.use_3relu or config.dyn_krelu:
+            encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, True, 'refinezono')
         j = 0
      
         for i in range(length):
@@ -540,7 +541,10 @@ class DeepzonoAffine(DeepzonoMatmul):
         #    refine_after_affine(self, man, element, nlb, nub)
         lbi, ubi = add_bounds(man, element, nlb, nub, self.output_length, offset+old_length)
         # print("num candidates here ", num_candidates)
-        encode_krelu_cons(nn, man, element, start_offset, nn.ffn_counter + nn.conv_counter, num_vars, lbi, ubi, relu_groups, False, 'refinezono')
+        if config.use_2relu or config.use_3relu or config.dyn_krelu:
+            encode_krelu_cons(nn, man, element, start_offset, nn.ffn_counter + nn.conv_counter, num_vars, lbi, ubi, relu_groups, False, 'refinezono')
+        else:
+            relu_groups.append([])
 
         nlb.append(lbi)
         nub.append(ubi) 
