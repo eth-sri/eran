@@ -64,13 +64,13 @@ rm gmp-6.1.2.tar.xz
 Install mpfr:
 ```
 wget https://www.mpfr.org/mpfr-current/mpfr-4.0.2.tar.xz
-tar -xvf mpfr-4.0.1.tar.xz
-cd mpfr-4.0.1
+tar -xvf mpfr-4.0.2.tar.xz
+cd mpfr-4.0.2
 ./configure
 make
 make install
 cd ..
-rm mpfr-4.0.1.tar.xz
+rm mpfr-4.0.2.tar.xz
 ```
 
 Install ELINA:
