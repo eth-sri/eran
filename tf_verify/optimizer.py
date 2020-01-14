@@ -7,7 +7,7 @@ from functools import reduce
 import numpy as np
 
 
-operations_for_neuron_count = ["MatMul", "Gemm", "Conv2D", "Conv", "Resadd"]
+operations_for_neuron_count = ["Relu", "Sigmoid", "Tanh", "MaxPool"]
 
 
 class Optimizer:
