@@ -50,7 +50,7 @@ def get_out_tensors(out_names):
 if args.dataset:
     datasets = [args.dataset]
 else:
-    datasets = os.listdir('../data/test_nets/')
+    datasets = os.listdir('../testing/test_nets/')
 
 for dataset in datasets:
     if args.network:
@@ -58,7 +58,7 @@ for dataset in datasets:
         networks = args.network
         dataset_folder = ''
     else:
-        dataset_folder = '../data/test_nets/' + dataset + '/'
+        dataset_folder = '../testing/test_nets/' + dataset + '/'
         networks = os.listdir(dataset_folder)
 
     for network in networks:
