@@ -168,7 +168,6 @@ parser.add_argument('--geometric_config', type=str, default=config.geometric_con
 parser.add_argument('--num_params', type=int, default=config.num_params, help='Number of transformation parameters')
 parser.add_argument('--num_tests', type=int, default=config.num_tests, help='Number of images to test')
 parser.add_argument('--from_test', type=int, default=config.from_test, help='Number of images to test')
-parser.add_argument('--test_idx', type=int, default=config.test_idx, help='Index to test')
 parser.add_argument('--debug', action='store_true', default=config.debug, help='Whether to display debug info')
 parser.add_argument('--attack', action='store_true', default=config.attack, help='Whether to attack')
 parser.add_argument('--geometric', '-g', dest='geometric', default=config.geometric, action='store_true', help='Whether to do geometric analysis')
@@ -384,9 +383,6 @@ elif config.geometric:
     if config.geometric_config:
         transform_attack_container = get_transform_attack_container(config.geometric_config)
         for i, test in enumerate(tests):
-            if config.test_idx is not None and i != config.test_idx:
-                continue
-
             if config.from_test and i < config.from_test:
                 continue
 
@@ -582,9 +578,6 @@ elif config.geometric:
 
     else:
         for i, test in enumerate(tests):
-            if config.test_idx is not None and i != config.test_idx:
-                continue
-
             if config.from_test and i < config.from_test:
                 continue
 
@@ -791,9 +784,6 @@ elif config.geometric:
     print('Average time: ', tot_time / total)
 else:
     for i, test in enumerate(tests):
-        if config.test_idx is not None and i != config.test_idx:
-            continue
-
         if config.from_test and i < config.from_test:
             continue
 

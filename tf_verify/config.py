@@ -24,7 +24,6 @@ class config:
     num_params = 0 # Number of transformation parameters for geometric analysis
     num_tests = None # Number of images to test
     from_test = 0 # From which number to start testing
-    test_idx = None # Index to test
     debug = False # Whether to display debug info
     attack = False # Whether to attack in geometric analysis
     geometric = False # Whether to do geometric analysis
