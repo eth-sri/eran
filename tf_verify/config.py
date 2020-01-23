@@ -3,11 +3,10 @@ import multiprocessing
 
 class config:
     use_milp = True # Whether to use MILP
-    numproc_milp = multiprocessing.cpu_count() # number of processes to use for MILP solver
     dyn_krelu = False # dynamically select parameter k
     use_2relu = False # use 2-relu
     use_3relu = False # use 3-relu
-    numproc_krelu = multiprocessing.cpu_count() # number of processes for krelu
+    numproc = multiprocessing.cpu_count() # number of processes for milp/lp/krelu
     netname = None # the network name, the extension can be only .pyt, .tf and .meta
     epsilon = 0 # the epsilon for L_infinity perturbation
     zonotope = None # file to specify the zonotope matrix

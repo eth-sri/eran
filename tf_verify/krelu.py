@@ -216,12 +216,14 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     Krelu.domain = domain
 
     start = time.time()
-    with multiprocessing.Pool(config.numproc_krelu) as pool:
+    with multiprocessing.Pool(config.numproc) as pool:
         krelu_results = pool.map(make_krelu_obj, krelu_args)
     for krelu_inst in krelu_results:
         relucons.append(krelu_inst)
     end = time.time()
 
+    if config.debug:
+        print('krelu time spent: ' + str(end-start))
     if domain == 'refinezono':
         element = dn.remove_dimensions(man,element,offset+length,1)
 
