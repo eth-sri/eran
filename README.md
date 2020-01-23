@@ -152,9 +152,9 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<use_area_heuristic>```: specifies whether to use area heuristic for the ReLU approximation in DeepPoly (default is true).
 
-* ```<mean>```: specifies mean used to normalize the data. If the data has multiple channels the mean for every channel has to be provided (e.g. for cifar10 --mean 0.5 0.5 0.5) (default is 0 for mnist and 0.485, 0.456, 0.406 for cifar10)
+* ```<mean>```: specifies mean used to normalize the data. If the data has multiple channels the mean for every channel has to be provided (e.g. for cifar10 --mean 0.485, 0.456, 0.406) (default is 0 for non-geometric mnist and 0.5 0.5 0.5 otherwise)
 
-* ```<std>```: specifies standard deviation used to normalize the data. If the data has multiple channels the standard deviaton for every channel has to be provided (e.g. for cifar10 --std 0.2 0.3 0.2) (default is 1 for mnist and 0.225, 0.225, 0.225 for cifar10)
+* ```<std>```: specifies standard deviation used to normalize the data. If the data has multiple channels the standard deviaton for every channel has to be provided (e.g. for cifar10 --std 0.2 0.3 0.2) (default is 1 1 1)
 
 * ```<use_milp>```: specifies whether to use MILP (default is true).
 
