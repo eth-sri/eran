@@ -60,7 +60,7 @@ def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
     print('==================================================================')
 
 
-def normalize(image, means, stds, dataset, is_conv):
+def normalize(image, means, stds, dataset):
     if dataset == 'mnist'  or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
@@ -69,12 +69,8 @@ def normalize(image, means, stds, dataset, is_conv):
         for i in range(3072):
             tmp[i] = (image[i] - means[i % 3]) / stds[i % 3]
 
-        if not is_conv:
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            for i in range(3072):
-                image[i] = tmp[i % 1024 + (i % 3) * 1024]
+        for i in range(3072):
+            image[i] = tmp[i]
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
@@ -109,18 +105,8 @@ def denormalize(image, means, stds, dataset):
             tmp[count] = image[count]*stds[2] + means[2]
             count = count + 1
 
-        if(is_conv):
-            for i in range(3072):
-                image[i] = tmp[i]
-        else:
-            count = 0
-            for i in range(1024):
-                image[i] = tmp[count]
-                count = count+1
-                image[i+1024] = tmp[count]
-                count = count+1
-                image[i+2048] = tmp[count]
-                count = count+1
+        for i in range(3072):
+            image[i] = tmp[i]
 
 
 def get_tests(dataset, geometric):
@@ -227,7 +213,6 @@ if(dataset=='acasxu' and (specnumber!=9)):
     exit(1)
 
 
-is_conv = False
 mean = 0
 std = 0
 
@@ -271,10 +256,10 @@ else:
     elif(dataset=='acasxu'):
         num_pixels = 5
     if is_onnx:
-        model, is_conv = read_onnx_net(netname)
+        model, _ = read_onnx_net(netname)
         # this is to have different defaults for mnist and cifar10
     else:
-        model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
+        model, _, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
     eran = ERAN(model, is_onnx=is_onnx)
 
 if not is_trained_with_pytorch:
@@ -402,8 +387,8 @@ elif config.geometric:
             spec_lb = np.copy(image)
             spec_ub = np.copy(image)
 
-            normalize(spec_lb, means, stds, config.dataset, is_conv)
-            normalize(spec_ub, means, stds, config.dataset, is_conv)
+            normalize(spec_lb, means, stds, config.dataset)
+            normalize(spec_ub, means, stds, config.dataset)
 
             label, nn, nlb, nub = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
                                                    config.use_area_heuristic)
@@ -433,8 +418,8 @@ elif config.geometric:
                     attack_lb = values[::2]
                     attack_ub = values[1::2]
 
-                    normalize(attack_lb, means, stds, config.dataset, is_conv)
-                    normalize(attack_ub, means, stds, config.dataset, is_conv)
+                    normalize(attack_lb, means, stds, config.dataset)
+                    normalize(attack_ub, means, stds, config.dataset)
                     attack_imgs.append((params, attack_lb, attack_ub))
                     checked.append(False)
 
@@ -509,8 +494,8 @@ elif config.geometric:
                         for l in range(config.num_params):
                             uexpr_weights.append(0)
                             uexpr_dim.append(dim + l)
-                    normalize(spec_lb[:dim], means, stds, config.dataset, is_conv)
-                    normalize(spec_ub[:dim], means, stds, config.dataset, is_conv)
+                    normalize(spec_lb[:dim], means, stds, config.dataset)
+                    normalize(spec_ub[:dim], means, stds, config.dataset)
                     normalize_poly(config.num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights,
                                    uexpr_dim, means, stds, config.dataset)
 
@@ -596,8 +581,8 @@ elif config.geometric:
             spec_lb = np.copy(image)
             spec_ub = np.copy(image)
 
-            normalize(spec_lb, means, stds, config.dataset, is_conv)
-            normalize(spec_ub, means, stds, config.dataset, is_conv)
+            normalize(spec_lb, means, stds, config.dataset)
+            normalize(spec_ub, means, stds, config.dataset)
 
             label, nn, nlb, nub = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
                                                    config.use_area_heuristic)
@@ -630,8 +615,8 @@ elif config.geometric:
                         attack_lb = values[::2]
                         attack_ub = values[1::2]
 
-                        normalize(attack_lb, means, stds, config.dataset, is_conv)
-                        normalize(attack_ub, means, stds, config.dataset, is_conv)
+                        normalize(attack_lb, means, stds, config.dataset)
+                        normalize(attack_ub, means, stds, config.dataset)
                         attack_imgs.append((params, attack_lb, attack_ub))
                         checked.append(False)
 
@@ -709,8 +694,8 @@ elif config.geometric:
                             for l in range(config.num_params):
                                 uexpr_weights.append(0)
                                 uexpr_dim.append(dim + l)
-                        normalize(spec_lb[:dim], means, stds, config.dataset, is_conv)
-                        normalize(spec_ub[:dim], means, stds, config.dataset, is_conv)
+                        normalize(spec_lb[:dim], means, stds, config.dataset)
+                        normalize(spec_ub[:dim], means, stds, config.dataset)
                         normalize_poly(config.num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights,
                                        uexpr_dim, means, stds, config.dataset)
 
@@ -795,8 +780,8 @@ else:
         specLB = np.copy(image)
         specUB = np.copy(image)
 
-        normalize(specLB, means, stds, dataset, is_conv)
-        normalize(specUB, means, stds, dataset, is_conv)
+        normalize(specLB, means, stds, dataset)
+        normalize(specUB, means, stds, dataset)
 
         label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_area_heuristic)
         #for number in range(len(nub)):
@@ -813,8 +798,8 @@ else:
 
             specLB = np.clip(image - epsilon,0,1)
             specUB = np.clip(image + epsilon,0,1)
-            normalize(specLB, means, stds, dataset, is_conv)
-            normalize(specUB, means, stds, dataset, is_conv)
+            normalize(specLB, means, stds, dataset)
+            normalize(specUB, means, stds, dataset)
             start = time.time()
             perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_area_heuristic)
             print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
