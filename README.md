@@ -166,7 +166,16 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<numproc>```: specifies how many processes to use for MILP, LP and k-ReLU (default is the number of processors in your machine).
 
-* Note that the residual layers are currently only supported with the DeepZ (called with deepzono) domain. 
+
+* ```<geometric>```: specifies whether to do geometric analysis (default is false).
+
+* ```<geometric_config>```: specifies the geometric configuration file location.
+
+* ```<data_dir>```: specifies the geometric data location.
+
+* ```<num_params>```: specifies the number of transformation parameters (default is 0)
+
+* ```<attack>```: specifies whether to verify attack images (default is false).
 
 * Refinezono and RefinePoly refines the analysis results from the DeepZ and DeepPoly domain respectively using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
@@ -201,6 +210,20 @@ python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --zonotope some_pa
 will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output either "Verified" or "Failed" along with the timing.
 
 Similarly, for the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
+
+
+Geometric analysis
+
+```
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --geometric_config ../deepg/examples/example1/config.txt --num_params 1 --dataset mnist
+```
+will on the fly generate geometric perturbed images and evaluate the network against them. For more information on the geometric configuration file please see [Format of the configuration file in DeepG](https://github.com/eth-sri/deepg#format-of-configuration-file).
+
+
+```
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/examples/example1/ --num_params 1 --dataset mnist --attack
+```
+will evaluate the generated geometric perturbed images in the given data_dir and also evaluate generated attack images.
 
 
 Publications
