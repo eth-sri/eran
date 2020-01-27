@@ -106,9 +106,10 @@ def prepare_model(model):
 				elif 'transB' == attribute.name:
 					transB = attribute.i
 			M = shape_map[node.input[0]][transA]
-			if len(shape_map[node.input[1]]) == 1:
-				transB = 1
-			N = shape_map[node.input[1]][1 - transB]
+			if len(shape_map[node.input[1]]) == 1 and transB == 0:
+				N = 1
+			else:
+				N = shape_map[node.input[1]][1 - transB]
 			shape_map[node.output[0]] = [M, N]
 
 		elif node.op_type in ["Add", "Sub", "Mul"]:
