@@ -79,7 +79,9 @@ def prepare_model(model):
 		constants_map[initial.name] = const
 		shape_map[initial.name] = const.shape
 
+	placeholdernames = []
 	for input in model.graph.input:
+		placeholdernames.append(input.name)
 		if input.name not in shape_map:
 			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
 			input_node_map[input.name] = input
@@ -104,6 +106,8 @@ def prepare_model(model):
 				elif 'transB' == attribute.name:
 					transB = attribute.i
 			M = shape_map[node.input[0]][transA]
+			if len(shape_map[node.input[1]]) == 1:
+				transB = 1
 			N = shape_map[node.input[1]][1 - transB]
 			shape_map[node.output[0]] = [M, N]
 
@@ -270,7 +274,7 @@ def prepare_model(model):
 	#print(constants_map)
 	#print('shape_map')
 	#print(shape_map)
-	return shape_map, constants_map, output_node_map, input_node_map
+	return shape_map, constants_map, output_node_map, input_node_map, placeholdernames
 
 
 class ONNXTranslator:
@@ -294,7 +298,7 @@ class ONNXTranslator:
 			self.model = model
 			self.nodes = self.model.graph.node
 
-			self.shape_map, self.constants_map, self.output_node_map, self.input_node_map = prepare_model(model)
+			self.shape_map, self.constants_map, self.output_node_map, self.input_node_map, self.placeholdernames = prepare_model(model)
 		else:
 			assert 0, 'not onnx model'
 	
@@ -452,7 +456,7 @@ class ONNXTranslator:
 	def get_kind(self, name):
 		if name in self.constants_map:
 			kind = 'Constant'
-		elif 'input' in name or '0' == name:
+		elif name in self.placeholdernames:
 			kind = 'Placeholder'
 		else:
 			kind = self.output_node_map[name].op_type
