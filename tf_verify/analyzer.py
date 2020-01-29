@@ -90,13 +90,14 @@ class Analyzer:
             else:
                 element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
 
-            if isinstance(element_test_bounds, tuple):
+            if self.testing and isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds
                 testing_nlb.append(test_lb)
                 testing_nub.append(test_ub)
             else:
                 element = element_test_bounds
-        gc.collect()
+        if self.domain in ["refinezono", "refinepoly"]:
+            gc.collect()
         if self.testing:
             return element, testing_nlb, testing_nub
         return element, nlb, nub
