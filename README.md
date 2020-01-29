@@ -19,6 +19,11 @@ ERAN vs AI2
 --------------------
 Note that ERAN subsumes the first abstract interpretation based analyzer [AI2](https://www.sri.inf.ethz.ch/publications/gehr2018ai), so if you aim to compare, please use ERAN as a baseline. 
 
+
+USER MANUAL
+--------------------
+For a detailed desciption of the options provided and the implentation of ERAN, you can download the [user manual](https://files.sri.inf.ethz.ch/eran/docs/eran_manual.pdf).
+
 Requirements 
 ------------
 GNU C compiler, ELINA, Gurobi's Python interface,
