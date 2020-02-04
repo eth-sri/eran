@@ -1,5 +1,11 @@
 import multiprocessing
 
+from enum import Enum
+
+class Device(Enum):
+    CPU = 0
+    CUDA = 1
+
 
 class config:
     use_milp = True # Whether to use MILP
@@ -26,6 +32,7 @@ class config:
     debug = False # Whether to display debug info
     attack = False # Whether to attack in geometric analysis
     geometric = False # Whether to do geometric analysis
-    specnumber = None
-    input_box = None
-    output_constraints = None
+    specnumber = None # Acas Xu spec number
+    input_box = None # input box file to use
+    output_constraints = None # output constraints file to check
+    device = Device.CUDA # Which device Deeppoly should run on
