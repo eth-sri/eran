@@ -43,7 +43,7 @@ def calculate_padding(padding_str, image_shape, filter_shape, strides):
 			tmp = filter_shape[1] - strides[1]
 			pad_along_width = max(tmp, 0)
 		else:
-			tmp = filter_shape[1] - (image_shape[2] % strides[1]);
+			tmp = filter_shape[1] - (image_shape[2] % strides[1])
 			pad_along_width = max(tmp, 0)
 		pad_top = int(pad_along_height / 2)
 

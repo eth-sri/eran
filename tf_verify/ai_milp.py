@@ -591,7 +591,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 
 
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub, is_max=True):
+def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
@@ -602,24 +602,23 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, c, nlb, nub, is_max=True):
 
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True,relu_needed)
 
-    num_var = len(var_list)
-    output_size = num_var - counter
+    # model.setParam('TimeLimit', config.timeout_milp)
 
-    for i in range(output_size):
-        if(i!=c):
+    for or_list in constraints.and_list:
+        any = False
+        for (i, j) in or_list:
             obj = LinExpr()
-            if is_max:
-                obj += 1*var_list[counter+c]
-                obj += -1*var_list[counter + i]
-            else:
-                obj += -1*var_list[counter+c]
-                obj += 1*var_list[counter + i]
+            obj += -1*var_list[counter + i]
+            obj += 1*var_list[counter + j]
             model.setObjective(obj,GRB.MINIMIZE)
             model.optimize()
 
-            if(model.objval<0):
+            if model.objval <= 0:
+                any = True
+                break
 
-                return False, model.x[0:input_size]
+        if not any:
+            return False, model.x[0:input_size]
 
     return True, model.x[0:input_size]
 

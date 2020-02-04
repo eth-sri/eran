@@ -41,7 +41,7 @@ class layers:
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_area_heuristic, testing = False):
         """
         Arguments
         ---------
@@ -65,7 +65,7 @@ class Analyzer:
         self.nn = nn
         self.timeout_lp = timeout_lp
         self.timeout_milp = timeout_milp
-        self.specnumber = specnumber
+        self.output_constraints = output_constraints
         self.use_area_heuristic = use_area_heuristic
         self.testing = testing
         self.relu_groups = []
@@ -133,7 +133,7 @@ class Analyzer:
             output_size = num_var - counter
 
 
-        if self.specnumber==0:
+        if self.output_constraints is None:
             for i in range(output_size):
                 flag = True
                 label = i
@@ -168,19 +168,21 @@ class Analyzer:
                 if flag:
                     dominant_class = i
                     break
-        elif self.specnumber==9:
-            flag = True
-            for i in range(output_size):
-                if self.domain == 'deepzono' or self.domain == 'refinezono':
-                    if i!=3 and not self.is_greater(self.man, element, i, 3):
-                        flag = False
+        else:
+            # AND
+            and_list = self.output_constraints.and_list
+            dominant_class = True
+            for or_list in and_list:
+                # OR
+                or_result = False
+                for is_greater_tuple in or_list:
+                    if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                        or_result = True
                         break
-                else:
-                    if i!=3 and not self.is_greater(self.man, element, i, 3, self.use_area_heuristic):
-                        flag = False
-                        break
-            if flag:
-                dominant_class = 3
+
+                if not or_result:
+                    dominant_class = False
+                    break
 
         elina_abstract0_free(self.man, element)
         return dominant_class, nlb, nub

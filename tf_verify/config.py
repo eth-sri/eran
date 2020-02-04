@@ -26,3 +26,6 @@ class config:
     debug = False # Whether to display debug info
     attack = False # Whether to attack in geometric analysis
     geometric = False # Whether to do geometric analysis
+    specnumber = None
+    input_box = None
+    output_constraints = None

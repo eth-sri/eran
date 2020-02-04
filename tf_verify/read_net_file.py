@@ -166,7 +166,7 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
             #W = myConst(permutation(parseVec(net), h, w, c).transpose())
             b = None
             if("padding" in line):
-                if(args["padding"]==1):
+                if(args["padding"]>=1):
                     padding_arg = "SAME"
                 else:
                     padding_arg = "VALID"

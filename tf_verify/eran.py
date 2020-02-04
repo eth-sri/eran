@@ -42,7 +42,7 @@ class ERAN:
         print('This network has ' + str(self.optimizer.get_neuron_count()) + ' neurons.')
     
     
-    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0, lexpr_weights= None, lexpr_cst=None, lexpr_dim=None, uexpr_weights=None, uexpr_cst=None, uexpr_dim=None, expr_size=0, testing = False):
+    def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_area_heuristic, output_constraints=None, lexpr_weights= None, lexpr_cst=None, lexpr_dim=None, uexpr_weights=None, uexpr_cst=None, uexpr_dim=None, expr_size=0, testing = False):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
         
@@ -69,10 +69,10 @@ class ERAN:
         nn.specUB = specUB
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list, output_info = self.optimizer.get_deepzono(nn,specLB, specUB)
-            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_area_heuristic, testing)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size)
-            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_area_heuristic, testing)
         dominant_class, nlb, nub = analyzer.analyze()
         if testing:
             return dominant_class, nn, nlb, nub, output_info
@@ -80,7 +80,7 @@ class ERAN:
             return dominant_class, nn, nlb, nub
 
 
-    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, specnumber=0, testing = False):
+    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_area_heuristic, output_constraints=None, testing = False):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
 
@@ -104,7 +104,7 @@ class ERAN:
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list, output_info   = self.optimizer.get_deepzono(nn, zonotope)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_area_heuristic, testing)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_area_heuristic, testing)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0
             #execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)

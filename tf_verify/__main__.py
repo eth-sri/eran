@@ -13,7 +13,9 @@ from tqdm import tqdm
 from ai_milp import *
 import argparse
 from config import config
-
+from constraints import Constraints
+import re
+import itertools
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -34,17 +36,23 @@ def isnetworkfile(fname):
     return fname
 
 
-def parse_acasxu_spec(text):
-    text = text.replace("[", "")
-    text = text.replace("]", "")
-    low = []
-    high = []
+
+def parse_input_box(text):
+    intervals_list = []
     for line in text.split('\n'):
         if line!="":
-           [lb,ub] = line.split(",")
-           low.append(np.double(lb))
-           high.append(np.double(ub))
-    return low,high
+            interval_strings = re.findall("\[-?\d*\.?\d+, *-?\d*\.?\d+\]", line)
+            intervals = []
+            for interval in interval_strings:
+                interval = interval.replace('[', '')
+                interval = interval.replace(']', '')
+                [lb,ub] = interval.split(",")
+                intervals.append((np.double(lb), np.double(ub)))
+            intervals_list.append(intervals)
+
+    # return every combination
+    boxes = itertools.product(*intervals_list)
+    return boxes
 
 
 def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
@@ -71,6 +79,10 @@ def normalize(image, means, stds, dataset):
 
         for i in range(3072):
             image[i] = tmp[i]
+    else:
+        for i in range(len(image)):
+            image[i] -= means[i]
+            image[i] /= stds[i]
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
@@ -110,15 +122,11 @@ def denormalize(image, means, stds, dataset):
 
 
 def get_tests(dataset, geometric):
-    if (dataset == 'acasxu'):
-        specfile = '../data/acasxu/specs/acasxu_prop' + str(specnumber) + '_spec.txt'
-        tests = open(specfile, 'r').read()
+    if geometric:
+        csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
     else:
-        if geometric:
-            csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
-        else:
-            csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
-        tests = csv.reader(csvfile, delimiter=',')
+        csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+    tests = csv.reader(csvfile, delimiter=',')
     return tests
 
 
@@ -134,7 +142,7 @@ parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=ar
 parser.add_argument('--netname', type=isnetworkfile, default=config.netname, help='the network name, the extension can be only .pb, .pyt, .tf, .meta, and .onnx')
 parser.add_argument('--epsilon', type=float, default=config.epsilon, help='the epsilon for L_infinity perturbation')
 parser.add_argument('--zonotope', type=str, default=config.zonotope, help='file to specify the zonotope matrix')
-#parser.add_argument('--specnumber', type=int, default=9, help='the property number for the acasxu networks')
+parser.add_argument('--specnumber', type=int, default=config.specnumber, help='the property number for the acasxu networks')
 parser.add_argument('--domain', type=str, default=config.domain, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
 parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
 parser.add_argument('--complete', type=str2bool, default=config.complete,  help='flag specifying where to use complete verification or not')
@@ -156,6 +164,8 @@ parser.add_argument('--from_test', type=int, default=config.from_test, help='Num
 parser.add_argument('--debug', action='store_true', default=config.debug, help='Whether to display debug info')
 parser.add_argument('--attack', action='store_true', default=config.attack, help='Whether to attack')
 parser.add_argument('--geometric', '-g', dest='geometric', default=config.geometric, action='store_true', help='Whether to do geometric analysis')
+parser.add_argument('--input_box', default=config.input_box,  help='input box to use')
+parser.add_argument('--output_constraints', default=config.output_constraints, help='custom output constraints to check')
 
 
 # Logging options
@@ -167,6 +177,10 @@ args = parser.parse_args()
 for k, v in vars(args).items():
     setattr(config, k, v)
 config.json = vars(args)
+
+if config.specnumber and not config.input_box and not config.output_constraints:
+    config.input_box = '../data/acasxu/specs/acasxu_prop_' + config.specnumber + '_input_prenormalized.txt'
+    config.output_constraints = '../data/acasxu/specs/acasxu_prop_' + config.specnumber + '_constraints.txt'
 
 assert config.netname, 'a network has to be provided for analysis.'
 
@@ -205,12 +219,9 @@ dataset = config.dataset
 if zonotope_bool==False:
    assert dataset in ['mnist', 'cifar10', 'acasxu', 'fashion'], "only mnist, cifar10, acasxu, and fashion datasets are supported"
 
-
-specnumber = 9
-if(dataset=='acasxu' and (specnumber!=9)):
-    print("currently we only support property 9 for acasxu")
-    exit(1)
-
+constraints = None
+if config.output_constraints:
+    constraints = Constraints(config.output_constraints)
 
 mean = 0
 std = 0
@@ -218,7 +229,7 @@ std = 0
 complete = (config.complete==True)
 
 if(dataset=='acasxu'):
-    print("netname ", netname, " specnumber ", specnumber, " domain ", domain, " dataset ", dataset, "args complete ", config.complete, " complete ",complete, " timeout_lp ",config.timeout_lp)
+    print("netname ", netname, " specnumber ", config.specnumber, " domain ", domain, " dataset ", dataset, "args complete ", config.complete, " complete ",complete, " timeout_lp ",config.timeout_lp)
 else:
     print("netname ", netname, " epsilon ", epsilon, " domain ", domain, " dataset ", dataset, "args complete ", config.complete, " complete ",complete, " timeout_lp ",config.timeout_lp)
 
@@ -265,6 +276,9 @@ if not is_trained_with_pytorch:
     if dataset == 'mnist' and not config.geometric:
         means = [0]
         stds = [1]
+    elif dataset == 'acasxu':
+        means = [1.9791091e+04,0.0,0.0,650.0,600.0,35.1111111,0.0,7.5188840201005975]
+        stds = [60261.0,6.28318530718,6.28318530718,1100.0,1200.0,100.0,6.0,373.94992]
     else:
         means = [0.5, 0.5, 0.5]
         stds = [1, 1, 1]
@@ -280,68 +294,84 @@ verified_images = 0
 
 
 if dataset:
-    tests = get_tests(dataset, config.geometric)
+    if config.input_box is None:
+        tests = get_tests(dataset, config.geometric)
+    else:
+        tests = open(config.input_box, 'r').read()
 
 
 if dataset=='acasxu':
-    # Ignores Zonotope for now.
-    specLB, specUB = parse_acasxu_spec(tests)
-    if(specnumber==9):
-        num_splits = [10,9,1,5,14]
-    else:
-        num_splits = [10,10,1,10,10]
-    step_size = []
-    for i in range(5):
-        step_size.append((specUB[i]-specLB[i])/num_splits[i])
-    #sorted_indices = np.argsort(widths)
-    #input_to_split = sorted_indices[0]
-    #print("input to split ", input_to_split)
+    if config.debug:
+        print('Constraints: ', constraints.and_list)
+    boxes = parse_input_box(tests)
+    for box in boxes:
+        specLB = [interval[0] for interval in box]
+        specUB = [interval[1] for interval in box]
+        normalize(specLB, means, stds, dataset)
+        normalize(specUB, means, stds, dataset)
+        print(specLB)
+        print(specUB)
+        if config.specnumber == 9:
+            num_splits = [10,9,1,5,14]
+        #elif spec_num == 5:
+        #    num_splits = [4,5,1,20,20]
+        else:
+            num_splits = [10, 10, 1, 10, 10]
+        step_size = []
+        for i in range(5):
+            step_size.append((specUB[i]-specLB[i])/num_splits[i])
+        #sorted_indices = np.argsort(widths)
+        #input_to_split = sorted_indices[0]
+        #print("input to split ", input_to_split)
 
-    #step_size = widths/num_splits
-    start_val = np.copy(specLB)
-    end_val = np.copy(specUB)
-    flag = True
-    _,nn,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_area_heuristic, specnumber)
-    start = time.time()
-    for i in range(num_splits[0]):
-        specLB[0] = start_val[0] + i*step_size[0]
-        specUB[0] = np.fmin(end_val[0],start_val[0]+ (i+1)*step_size[0])
+        #step_size = widths/num_splits
+        start_val = np.copy(specLB)
+        end_val = np.copy(specUB)
+        flag = True
+        _,nn,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_area_heuristic, constraints)
+        start = time.time()
+        #complete_list = []
+        for i in range(num_splits[0]):
+            specLB[0] = start_val[0] + i*step_size[0]
+            specUB[0] = np.fmin(end_val[0],start_val[0]+ (i+1)*step_size[0])
 
-        for j in range(num_splits[1]):
-            specLB[1] = start_val[1] + j*step_size[1]
-            specUB[1] = np.fmin(end_val[1],start_val[1]+ (j+1)*step_size[1])
+            for j in range(num_splits[1]):
+                specLB[1] = start_val[1] + j*step_size[1]
+                specUB[1] = np.fmin(end_val[1],start_val[1]+ (j+1)*step_size[1])
 
-            for k in range(num_splits[2]):
-                specLB[2] = start_val[2] + k*step_size[2]
-                specUB[2] = np.fmin(end_val[2],start_val[2]+ (k+1)*step_size[2])
-                for l in range(num_splits[3]):
-                    specLB[3] = start_val[3] + l*step_size[3]
-                    specUB[3] = np.fmin(end_val[3],start_val[3]+ (l+1)*step_size[3])
-                    for m in range(num_splits[4]):
+                for k in range(num_splits[2]):
+                    specLB[2] = start_val[2] + k*step_size[2]
+                    specUB[2] = np.fmin(end_val[2],start_val[2]+ (k+1)*step_size[2])
+                    for l in range(num_splits[3]):
+                        specLB[3] = start_val[3] + l*step_size[3]
+                        specUB[3] = np.fmin(end_val[3],start_val[3]+ (l+1)*step_size[3])
+                        for m in range(num_splits[4]):
 
-                        specLB[4] = start_val[4] + m*step_size[4]
-                        specUB[4] = np.fmin(end_val[4],start_val[4]+ (m+1)*step_size[4])
+                            specLB[4] = start_val[4] + m*step_size[4]
+                            specUB[4] = np.fmin(end_val[4],start_val[4]+ (m+1)*step_size[4])
 
-                        label,_,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_area_heuristic, specnumber)
+                            hold,_,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_area_heuristic, constraints)
 
-                        if(specnumber==9 and label!=3):
-                            if complete==True:
-                               verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, 3, nlb, nub,False)
-                               if(verified_flag==False):
-                                  flag = False
-                                  break
-                            else:
-                               flag = False
-                               break
-                        elif config.debug:
-                            print('split', i, j, k, l, m)
-    end = time.time()
-    if(flag):
-        print("acasxu property ", specnumber, "Verified")
-    else:
-        print("acasxu property ", specnumber, "Failed")
+                            if not hold:
+                                if complete==True:
+                                   verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+                                   #complete_list.append((i,j,k,l,m))
+                                   if(verified_flag==False):
+                                      flag = False
+                                      assert 0
+                                else:
+                                   flag = False
+                                   break
+                            if config.debug:
+                                print('split', i, j, k, l, m)
+        end = time.time()
+        #print(complete_list)
+        if(flag):
+            print("acasxu property ", config.specnumber, "Verified")
+        else:
+            print("acasxu property ", config.specnumber, "Failed")
 
-    print(end - start, "seconds")
+        print(end - start, "seconds")
 
 elif zonotope_bool:
     perturbed_label, nn, nlb, nub = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_area_heuristic)
