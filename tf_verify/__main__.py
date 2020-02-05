@@ -88,17 +88,18 @@ def normalize(image, means, stds, dataset):
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
     # normalization taken out of the network
+    # TODO test
     if len(means) == len(image):
         for i in range(len(lexpr_cst)):
-            lexpr_cst[i] -= means[i]
-            uexpr_cst[i] -= means[i]
-            lexpr_cst[i] /= stds[i]
-            uexpr_cst[i] /= stds[i]
+            lexpr_cst[i] -= means[i % 3]
+            uexpr_cst[i] -= means[i % 3]
+            lexpr_cst[i] /= stds[i % 3]
+            uexpr_cst[i] /= stds[i % 3]
         for i in range(len(lexpr_weights)):
-            lexpr_weights[i] -= means[i]
-            uexpr_weights[i] -= means[i]
-            lexpr_weights[i] /= stds[i]
-            uexpr_weights[i] /= stds[i]
+            lexpr_weights[i] -= means[i % 3]
+            uexpr_weights[i] -= means[i % 3]
+            lexpr_weights[i] /= stds[i % 3]
+            uexpr_weights[i] /= stds[i % 3]
     elif dataset == 'mnist' or dataset == 'fashion':
         for i in range(len(lexpr_cst)):
             lexpr_cst[i] = (lexpr_cst[i] - means[0]) / stds[0]
@@ -465,7 +466,7 @@ elif config.geometric:
 
                     predict_label, _, _, _ = eran.analyze_box(
                         attack_lb[:dim], attack_ub[:dim], 'deeppoly',
-                        config.timeout_lp, config.timeout_milp, config.use_area_heuristic, 0)
+                        config.timeout_lp, config.timeout_milp, config.use_area_heuristic)
                     if predict_label != int(test[0]):
                         print('counter-example, params: ', params, ', predicted label: ', predict_label)
                         cex_found = True
@@ -557,13 +558,13 @@ elif config.geometric:
                     t_begin = time.time()
                     perturbed_label_poly, _, _, _ = eran.analyze_box(
                         spec_lb, spec_ub, 'deeppoly',
-                        config.timeout_lp, config.timeout_milp, config.use_area_heuristic, 0,
+                        config.timeout_lp, config.timeout_milp, config.use_area_heuristic, None,
                         lexpr_weights, lexpr_cst, lexpr_dim,
                         uexpr_weights, uexpr_cst, uexpr_dim,
                         expr_size)
                     perturbed_label_box, _, _, _ = eran.analyze_box(
                         spec_lb[:dim], spec_ub[:dim], 'deeppoly',
-                        config.timeout_lp, config.timeout_milp, config.use_area_heuristic, 0)
+                        config.timeout_lp, config.timeout_milp, config.use_area_heuristic)
                     t_end = time.time()
 
                     print('DeepG: ', perturbed_label_poly, '\tInterval: ', perturbed_label_box, '\tlabel: ', label,
