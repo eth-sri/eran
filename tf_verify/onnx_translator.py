@@ -338,7 +338,7 @@ class ONNXTranslator:
 
 			operation_types.append(node.op_type)
 			# take means and stds out of the network
-			if len(operation_types) == 2 and node.op_type in ["Add", "Sub", "Mul", "Div"]:
+			if len(operation_types) == 2 and node.op_type in ["Add", "Sub", "Mul", "Div"] and node.output[0] not in self.constants_map:
 				constant = self.add_resources(node)[0].reshape(-1)
 				if node.op_type == "Add":
 					config.mean = np.multiply(constant, -1)
