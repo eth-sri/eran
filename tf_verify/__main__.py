@@ -88,19 +88,7 @@ def normalize(image, means, stds, dataset):
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
     # normalization taken out of the network
-    # TODO test
-    if len(means) == len(image):
-        for i in range(len(lexpr_cst)):
-            lexpr_cst[i] -= means[i % 3]
-            uexpr_cst[i] -= means[i % 3]
-            lexpr_cst[i] /= stds[i % 3]
-            uexpr_cst[i] /= stds[i % 3]
-        for i in range(len(lexpr_weights)):
-            lexpr_weights[i] -= means[i % 3]
-            uexpr_weights[i] -= means[i % 3]
-            lexpr_weights[i] /= stds[i % 3]
-            uexpr_weights[i] /= stds[i % 3]
-    elif dataset == 'mnist' or dataset == 'fashion':
+    if dataset == 'mnist' or dataset == 'fashion':
         for i in range(len(lexpr_cst)):
             lexpr_cst[i] = (lexpr_cst[i] - means[0]) / stds[0]
             uexpr_cst[i] = (uexpr_cst[i] - means[0]) / stds[0]
