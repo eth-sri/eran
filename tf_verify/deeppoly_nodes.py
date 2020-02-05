@@ -5,13 +5,12 @@
 
 
 import numpy as np
-from fppoly import *
 from config import config, Device
 
 if config.device == Device.CPU:
     from fppoly import *
 else:
-    from fppoly_gpu import*
+    from fppoly_gpu import *
 
 from elina_interval import *
 from elina_abstract0 import *

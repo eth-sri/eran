@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 cd gurobi900/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make

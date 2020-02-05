@@ -35,4 +35,4 @@ class config:
     specnumber = None # Acas Xu spec number
     input_box = None # input box file to use
     output_constraints = None # output constraints file to check
-    device = Device.CUDA # Which device Deeppoly should run on
+    device = Device.CPU # Which device Deeppoly should run on

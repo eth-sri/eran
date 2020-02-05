@@ -337,6 +337,21 @@ class ONNXTranslator:
 				continue
 
 			operation_types.append(node.op_type)
+			# take means and stds out of the network
+			if len(operation_types) == 2 and node.op_type in ["Add", "Sub", "Mul", "Div"]:
+				constant = self.add_resources(node)[0].reshape(-1)
+				if node.op_type == "Add":
+					config.mean = np.multiply(constant, -1)
+				elif node.op_type == "Sub":
+					config.mean = constant
+				elif node.op_type == "Mul":
+					config.std = np.divide(1, constant)
+				elif node.op_type == "Div":
+					config.std = constant
+
+				self.ignore_node(node, operation_types, reshape_map)
+				continue
+
 			input_onnx_names = []
 			for name in node.input:
 				kind = self.get_kind(name)

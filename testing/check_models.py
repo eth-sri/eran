@@ -14,7 +14,6 @@ import argparse
 from onnx import helper
 from config import config
 
-
 parser = argparse.ArgumentParser(description='ERAN sanity check',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--dataset', type=str,  help='the dataset to test with')
 parser.add_argument('--domain', nargs='+', type=str, default=['deepzono', 'refinezono', 'deeppoly', 'refinepoly'],  help='the domains to be tested. default:deepzono refinezono deeppoly refinepoly')
@@ -30,7 +29,11 @@ args = parser.parse_args()
 
 
 def normalize(image, means, stds, dataset):
-    if dataset == 'mnist' or dataset == 'fashion':
+    if len(means) == len(image):
+        for i in range(len(image)):
+            image[i] -= means[i]
+            image[i] /= stds[i]
+    elif dataset == 'mnist' or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
     else:
@@ -50,7 +53,7 @@ def get_out_tensors(out_names):
 if args.dataset:
     datasets = [args.dataset]
 else:
-    datasets = os.listdir('../testing/test_nets/')
+    datasets = os.listdir('../data/test_nets/')
 
 for dataset in datasets:
     if args.network:
@@ -58,7 +61,7 @@ for dataset in datasets:
         networks = args.network
         dataset_folder = ''
     else:
-        dataset_folder = '../testing/test_nets/' + dataset + '/'
+        dataset_folder = '../data/test_nets/' + dataset + '/'
         networks = os.listdir(dataset_folder)
 
     for network in networks:
@@ -167,6 +170,9 @@ for dataset in datasets:
 
 
             image= np.float64(test[1:len(test)])/np.float64(255)
+
+            if config.mean is not None:
+                normalize(image, config.mean, config.std, dataset)
 
             specLB = np.copy(image)
             specUB = np.copy(image)

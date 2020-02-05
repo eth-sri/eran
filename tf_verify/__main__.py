@@ -69,7 +69,11 @@ def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
 
 
 def normalize(image, means, stds, dataset):
-    if dataset == 'mnist'  or dataset == 'fashion':
+    if len(means) == len(image):
+        for i in range(len(image)):
+            image[i] -= means[i]
+            image[i] /= stds[i]
+    elif dataset == 'mnist'  or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
     elif(dataset=='cifar10'):
@@ -79,10 +83,6 @@ def normalize(image, means, stds, dataset):
 
         for i in range(3072):
             image[i] = tmp[i]
-    else:
-        for i in range(len(image)):
-            image[i] -= means[i]
-            image[i] /= stds[i]
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
@@ -285,7 +285,7 @@ if not is_trained_with_pytorch:
 
 is_trained_with_pytorch = is_trained_with_pytorch or is_onnx
 
-if config.mean:
+if config.mean is not None:
     means = config.mean
     stds = config.std
 
@@ -309,8 +309,6 @@ if dataset=='acasxu':
         specUB = [interval[1] for interval in box]
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
-        print(specLB)
-        print(specUB)
         if config.specnumber == 9:
             num_splits = [10,9,1,5,14]
         #elif spec_num == 5:
