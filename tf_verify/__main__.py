@@ -69,6 +69,7 @@ def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
 
 
 def normalize(image, means, stds, dataset):
+    # normalization taken out of the network
     if len(means) == len(image):
         for i in range(len(image)):
             image[i] -= means[i]
@@ -86,7 +87,19 @@ def normalize(image, means, stds, dataset):
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
-    if dataset == 'mnist' or dataset == 'fashion':
+    # normalization taken out of the network
+    if len(means) == len(image):
+        for i in range(len(lexpr_cst)):
+            lexpr_cst[i] -= means[i]
+            uexpr_cst[i] -= means[i]
+            lexpr_cst[i] /= stds[i]
+            uexpr_cst[i] /= stds[i]
+        for i in range(len(lexpr_weights)):
+            lexpr_weights[i] -= means[i]
+            uexpr_weights[i] -= means[i]
+            lexpr_weights[i] /= stds[i]
+            uexpr_weights[i] /= stds[i]
+    elif dataset == 'mnist' or dataset == 'fashion':
         for i in range(len(lexpr_cst)):
             lexpr_cst[i] = (lexpr_cst[i] - means[0]) / stds[0]
             uexpr_cst[i] = (uexpr_cst[i] - means[0]) / stds[0]

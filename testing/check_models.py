@@ -28,17 +28,11 @@ parser.set_defaults(failed_only=False)
 args = parser.parse_args()
 
 
-def normalize(image, means, stds, dataset):
-    if len(means) == len(image):
-        for i in range(len(image)):
-            image[i] -= means[i]
-            image[i] /= stds[i]
-    elif dataset == 'mnist' or dataset == 'fashion':
-        for i in range(len(image)):
-            image[i] = (image[i] - means[0])/stds[0]
-    else:
-        for i in range(3072):
-            image[i] = (image[i] - means[i % 3]) / stds[i % 3]
+def normalize(image):
+    for i in range(len(image)):
+        image[i] -= config.mean[i]
+        image[i] /= config.std[i]
+
 
 
 domains = args.domain
@@ -171,12 +165,13 @@ for dataset in datasets:
 
             image= np.float64(test[1:len(test)])/np.float64(255)
 
-            if config.mean is not None:
-                normalize(image, config.mean, config.std, dataset)
-
             specLB = np.copy(image)
             specUB = np.copy(image)
             test_input = np.copy(image)
+
+            if config.mean is not None:
+                normalize(specLB)
+                normalize(specUB)
 
             print(', '.join([dataset, network, domain]), 'testing now')
 
