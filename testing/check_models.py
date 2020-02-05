@@ -59,6 +59,9 @@ for dataset in datasets:
         networks = os.listdir(dataset_folder)
 
     for network in networks:
+        # reset mean and std for new network
+        config.mean = None
+        config.std = None
         if args.new_only:
             tested_for_all_domains = True
             for domain in domains:
