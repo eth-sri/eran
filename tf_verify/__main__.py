@@ -181,8 +181,8 @@ for k, v in vars(args).items():
 config.json = vars(args)
 
 if config.specnumber and not config.input_box and not config.output_constraints:
-    config.input_box = '../data/acasxu/specs/acasxu_prop_' + config.specnumber + '_input_prenormalized.txt'
-    config.output_constraints = '../data/acasxu/specs/acasxu_prop_' + config.specnumber + '_constraints.txt'
+    config.input_box = '../data/acasxu/specs/acasxu_prop_' + str(config.specnumber) + '_input_prenormalized.txt'
+    config.output_constraints = '../data/acasxu/specs/acasxu_prop_' + str(config.specnumber) + '_constraints.txt'
 
 assert config.netname, 'a network has to be provided for analysis.'
 
@@ -223,7 +223,7 @@ if zonotope_bool==False:
 
 constraints = None
 if config.output_constraints:
-    constraints = Constraints(config.output_constraints)
+    constraints = get_constraints_from_file(config.output_constraints)
 
 mean = 0
 std = 0
@@ -279,8 +279,8 @@ if not is_trained_with_pytorch:
         means = [0]
         stds = [1]
     elif dataset == 'acasxu':
-        means = [1.9791091e+04,0.0,0.0,650.0,600.0,35.1111111,0.0,7.5188840201005975]
-        stds = [60261.0,6.28318530718,6.28318530718,1100.0,1200.0,100.0,6.0,373.94992]
+        means = [1.9791091e+04,0.0,0.0,650.0,600.0]
+        stds = [60261.0,6.28318530718,6.28318530718,1100.0,1200.0]
     else:
         means = [0.5, 0.5, 0.5]
         stds = [1, 1, 1]
@@ -304,7 +304,7 @@ if dataset:
 
 if dataset=='acasxu':
     if config.debug:
-        print('Constraints: ', constraints.and_list)
+        print('Constraints: ', constraints)
     boxes = parse_input_box(tests)
     for box in boxes:
         specLB = [interval[0] for interval in box]
@@ -313,8 +313,8 @@ if dataset=='acasxu':
         normalize(specUB, means, stds, dataset)
         if config.specnumber == 9:
             num_splits = [10,9,1,5,14]
-        #elif spec_num == 5:
-        #    num_splits = [4,5,1,20,20]
+        elif config.specnumber == 5:
+            num_splits = [4,5,1,20,20]
         else:
             num_splits = [10, 10, 1, 10, 10]
         step_size = []

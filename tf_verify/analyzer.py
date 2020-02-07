@@ -170,9 +170,8 @@ class Analyzer:
                     break
         else:
             # AND
-            and_list = self.output_constraints.and_list
             dominant_class = True
-            for or_list in and_list:
+            for or_list in self.output_constraints:
                 # OR
                 or_result = False
                 for is_greater_tuple in or_list:
