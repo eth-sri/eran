@@ -13,7 +13,7 @@ from tqdm import tqdm
 from ai_milp import *
 import argparse
 from config import config
-from constraints import Constraints
+from constraints import *
 import re
 import itertools
 
@@ -378,13 +378,14 @@ elif zonotope_bool:
     print("nlb ",nlb[-1])
     print("nub ",nub[-1])
     if(perturbed_label!=-1):
-         print("Verified")
+        print("Verified")
     elif(complete==True):
-         verified_flag,adv_image = verify_network_with_milp(nn, zonotope, [],perturbed_label, nlb, nub)
-         if(verified_flag==True):
-             print("Verified")
-         else:
-             print("Failed")
+        constraints = get_constraints_for_dominant_label(perturbed_label, 10)
+        verified_flag,adv_image = verify_network_with_milp(nn, zonotope, [], nlb, nub, constraints)
+        if(verified_flag==True):
+            print("Verified")
+        else:
+            print("Failed")
     else:
          print("Failed")
 
@@ -837,7 +838,8 @@ else:
                 verified_images += 1
             else:
                 if complete==True:
-                    verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, label, nlb, nub)
+                    constraints = get_constraints_for_dominant_label(label, 10)
+                    verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                     if(verified_flag==True):
                         print("img", i, "Verified", label)
                         verified_images += 1

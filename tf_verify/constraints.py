@@ -1,10 +1,13 @@
 import re
 
+
 class Constraints:
     # representation of the constraints in conjunctive normal form (CNF)
     and_list = []
 
-    def __init__(self, file):
+    def __init__(self, file=None):
+        if file is None:
+            return
         lines = open(file, 'r').readlines() # AND
 
         num_labels = int(lines[0])
@@ -55,3 +58,10 @@ def clean_string(string):
 
 def label_index(label):
     return int(clean_string(label)[1:])
+
+def get_constraints_for_dominant_label(label, num_labels):
+    constraints = Constraints()
+    for other in range(num_labels):
+        if other != label:
+            constraints.and_list.append([(label, other)])
+    return constraints
