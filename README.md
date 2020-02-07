@@ -456,6 +456,8 @@ Contributors
 
 * Jonathan Maurer - maurerjo@student.ethz.ch
 
+* Christoph Müller (contact for GPU version of DeepPoly) - christoph.mueller@inf.ethz.ch
+
 * [Matthew Mirman](https://www.mirman.com) - matt@mirman.com
 
 * [Timon Gehr](https://www.sri.inf.ethz.ch/tg.php) - timon.gehr@inf.ethz.ch
