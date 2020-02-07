@@ -39,6 +39,7 @@ rm mpfr-4.0.2.tar.xz
 
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
+./configure
 make
 make install
 cd ..
