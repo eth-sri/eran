@@ -54,7 +54,7 @@ rm mpfr-4.0.2.tar.xz
 
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-if test "$has_cuda" -eq 0
+if test "$has_cuda" -eq 1
 then
     ./configure -use-cuda
 else
