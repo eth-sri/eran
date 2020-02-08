@@ -2,6 +2,21 @@
 
 set -e
 
+has_cuda=0
+
+while : ; do
+    case "$1" in
+        "")
+            break;;
+        -use-cuda|--use-cuda)
+         has_cuda=1;;
+        *)
+            echo "unknown option $1, try -help"
+            exit 2;;
+    esac
+    shift
+done
+
 
 wget ftp://ftp.gnu.org/gnu/m4/m4-1.4.1.tar.gz
 tar -xvzf m4-1.4.1.tar.gz
@@ -39,7 +54,13 @@ rm mpfr-4.0.2.tar.xz
 
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure
+if test "$has_cuda" -eq 0
+then
+    ./configure -use-cuda
+else
+    ./configure
+fi
+
 make
 make install
 cd ..
