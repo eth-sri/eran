@@ -233,6 +233,12 @@ will evaluate the generated geometric perturbed images in the given data_dir and
 
 Publications
 -------------
+*  [Certifying Geometric Robustness of Neural Networks](https://www.sri.inf.ethz.ch/publications/balunovic2019geometric)
+
+   Mislav Balunovic,  Maximilian Baader, Gagandeep Singh, Timon Gehr,  Martin Vechev
+   
+   NeurIPS 2019.
+
 
 *  [Beyond the Single Neuron Convex Barrier for Neural Network Certification](https://www.sri.inf.ethz.ch/publications/singh2019krelu).
     
