@@ -41,7 +41,7 @@ class layers:
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_area_heuristic, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, testing = False):
         """
         Arguments
         ---------
@@ -66,7 +66,7 @@ class Analyzer:
         self.timeout_lp = timeout_lp
         self.timeout_milp = timeout_milp
         self.output_constraints = output_constraints
-        self.use_area_heuristic = use_area_heuristic
+        self.use_default_heuristic = use_default_heuristic
         self.testing = testing
         self.relu_groups = []
 
@@ -86,9 +86,9 @@ class Analyzer:
         testing_nub = []
         for i in range(1, len(self.ir_list)):
             if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.testing)
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
             else:
-                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_area_heuristic, self.testing)
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
 
             if self.testing and isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds
@@ -143,7 +143,7 @@ class Analyzer:
                             flag = False
                             break
                     else:
-                        if label!=j and not self.is_greater(self.man, element, label, j, self.use_area_heuristic):
+                        if label!=j and not self.is_greater(self.man, element, label, j, self.use_default_heuristic):
 
                             if(self.domain=='refinepoly'):
                                 obj = LinExpr()

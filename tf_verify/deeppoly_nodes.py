@@ -194,7 +194,7 @@ class DeeppolyNode:
 
 
 class DeeppolyReluNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
         transformer for the first layer of a neural network, if that first layer is fully connected with relu
         
@@ -220,7 +220,7 @@ class DeeppolyReluNodeFirst(DeeppolyNode):
 
 
 class DeeppolySigmoidNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with sigmoid
             
@@ -246,7 +246,7 @@ class DeeppolySigmoidNodeFirst(DeeppolyNode):
 
 
 class DeeppolyTanhNodeFirst(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
             transformer for the first layer of a neural network, if that first layer is fully connected with tanh
             
@@ -273,7 +273,7 @@ class DeeppolyTanhNodeFirst(DeeppolyNode):
 
 
 class DeeppolyReluNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
         transformer for any intermediate fully connected layer with relu
         
@@ -289,7 +289,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        ffn_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_default_heuristic)
         layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy = False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
         #print("lbi ", timeout_milp, "ubi ", timeout_lp)
@@ -325,7 +325,7 @@ class DeeppolyReluNodeIntermediate(DeeppolyNode):
 
 
 class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
             transformer for any intermediate fully connected layer with sigmoid
             
@@ -341,7 +341,7 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
             output : ElinaAbstract0Ptr
             abstract element after the transformer
             """
-        ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        ffn_handle_intermediate_sigmoid_layer(man, element, *self.get_arguments(), use_default_heuristic)
         if testing or refine:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
@@ -351,7 +351,7 @@ class DeeppolySigmoidNodeIntermediate(DeeppolyNode):
 
 
 class DeeppolyTanhNodeIntermediate(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
             transformer for any intermediate fully connected layer with tanh
             
@@ -367,7 +367,7 @@ class DeeppolyTanhNodeIntermediate(DeeppolyNode):
             output : ElinaAbstract0Ptr
             abstract element after the transformer
             """
-        ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_area_heuristic)
+        ffn_handle_intermediate_tanh_layer(man, element, *self.get_arguments(), use_default_heuristic)
         if testing or refine:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
@@ -392,7 +392,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         DeeppolyNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.relu_present = relu_present
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
         transformer for a fully connected layer if it's the last layer in the network
         
@@ -408,7 +408,7 @@ class DeeppolyReluNodeLast(DeeppolyNode):
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present,  use_area_heuristic)
+        ffn_handle_last_relu_layer(man, element, *self.get_arguments(), self.relu_present,  use_default_heuristic)
         layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
 
@@ -455,7 +455,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
         DeeppolySigmoidNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.sigmoid_present = sigmoid_present
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -471,7 +471,7 @@ class DeeppolySigmoidNodeLast(DeeppolyNode):
                     output : ElinaAbstract0Ptr
                     abstract element after the transformer 
         """
-        ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_area_heuristic)
+        ffn_handle_last_sigmoid_layer(man, element, *self.get_arguments(), self.sigmoid_present, use_default_heuristic)
         if testing:
             lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
@@ -495,7 +495,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
         DeeppolyTanhNode.__init__(self, weights, bias, input_names, output_name, output_shape)
         self.tanh_present = tanh_present
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
                     transformer for a fully connected layer if it's the last layer in the network
                     
@@ -511,7 +511,7 @@ class DeeppolyTanhNodeLast(DeeppolyNode):
                     output : ElinaAbstract0Ptr
                     abstract element after the transformer 
         """
-        ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_area_heuristic)
+        ffn_handle_last_tanh_layer(man, element, *self.get_arguments(), self.tanh_present, use_default_heuristic)
         if testing:
             lb, ub = calc_bounds(man, element, nn, nlb, nub)
         nn.ffn_counter+=1
@@ -566,7 +566,7 @@ class DeeppolyConv2dNodeIntermediate:
         return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, True, self.predecessors
 
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
         transformer for a convolutional layer, if that layer is an intermediate of the network
         
@@ -583,9 +583,9 @@ class DeeppolyConv2dNodeIntermediate:
             abstract element after the transformer 
         """
         if(self.has_relu):
-            conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_area_heuristic)
+            conv_handle_intermediate_relu_layer(man, element, *self.get_arguments(), use_default_heuristic)
         else:
-            conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_area_heuristic)
+            conv_handle_intermediate_affine_layer(man, element, *self.get_arguments(), use_default_heuristic)
         layerno, bounds, num_neurons, lbi, ubi = calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
         candidate_vars = [i for i, (l, u) in enumerate(zip(lbi, ubi)) if l<0 and u>0]
 
@@ -619,7 +619,7 @@ class DeeppolyConv2dNodeIntermediate:
 
 
 class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
         transformer for a convolutional layer, if that layer is the first of the network
         
@@ -664,7 +664,7 @@ class DeeppolyMaxpool:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
         transformer for a maxpool layer, this can't be the first layer of a network
         
@@ -704,11 +704,11 @@ class DeeppolyResadd:
         self.has_relu = has_relu
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         if(self.has_relu):
-             handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
+             handle_residual_relu_layer(man,element,self.output_length,self.predecessors,use_default_heuristic)
         else:
-             handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_area_heuristic)
+             handle_residual_affine_layer(man,element,self.output_length,self.predecessors,use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, use_krelu=refine, is_refine_layer=True)
         # print("Residual ", nn.layertypes[layerno],layerno)
         nn.residual_counter += 1
@@ -735,7 +735,7 @@ class DeeppolyGather:
         self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         handle_gather_layer(man, element, self.indexes)
         return element
 
@@ -758,7 +758,7 @@ class DeeppolySubNodeFirst:
         self.is_minuend = is_minuend
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         ffn_handle_first_sub_layer(man, element, self.bias, self.is_minuend, len(self.bias.reshape(-1)), self.predecessors)
         if refine or testing:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
@@ -786,10 +786,10 @@ class DeeppolySubNodeIntermediate:
         self.is_minuend = is_minuend
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         layerno = nn.calc_layerno()
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
-        ffn_handle_intermediate_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, use_area_heuristic)
+        ffn_handle_intermediate_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, use_default_heuristic)
         if refine or testing:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
@@ -815,7 +815,7 @@ class DeeppolyMulNodeFirst:
         self.bias = np.ascontiguousarray(bias, dtype=np.float64)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         ffn_handle_first_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors)
         if refine or testing:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
@@ -843,8 +843,8 @@ class DeeppolyMulNodeIntermediate:
         self.bias = np.ascontiguousarray(bias.reshape(-1), dtype=np.float64)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_area_heuristic, testing):
-        ffn_handle_intermediate_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors, use_area_heuristic)
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        ffn_handle_intermediate_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors, use_default_heuristic)
         if refine or testing:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1
