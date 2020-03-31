@@ -78,12 +78,29 @@ def normalize(image, means, stds, dataset):
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
     elif(dataset=='cifar10'):
+        count = 0
         tmp = np.zeros(3072)
-        for i in range(3072):
-            tmp[i] = (image[i] - means[i % 3]) / stds[i % 3]
+        for i in range(1024):
+            tmp[count] = (image[count] - means[0])/stds[0]
+            count = count + 1
+            tmp[count] = (image[count] - means[1])/stds[1]
+            count = count + 1
+            tmp[count] = (image[count] - means[2])/stds[2]
+            count = count + 1
 
-        for i in range(3072):
-            image[i] = tmp[i]
+        if(is_conv):
+            for i in range(3072):
+                image[i] = tmp[i]
+        else:
+            count = 0
+            for i in range(1024):
+                image[i] = tmp[count]
+                count = count+1
+                image[i+1024] = tmp[count]
+                count = count+1
+                image[i+2048] = tmp[count]
+                count = count+1
+        
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
@@ -227,6 +244,7 @@ if config.output_constraints:
 
 mean = 0
 std = 0
+is_conv = False
 
 complete = (config.complete==True)
 
@@ -268,10 +286,10 @@ else:
     elif(dataset=='acasxu'):
         num_pixels = 5
     if is_onnx:
-        model, _ = read_onnx_net(netname)
+        model, is_conv = read_onnx_net(netname)
         # this is to have different defaults for mnist and cifar10
     else:
-        model, _, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
+        model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
     eran = ERAN(model, is_onnx=is_onnx)
 
 if not is_trained_with_pytorch:
