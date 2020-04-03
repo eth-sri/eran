@@ -70,7 +70,7 @@ class DeeppolyInput:
     def __init__(self, specLB, specUB, input_names, output_name, output_shape,
                  lexpr_weights=None, lexpr_cst=None, lexpr_dim=None,
                  uexpr_weights=None, uexpr_cst=None, uexpr_dim=None,
-                 expr_size=0):
+                 expr_size=0, spatial_constraints=None):
         """
         Arguments
         ---------
@@ -122,6 +122,22 @@ class DeeppolyInput:
         else:
             self.uexpr_dim = None
 
+        self.has_spatial_constraints = (spatial_constraints is not None)
+
+        if self.has_spatial_constraints:
+            self.spatial_indices = np.ascontiguousarray(
+                spatial_constraints['indices'], np.uint64
+            )
+            self.spatial_neighbors = np.ascontiguousarray(
+                spatial_constraints['neighbors'], np.uint64
+            )
+            self.spatial_lower_bounds = np.ascontiguousarray(
+                spatial_constraints['lower_bounds'], np.double
+            )
+            self.spatial_upper_bounds = np.ascontiguousarray(
+                spatial_constraints['upper_bounds'], np.double
+            )
+
         self.expr_size = expr_size
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
@@ -140,6 +156,14 @@ class DeeppolyInput:
         output : ElinaAbstract0Ptr
             new abstract element representing the element specified by self.specLB and self.specUB
         """
+        if self.has_spatial_constraints:
+            return fppoly_from_network_input_spatial(
+                man, 0, len(self.specLB), self.specLB, self.specUB,
+                self.spatial_indices, self.spatial_neighbors,
+                self.spatial_lower_bounds, self.spatial_upper_bounds,
+                len(self.spatial_indices)
+            )
+
         if self.expr_size == 0:
             return fppoly_from_network_input(man, 0, len(self.specLB), self.specLB, self.specUB)
         else:
