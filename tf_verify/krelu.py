@@ -1,4 +1,3 @@
-import deepzono_nodes as dn
 from elina_scalar import *
 from elina_dimension import *
 from elina_linexpr0 import *
@@ -162,7 +161,7 @@ def grouping_heuristic(ind, lb, ub):
     # return ret_order
 
 def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, need_pop, domain):
-
+    import deepzono_nodes as dn
     if(need_pop):
         relu_groups.pop()
 
