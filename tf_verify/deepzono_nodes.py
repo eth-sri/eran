@@ -119,7 +119,7 @@ def add_input_output_information(self, input_names, output_name, output_shape):
 
 
 
-def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp):
+def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic):
     """
     refines the relu transformer
 
@@ -147,7 +147,7 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
     lbi = nlb[-1]
     ubi = nub[-1]
     if layerno==0 or nn.last_layer=='Conv2D':
-        element = relu_zono_layerwise(man,True,element,offset, length)
+        element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
     else:
         is_conv = False
         timeout = timeout_milp
@@ -754,7 +754,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         """
         offset, length = self.abstract_information
         if refine:
-            element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp)
+            element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic)
         else:
             element = relu_zono_layerwise(*self.get_arguments(man, element), use_default_heuristic)
 
