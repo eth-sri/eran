@@ -8,10 +8,7 @@ def label_index(label):
     return int(clean_string(label)[1:])
 
 def get_constraints_for_dominant_label(label, num_labels):
-    and_list = []
-    for other in range(num_labels):
-        if other != label:
-            and_list.append([(label, other)])
+    and_list = [[(label, other) for other in range(num_labels)]]
     return and_list
 
 def get_constraints_from_file(file):
