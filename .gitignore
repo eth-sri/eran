@@ -4,3 +4,5 @@ gmp-6.1.2
 gurobi900
 m4-1.4.1
 mpfr-4.0.2
+
+__pycache__
