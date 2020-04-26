@@ -605,7 +605,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     # model.setParam('TimeLimit', config.timeout_milp)
 
     for or_list in constraints:
-        any = True
+        or_result = False
         for (i, j) in or_list:
             obj = LinExpr()
             if i!=j:
@@ -614,12 +614,12 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                 model.setObjective(obj,GRB.MINIMIZE)
                 model.optimize()
 
-                if model.objval <= 0:
-                    any = False
+                if model.objval > 0:
+                    or_result = True
                     break
 
-        if any:
-            return True, model.x[0:input_size]
+        if not or_result:
+            return False, model.x[0:input_size]
 
-    return False, model.x[0:input_size]
+    return True, model.x[0:input_size]
 

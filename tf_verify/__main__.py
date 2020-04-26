@@ -13,7 +13,7 @@ from tqdm import tqdm
 from ai_milp import *
 import argparse
 from config import config
-from constraints import *
+from constraint_utils import *
 import re
 import itertools
 
