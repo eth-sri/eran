@@ -841,6 +841,7 @@ else:
 
         print("concrete ", nlb[-1])
         #if(label == int(test[0])):
+        constraints = get_constraints_for_dominant_label(label, 10)
         if(label == int(test[0])):
             perturbed_label = None
 
@@ -849,14 +850,13 @@ else:
             normalize(specLB, means, stds, dataset)
             normalize(specUB, means, stds, dataset)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
             print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
-            if(perturbed_label==label):
+            if(perturbed_label):
                 print("img", i, "Verified", label)
                 verified_images += 1
             else:
                 if complete==True:
-                    constraints = get_constraints_for_dominant_label(label, 10)
                     verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                     if(verified_flag==True):
                         print("img", i, "Verified", label)

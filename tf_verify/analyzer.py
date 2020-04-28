@@ -85,10 +85,7 @@ class Analyzer:
         testing_nlb = []
         testing_nub = []
         for i in range(1, len(self.ir_list)):
-            if self.domain == 'deepzono' or self.domain == 'refinezono':
-                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinezono', self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
-            else:
-                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, self.domain=='refinepoly', self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
+            element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, 'refine' in self.domain, self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
 
             if self.testing and isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds
@@ -175,7 +172,7 @@ class Analyzer:
                 # OR
                 or_result = False
                 for is_greater_tuple in or_list:
-                    if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                    if is_greater_tuple[0] != is_greater_tuple[1] and self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
                         or_result = True
                         break
 
