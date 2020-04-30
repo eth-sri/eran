@@ -37,7 +37,7 @@ Installation
 ------------
 Clone the ERAN repository via git as follows:
 ```
-git clone https://github.com/eth-sri/ERAN.git
+git clone https://github.com/anianruoss/ERAN.git
 cd ERAN
 ```
 
@@ -93,16 +93,6 @@ rm cddlib-0.94j.tar.gz
 
 ```
 
-Install ELINA:
-```
-git clone https://github.com/eth-sri/ELINA.git
-cd ELINA
-./configure -use-deeppoly
-make
-make install
-cd ..
-```
-
 Install Gurobi:
 ```
 wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
@@ -122,8 +112,19 @@ Update environment variables:
 ```
 export GUROBI_HOME="Current_directory/gurobi900/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
+export CPATH="${CPATH}:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 
+```
+
+Install ELINA:
+```
+git clone https://github.com/anianruoss/ELINA.git
+cd ELINA
+./configure -use-deeppoly -use-gurobi
+make
+make install
+cd ..
 ```
 
 Install DeepG (note that with an already existing version of ERAN you have to start at step Install Gurobi):

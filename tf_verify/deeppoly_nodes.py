@@ -137,6 +137,7 @@ class DeeppolyInput:
             self.spatial_upper_bounds = np.ascontiguousarray(
                 spatial_constraints['upper_bounds'], np.double
             )
+            self.spatial_use_gurobi = bool(spatial_constraints['use_gurobi'])
 
         self.expr_size = expr_size
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
@@ -161,7 +162,7 @@ class DeeppolyInput:
                 man, 0, len(self.specLB), self.specLB, self.specUB,
                 self.spatial_indices, self.spatial_neighbors,
                 self.spatial_lower_bounds, self.spatial_upper_bounds,
-                len(self.spatial_indices)
+                len(self.spatial_indices), self.spatial_use_gurobi
             )
 
         if self.expr_size == 0:
