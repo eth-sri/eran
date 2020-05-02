@@ -13,6 +13,8 @@ ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound unde
 
 * RefineZono [ICLR'19]: combines DeepZ analysis with MILP and LP solvers for more precision. 
 
+* RefinePoly [NeurIPS'19]: combines DeepPoly analysis with MILP and k-ReLU framework for state-of-the-art precision while maintaining scalability.
+
 All analysis are implemented using the [ELINA](http://elina.ethz.ch/) library for numerical abstractions. More details can be found in the publications below. 
 
 ERAN vs AI2
@@ -76,6 +78,17 @@ make
 make install
 cd ..
 rm mpfr-4.0.2.tar.xz
+```
+
+Install cddlib:
+```
+git clone https://github.com/cddlib/cddlib.git
+cd cddlib
+./bootstrap
+./configure
+make
+make install
+cd ..
 ```
 
 Install ELINA:

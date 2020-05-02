@@ -56,7 +56,7 @@ cd cddlib
 ./configure
 make
 make install
-
+cd ..
 
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
