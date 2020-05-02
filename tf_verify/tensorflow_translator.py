@@ -7,7 +7,10 @@ from tensorflow.python.keras.engine.sequential import Sequential
 from tensorflow.python.framework import graph_util
 import onnx
 
+is_tf_version_2=tf.__version__[0]=='2'
 
+if is_tf_version_2:
+    tf= tf.compat.v1
 
 
 
@@ -24,7 +27,7 @@ def tensorshape_to_intlist(tensorshape):
 	output : list
 	    list of ints corresponding to tensorshape
 	"""
-	return list(map(lambda j: 1 if j.value is None else int(j), tensorshape))
+	return list(map(lambda j: 1 if j is None else int(j), tensorshape))
 
 
 def calculate_padding(padding_str, image_shape, filter_shape, strides):
@@ -60,7 +63,7 @@ class TFTranslator:
 		This constructor takes a reference to a TensorFlow Operation or Tensor or Keras model and then applies the two TensorFlow functions
 		graph_util.convert_variables_to_constants and graph_util.remove_training_nodes to cleanse the graph of any nodes that are linked to training. This leaves us with 
 		the nodes you need for inference. 
-		In the resulting graph there should only be tf.Operations left that have one of the following types [Const, MatMul, Add, BiasAdd, Conv2D, Reshape, MaxPool, Placeholder, Relu, Sigmoid, Tanh]
+		In the resulting graph there should only be tf.Operations left that have one of the following types [Const, MatMul, Add, BiasAdd, Conv2D, Reshape, MaxPool, AveragePool, Placeholder, Relu, Sigmoid, Tanh]
 		If the input should be a Keras model we will ignore operations with type Pack, Shape, StridedSlice, and Prod such that the Flatten layer can be used.
 		
 		Arguments
@@ -183,8 +186,8 @@ class TFTranslator:
 						deeppoly_res = (filters, image_shape, strides, pad_top, pad_left) + in_out_info
 						deepzono_res = deeppoly_res 
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-					elif op.type == "MaxPool":
-						image_shape, window_size, strides, pad_top, pad_left = self.maxpool_resources(op)
+					elif op.type == "MaxPool" or op.type == "AvgPool":
+						image_shape, window_size, strides, pad_top, pad_left = self.pool_resources(op)
 						deeppoly_res =  (image_shape, window_size, strides, pad_top, pad_left) + in_out_info
 						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
@@ -286,14 +289,14 @@ class TFTranslator:
 		return filters, image_shape, strides, pad_top, pad_left
 	
 	
-	def maxpool_resources(self, op):
+	def pool_resources(self, op):
 		"""
-		Extracts the incoming image size (heigth, width, channels), the size of the maxpool window (heigth, width), and the strides of the window (heigth, width)
+		Extracts the incoming image size (heigth, width, channels), the size of the maxpool/averagepool window (heigth, width), and the strides of the window (heigth, width)
 		
 		Arguments
 		---------
 		op : tf.Operation
-		    must have type "MaxPool"
+		    must have type "MaxPool" or "AvgPool"
 		
 		Return
 		------

@@ -645,10 +645,10 @@ class DeeppolyConv2dNodeFirst(DeeppolyConv2dNodeIntermediate):
 
 
 
-class DeeppolyMaxpool:
-    def __init__(self, image_shape, window_size, strides, input_names, output_name, output_shape):
+class DeeppolyPool:
+    def __init__(self, input_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape,is_maxpool):
         """
-        collects the information needed for the handle_maxpool_layer transformer and brings it into the required shape
+        collects the information needed for the handle_pool_layer transformer and brings it into the required shape
         
         Arguments
         ---------
@@ -659,14 +659,19 @@ class DeeppolyMaxpool:
         strides : numpy.ndarray
             1D array of ints with 2 entries [height, width] representing the stride in these directions
         """
-        self.image_shape = np.ascontiguousarray(image_shape, dtype=np.uintp)
-        self.window_size = np.ascontiguousarray([window_size[0], window_size[1], 1], dtype=np.uintp)
+        self.input_shape = np.ascontiguousarray(input_shape, dtype=np.uintp)
+        self.window_size = np.ascontiguousarray(window_size, dtype=np.uintp)
+        self.strides = np.ascontiguousarray(strides, dtype=np.uintp)
+        self.pad_top = pad_top
+        self.pad_left = pad_left
+        self.output_shape = (c_size_t * 3)(output_shape[1],output_shape[2],output_shape[3])
+        self.is_maxpool = is_maxpool
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         """
-        transformer for a maxpool layer, this can't be the first layer of a network
+        transformer for a maxpool/averagepool layer, this can't be the first layer of a network
         
         Arguments
         ---------
@@ -680,10 +685,12 @@ class DeeppolyMaxpool:
         output : ElinaAbstract0Ptr
             abstract element after the transformer 
         """
-        handle_maxpool_layer(man, element, self.window_size, self.image_shape, self.predecessors)
+        h, w = self.window_size
+        H, W, C = self.input_shape
+        handle_pool_layer(man, element, (c_size_t *3)(h,w,1), (c_size_t *3)(H, W, C), (c_size_t *2)(self.strides[0], self.strides[1]),3, self.pad_top, self.pad_left, self.output_shape, self.predecessors,self.is_maxpool)
         if refine or testing:
             calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
-        nn.maxpool_counter += 1
+        nn.pool_counter += 1
         if testing:
             return element, nlb[-1], nub[-1]
         return element

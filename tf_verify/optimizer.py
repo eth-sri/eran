@@ -149,7 +149,7 @@ class Optimizer:
                 nn.layertypes.append('Mul')
                 nn.numlayer += 1
                 i += 1
-            elif self.operations[i] == "MaxPool":
+            elif self.operations[i] == "MaxPool" or self.operations[i] == "AveragePool" or self.operations[i] == "AvgPool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
                 nn.pool_size.append(window_size)
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
@@ -158,7 +158,8 @@ class Optimizer:
                 nn.padding.append([pad_top, pad_left])
                 nn.layertypes.append('MaxPooling2D')
                 nn.numlayer+=1
-                execute_list.append(DeepzonoMaxpool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape))
+                is_maxpool = (self.operations[i]=="MaxPool")
+                execute_list.append(DeepzonoPool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape, is_maxpool))
                 i += 1
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
@@ -308,7 +309,7 @@ class Optimizer:
             - Placholder         (only at the beginning)
                 - MatMul -> Add -> Relu
                 - Conv2D -> Add -> Relu    (not as last layer)
-                - MaxPool         (only as intermediate layer)
+                - MaxPool/AveragePool         (only as intermediate layer)
 
         Arguments
         ---------
@@ -437,16 +438,17 @@ class Optimizer:
                         assert 0
                     i += 2
 
-            elif self.operations[i] == "MaxPool":
+            elif self.operations[i] == "MaxPool" or self.operations[i] == "AvgPool" or self.operations[i] == "AveragePool":
                 image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
                 nn.pool_size.append(window_size)
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
                 nn.out_shapes.append(output_shape)
                 nn.padding.append([pad_top, pad_left])
-                nn.layertypes.append('MaxPooling2D')
+                nn.layertypes.append(self.operations[i])
                 nn.numlayer+=1
-                execute_list.append(DeeppolyMaxpool(image_shape, window_size, strides, input_names, output_name, output_shape))
+                is_maxpool = (self.operations[i] == "MaxPool")
+                execute_list.append(DeeppolyPool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape,is_maxpool))
                 i += 1
 
                 # Tensorflow operation

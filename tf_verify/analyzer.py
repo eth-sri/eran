@@ -26,7 +26,7 @@ class layers:
         self.ffn_counter = 0
         self.conv_counter = 0
         self.residual_counter = 0
-        self.maxpool_counter = 0
+        self.pool_counter = 0
         self.specLB = []
         self.specUB = []
         self.original = []
@@ -35,7 +35,7 @@ class layers:
         self.lastlayer = None
 
     def calc_layerno(self):
-        return self.ffn_counter + self.conv_counter + self.residual_counter + self.maxpool_counter
+        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter
 
     def is_ffn(self):
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
@@ -125,7 +125,7 @@ class Analyzer:
             relu_needed = [1] * self.nn.numlayer
             self.nn.ffn_counter = 0
             self.nn.conv_counter = 0
-            self.nn.maxpool_counter = 0
+            self.nn.pool_counter = 0
             self.nn.residual_counter = 0
             counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False,relu_needed)
             #model.setParam('Timeout',1000)

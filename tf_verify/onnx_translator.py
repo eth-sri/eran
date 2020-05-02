@@ -122,11 +122,11 @@ def prepare_model(model):
 				elif node.op_type == "Mul":
 					result = np.multiply(constants_map[node.input[0]], constants_map[node.input[1]])
 				constants_map[node.output[0]] = result
-		elif node.op_type in ["Conv", "MaxPool"]:
+		elif node.op_type in ["Conv", "MaxPool", "AveragePool"]:
 			output_shape = []
 			input_shape = shape_map[node.input[0]]
 
-			require_kernel_shape = node.op_type in ["MaxPool"]
+			require_kernel_shape = node.op_type in ["MaxPool", "AveragePool"]
 			if not require_kernel_shape:
 				filter_shape = shape_map[node.input[1]]
 				kernel_shape = filter_shape[1:-1]
@@ -287,7 +287,7 @@ class ONNXTranslator:
 		This constructor takes a reference to a ONNX Model and checks model, infers intermediate shapes and sets up maps from name to type and node or constant value
 		graph_util.convert_variables_to_constants and graph_util.remove_training_nodes to cleanse the graph of any nodes that are linked to training. This leaves us with 
 		the nodes you need for inference. 
-		In the resulting graph there should only be tf.Operations left that have one of the following types [Const, MatMul, Add, BiasAdd, Conv2D, Reshape, MaxPool, Placeholder, Relu, Sigmoid, Tanh]
+		In the resulting graph there should only be tf.Operations left that have one of the following types [Const, MatMul, Add, BiasAdd, Conv2D, Reshape, MaxPool, AveragePool, Placeholder, Relu, Sigmoid, Tanh]
 		If the input should be a Keras model we will ignore operations with type Pack, Shape, StridedSlice, and Prod such that the Flatten layer can be used.
 		
 		Arguments
@@ -404,8 +404,8 @@ class ONNXTranslator:
 				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-			elif node.op_type == "MaxPool":
-				image_shape, kernel_shape, strides, padding, dilations, pads, ceil_mode, storage_order = self.maxpool_resources(node)
+			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
+				image_shape, kernel_shape, strides, padding, dilations, pads, ceil_mode, storage_order = self.pool_resources(node)
 				deeppoly_res =  (image_shape, kernel_shape, in_out_info[2]) + in_out_info
 				# TODO padding is expected to be string in tf. dilations, auto_pad, ceil_mode, storage_order are unused at the moment
 				deepzono_res = (image_shape, kernel_shape, strides, padding) + in_out_info
@@ -662,14 +662,14 @@ class ONNXTranslator:
 		return filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape
 	
 	
-	def maxpool_resources(self, node):
+	def pool_resources(self, node):
 		"""
-		Extracts the incoming image size (heigth, width, channels), the size of the maxpool window (heigth, width), and the strides of the window (heigth, width)
+		Extracts the incoming image size (heigth, width, channels), the size of the maxpool/averagepool window (heigth, width), and the strides of the window (heigth, width)
 		
 		Arguments
 		---------
 		node : ONNX.Node
-		    must have op_type "MaxPool"
+		    must have op_type "MaxPool" or "AveragePool"
 		
 		Return
 		------

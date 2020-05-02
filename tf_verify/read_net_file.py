@@ -59,9 +59,13 @@ def permutation(W, h, w, c):
     
     return np.matmul(W, m) 
 
+is_tf_version_2 = tf.__version__[0]=='2'
+
+if is_tf_version_2: 
+   tf = tf.compat.v1
+
 tf.InteractiveSession().as_default()
-
-
+tf.disable_eager_execution()
 
 def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
     mean = 0.0

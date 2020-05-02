@@ -828,8 +828,8 @@ class DeepzonoTanh(DeepzonoNonlinearity):
 
 
 
-class DeepzonoMaxpool:
-    def __init__(self, image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape):
+class DeepzonoPool:
+    def __init__(self, image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape, is_maxpool):
         """
         Arguments
         ---------
@@ -855,6 +855,7 @@ class DeepzonoMaxpool:
         self.pad_top     = pad_top
         self.pad_left    = pad_left
         self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3])
+        self.is_maxpool = is_maxpool
         
     
     
@@ -877,11 +878,11 @@ class DeepzonoMaxpool:
         offset, old_length = self.abstract_information
         h, w    = self.window_size
         H, W, C = self.input_shape
-        element = maxpool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape)
+        element = pool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape, self.is_maxpool)
 
         if refine or testing:
             add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)
-        nn.maxpool_counter += 1
+        nn.pool_counter += 1
 
         relu_groups.append([])
         element = remove_dimensions(man, element, offset, old_length)
