@@ -1,5 +1,5 @@
 numpy
 tensorflow
-onnx
+onnx==1.5.0
 pycddlib
 tqdm
