@@ -33,12 +33,61 @@ class layers:
         self.zonotope = []
         self.predecessors = []
         self.lastlayer = None
+        self.last_weights = None
 
     def calc_layerno(self):
         return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter
 
     def is_ffn(self):
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
+
+    def set_last_weights(self, constraints):
+        length = 0.0
+        last_weights = [0 for weights in self.weights[-1][0]]
+        for or_list in constraints:
+            for (i, j) in or_list:
+                last_weights = [l + w_i + w_j for l,w_i, w_j in zip(last_weights, self.weights[-1][i], self.weights[-1][j])]
+                length += 1
+        self.last_weights = [w/length for w in last_weights]
+
+
+    def back_propagate_gradiant(self, nlb, nub):
+        #assert self.is_ffn(), 'only supported for FFN'
+
+        grad_lower = self.last_weights.copy()
+        grad_upper = self.last_weights.copy()
+        last_layer_size = len(grad_lower)
+        for layer in range(len(self.weights)-2, -1, -1):
+            weights = self.weights[layer]
+            lb = nlb[layer]
+            ub = nub[layer]
+            layer_size = len(weights[0])
+            grad_l = [0] * layer_size
+            grad_u = [0] * layer_size
+
+            for j in range(last_layer_size):
+
+                if ub[j] <= 0:
+                    grad_lower[j], grad_upper[j] = 0, 0
+
+                elif lb[j] <= 0:
+                    grad_upper[j] = grad_upper[j] if grad_upper[j] > 0 else 0
+                    grad_lower[j] = grad_lower[j] if grad_lower[j] < 0 else 0
+
+                for i in range(layer_size):
+                    if weights[j][i] >= 0:
+                        grad_l[i] += weights[j][i] * grad_lower[j]
+                        grad_u[i] += weights[j][i] * grad_upper[j]
+                    else:
+                        grad_l[i] += weights[j][i] * grad_upper[j]
+                        grad_u[i] += weights[j][i] * grad_lower[j]
+            last_layer_size = layer_size
+            grad_lower = grad_l
+            grad_upper = grad_u
+        return grad_lower, grad_upper
+
+
+
 
 class Analyzer:
     def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, testing = False):
@@ -172,9 +221,14 @@ class Analyzer:
                 # OR
                 or_result = False
                 for is_greater_tuple in or_list:
-                    if is_greater_tuple[0] != is_greater_tuple[1] and self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
-                        or_result = True
-                        break
+                    if self.domain == 'deepzono' or self.domain == 'refinezono':
+                        if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                            or_result = True
+                            break
+                    else:
+                        if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1], self.use_default_heuristic):
+                            or_result = True
+                            break
 
                 if not or_result:
                     dominant_class = False

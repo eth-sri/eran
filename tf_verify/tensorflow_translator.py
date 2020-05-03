@@ -206,7 +206,7 @@ class TFTranslator:
 					#	operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					else:
 						#print("operation type1 ",in_out_info,op.inputs[0].shape,op.inputs[1].shape)
-						assert 0, "Operations of type " + op.type + " are not yet supported."
+						assert 0, "Operations of type " + op.type + " in " + str([o.type for o in graph.get_operations()]) + " are not yet supported."
 		
 				return operation_types, operation_resources
 

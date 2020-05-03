@@ -16,6 +16,8 @@ from config import config
 from constraint_utils import *
 import re
 import itertools
+from multiprocessing import Pool
+import onnxruntime.backend as rt
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -52,7 +54,7 @@ def parse_input_box(text):
 
     # return every combination
     boxes = itertools.product(*intervals_list)
-    return boxes
+    return list(boxes)
 
 
 def show_ascii_spec(lb, ub, n_rows, n_cols, n_channels):
@@ -100,7 +102,7 @@ def normalize(image, means, stds, dataset):
                 count = count+1
                 image[i+2048] = tmp[count]
                 count = count+1
-        
+
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
@@ -138,6 +140,88 @@ def denormalize(image, means, stds, dataset):
 
         for i in range(3072):
             image[i] = tmp[i]
+
+
+def model_predict(base, input):
+    if is_onnx:
+        pred = base.run(input)
+    else:
+        pred = base.run(base.graph.get_operation_by_name(model.op.name), {base.graph.get_operations()[0].name + ':0': input})
+    return pred
+
+
+def estimate_grads(specLB, specUB, dim_samples=3):
+    specLB = np.array(specLB, dtype=np.float32)
+    specUB = np.array(specUB, dtype=np.float32)
+    inputs = [((dim_samples - i) * specLB + i * specUB) / dim_samples for i in range(dim_samples + 1)]
+    diffs = np.zeros(len(specLB))
+
+    # refactor this out of this method
+    if is_onnx:
+        runnable = rt.prepare(model, 'CPU')
+    elif sess is None:
+        runnable = tf.Session()
+    else:
+        runnable = sess
+
+    for sample in range(dim_samples + 1):
+        pred = model_predict(runnable, inputs[sample])
+
+        for index in range(len(specLB)):
+            if sample < dim_samples:
+                l_input = [m if i != index else u for i, m, u in zip(range(len(specLB)), inputs[sample], inputs[sample+1])]
+                l_input = np.array(l_input, dtype=np.float32)
+                l_i_pred = model_predict(runnable, l_input)
+            else:
+                l_i_pred = pred
+            if sample > 0:
+                u_input = [m if i != index else l for i, m, l in zip(range(len(specLB)), inputs[sample], inputs[sample-1])]
+                u_input = np.array(u_input, dtype=np.float32)
+                u_i_pred = model_predict(runnable, u_input)
+            else:
+                u_i_pred = pred
+            diff = np.sum([abs(li - m) + abs(ui - m) for li, m, ui in zip(l_i_pred, pred, u_i_pred)])
+            diffs[index] += diff
+    return diffs / dim_samples
+
+
+
+progress = 0.0
+def print_progress(depth):
+    if config.debug:
+        global progress, rec_start
+        progress += np.power(2.,-depth)
+        sys.stdout.write('\r%.10f percent, %.02f s' % (100 * progress, time.time()-rec_start))
+
+
+def acasxu_recursive(specLB, specUB, max_depth=99, depth=0):
+    hold,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+    if hold:
+        print_progress(depth)
+        return hold
+    elif depth >= max_depth:
+        if config.complete:
+            verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+            print_progress(depth)
+            return verified_flag
+        else:
+            return False
+    else:
+        grads = estimate_grads(specLB, specUB)
+        # grads + small epsilon so if gradient estimation becomes 0 it will divide the biggest interval.
+        smears = np.multiply(grads + 0.00001, [u-l for u, l in zip(specUB, specLB)])
+
+        #start = time.time()
+        #nn.set_last_weights(constraints)
+        #grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
+        #smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
+        index = np.argmax(smears)
+        m = (specLB[index]+specUB[index])/2
+
+        result =  acasxu_recursive(specLB, [ub if i != index else m for i, ub in enumerate(specUB)], max_depth, depth + 1)
+        result = result and acasxu_recursive([lb if i != index else m for i, lb in enumerate(specLB)], specUB, max_depth, depth + 1)
+        return result
+
 
 
 def get_tests(dataset, geometric):
@@ -244,7 +328,6 @@ if config.output_constraints:
 
 mean = 0
 std = 0
-is_conv = False
 
 complete = (config.complete==True)
 
@@ -255,6 +338,7 @@ else:
 
 non_layer_operation_types = ['NoOp', 'Assign', 'Const', 'RestoreV2', 'SaveV2', 'PlaceholderWithDefault', 'IsVariableInitialized', 'Placeholder', 'Identity']
 
+sess = None
 if is_saved_tf_model or is_pb_file:
     netfolder = os.path.dirname(netname)
 
@@ -274,7 +358,8 @@ if is_saved_tf_model or is_pb_file:
     last_layer_index = -1
     while ops[last_layer_index].type in non_layer_operation_types:
         last_layer_index -= 1
-    eran = ERAN(sess.graph.get_tensor_by_name(ops[last_layer_index].name + ':0'), sess)
+    model = sess.graph.get_tensor_by_name(ops[last_layer_index].name + ':0')
+    eran = ERAN(model, sess)
 
 else:
     if(zonotope_bool==True):
@@ -287,7 +372,6 @@ else:
         num_pixels = 5
     if is_onnx:
         model, is_conv = read_onnx_net(netname)
-        # this is to have different defaults for mnist and cifar10
     else:
         model, is_conv, means, stds = read_tensorflow_net(netname, num_pixels, is_trained_with_pytorch)
     eran = ERAN(model, is_onnx=is_onnx)
@@ -319,22 +403,30 @@ if dataset:
     else:
         tests = open(config.input_box, 'r').read()
 
-
 if dataset=='acasxu':
     if config.debug:
         print('Constraints: ', constraints)
     boxes = parse_input_box(tests)
-    for box in boxes:
+    total_start = time.time()
+    for box_index, box in enumerate(boxes):
         specLB = [interval[0] for interval in box]
         specUB = [interval[1] for interval in box]
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
-        if config.specnumber == 9:
-            num_splits = [10,9,1,5,14]
-        elif config.specnumber == 5:
-            num_splits = [4,5,1,20,20]
-        else:
-            num_splits = [10, 10, 1, 10, 10]
+
+
+        rec_start = time.time()
+
+        _,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+
+        # expensive min/max gradient calculation
+        nn.set_last_weights(constraints)
+        grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
+
+
+        smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
+        split_multiple = 20 / np.sum(smears)
+        num_splits = [int(np.ceil(smear * split_multiple)) for smear in smears]
         step_size = []
         for i in range(5):
             step_size.append((specUB[i]-specLB[i])/num_splits[i])
@@ -349,6 +441,8 @@ if dataset=='acasxu':
         _,nn,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         start = time.time()
         #complete_list = []
+        multi_bounds = []
+
         for i in range(num_splits[0]):
             specLB[0] = start_val[0] + i*step_size[0]
             specUB[0] = np.fmin(end_val[0],start_val[0]+ (i+1)*step_size[0])
@@ -368,28 +462,37 @@ if dataset=='acasxu':
                             specLB[4] = start_val[4] + m*step_size[4]
                             specUB[4] = np.fmin(end_val[4],start_val[4]+ (m+1)*step_size[4])
 
-                            hold,_,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                            # add bounds to input for multiprocessing map
+                            multi_bounds.append((specLB.copy(), specUB.copy()))
 
-                            if not hold:
-                                if complete==True:
-                                   verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
-                                   #complete_list.append((i,j,k,l,m))
-                                   if(verified_flag==False):
-                                      flag = False
-                                      assert 0
-                                else:
-                                   flag = False
-                                   break
-                            if config.debug:
-                                print('split', i, j, k, l, m)
-        end = time.time()
-        #print(complete_list)
-        if(flag):
-            print("acasxu property ", config.specnumber, "Verified")
+
+                            # --- VERSION WITHOUT MULTIPROCESSING ---
+                            #hold,_,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                            #if not hold:
+                            #    if complete==True:
+                            #       verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+                            #       #complete_list.append((i,j,k,l,m))
+                            #       if verified_flag==False:
+                            #          flag = False
+                            #          assert 0
+                            #    else:
+                            #       flag = False
+                            #       break
+                            #if config.debug:
+                            #    sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec' % (i, j, k, l, m, time.time()-start))
+
+        #print(time.time() - rec_start, "seconds")
+
+        with Pool(processes=config.numproc) as pool:
+            res = pool.starmap(acasxu_recursive, multi_bounds)
+
+        if all(res):
+            print("AcasXu property", config.specnumber, "Verified for Box", box_index, "out of",len(boxes))
         else:
-            print("acasxu property ", config.specnumber, "Failed")
+            print("AcasXu property", config.specnumber, "Failed for Box", box_index, "out of",len(boxes))
 
-        print(end - start, "seconds")
+        print(time.time() - rec_start, "seconds")
+    print("Total time needed:", time.time() - total_start, "seconds")
 
 elif zonotope_bool:
     perturbed_label, nn, nlb, nub = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
@@ -815,6 +918,28 @@ elif config.geometric:
     print('[Box]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_box)))
     print('[Poly]  Average chunks verified: %.2f percent' % (100.0 * np.mean(cver_poly)))
     print('Average time: ', tot_time / total)
+
+elif config.input_box is not None:
+    boxes = parse_input_box(tests)
+    index = 1
+    correct = 0
+    for box in boxes:
+        specLB = [interval[0] for interval in box]
+        specUB = [interval[1] for interval in box]
+        normalize(specLB, means, stds, dataset)
+        normalize(specUB, means, stds, dataset)
+        hold, nn, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+        if hold:
+            print('constraints hold for box ' + str(index) + ' out of ' + str(sum([1 for b in boxes])))
+            correct += 1
+        else:
+            print('constraints do NOT hold for box ' + str(index) + ' out of ' + str(sum([1 for b in boxes])))
+
+        index += 1
+
+    print('constraints hold for ' + str(correct) + ' out of ' + str(sum([1 for b in boxes])) + ' boxes')
+
+
 else:
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
@@ -841,7 +966,6 @@ else:
 
         print("concrete ", nlb[-1])
         #if(label == int(test[0])):
-        constraints = get_constraints_for_dominant_label(label, 10)
         if(label == int(test[0])):
             perturbed_label = None
 
@@ -850,13 +974,14 @@ else:
             normalize(specLB, means, stds, dataset)
             normalize(specUB, means, stds, dataset)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
-            if(perturbed_label):
+            if(perturbed_label==label):
                 print("img", i, "Verified", label)
                 verified_images += 1
             else:
                 if complete==True:
+                    constraints = get_constraints_for_dominant_label(label, 10)
                     verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                     if(verified_flag==True):
                         print("img", i, "Verified", label)
