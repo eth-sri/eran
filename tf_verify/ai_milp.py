@@ -591,7 +591,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 
 
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
+def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
@@ -601,6 +601,16 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     input_size = len(LB_N0)
 
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True,relu_needed)
+
+    if spatial_constraints:
+        indices = spatial_constraints['indices']
+        neighbors = spatial_constraints['neighbors']
+        lbs = spatial_constraints['lower_bounds']
+        ubs = spatial_constraints['upper_bounds']
+
+        for idx, nbr, lb, ub in zip(indices, neighbors, lbs, ubs):
+            model.addConstr(lb <= var_list[idx] - var_list[nbr])
+            model.addConstr(var_list[idx] - var_list[nbr] <= ub)
 
     # model.setParam('TimeLimit', config.timeout_milp)
 
