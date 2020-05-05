@@ -95,7 +95,7 @@ Install ELINA:
 ```
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure
+./configure -use-deeppoly
 make
 make install
 cd ..
