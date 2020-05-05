@@ -22,6 +22,11 @@ import onnxruntime.backend as rt
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
 
+is_tf_version_2=tf.__version__[0]=='2'
+
+if is_tf_version_2:
+    tf= tf.compat.v1
+
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
