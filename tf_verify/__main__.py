@@ -1,8 +1,9 @@
 import sys
+import os
+cpu_affinity = os.sched_getaffinity(0)
 sys.path.insert(0, '../ELINA/python_interface/')
 sys.path.insert(0, '../deepg/code/')
 import numpy as np
-import os
 from eran import ERAN
 from read_net_file import *
 from read_zonotope_file import read_zonotope
@@ -397,6 +398,8 @@ is_trained_with_pytorch = is_trained_with_pytorch or is_onnx
 if config.mean is not None:
     means = config.mean
     stds = config.std
+
+os.sched_setaffinity(0,cpu_affinity)
 
 correctly_classified_images = 0
 verified_images = 0
