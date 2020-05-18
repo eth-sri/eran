@@ -50,13 +50,14 @@ make install
 cd ..
 rm mpfr-4.0.2.tar.xz
 
-git clone https://github.com/cddlib/cddlib.git
-cd cddlib
-./bootstrap
+wget https://github.com/cddlib/cddlib/releases/download/0.94j/cddlib-0.94j.tar.gz
+tar -xvf cddlib-0.94j.tar.gz
+cd cddlib-0.94j
 ./configure
 make
 make install
 cd ..
+rm cddlib-0.94j.tar.gz
 
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
