@@ -590,8 +590,59 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     return resl, resu, sorted(indices)
 
 
+def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
+    delta = spatial_constraints.get('delta')
+    gamma = spatial_constraints.get('gamma')
+
+    lower_planes = spatial_constraints.get('lower_planes')
+    upper_planes = spatial_constraints.get('upper_planes')
+
+    add_norm_constraints = spatial_constraints.get('add_norm_constraints')
+    neighboring_indices = spatial_constraints.get('neighboring_indices')
+
+    vector_field = list()
+
+    for idx in range(input_size):
+        vx = model.addVar(lb=-delta, ub=delta)
+        vy = model.addVar(lb=-delta, ub=delta)
+        add_norm_constraints(model, vx, vy)
+        vector_field.append({'vx': vx, 'vy': vy})
+
+    if (lower_planes is not None) and (upper_planes is not None):
+
+        iterator = zip(var_list, vector_field, *lower_planes, *upper_planes)
+
+        for var, vector, lb_a, lb_b, lb_c, ub_a, ub_b, ub_c in iterator:
+            model.addConstr(
+                var >= lb_a + lb_b * vector['vx'] + lb_c * vector['vy']
+            )
+            model.addConstr(
+                var <= ub_a + ub_b * vector['vx'] + ub_c * vector['vy']
+            )
+
+    if (gamma is not None) and (gamma < float('inf')):
+
+        indices = neighboring_indices['indices']
+        neighbors = neighboring_indices['neighbors']
+
+        for idx, nbr in zip(indices.tolist(), neighbors.tolist()):
+            model.addConstr(
+                vector_field[idx]['vx'] - vector_field[nbr]['vx'] <= gamma
+            )
+            model.addConstr(
+                vector_field[nbr]['vx'] - vector_field[idx]['vx'] <= gamma
+            )
+            model.addConstr(
+                vector_field[idx]['vy'] - vector_field[nbr]['vy'] <= gamma
+            )
+            model.addConstr(
+                vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
+            )
+
+
+def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
+                             use_milp=True, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
@@ -600,17 +651,22 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     relu_needed = [1] * numlayer
     input_size = len(LB_N0)
 
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True,relu_needed)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp, relu_needed)
+    
+    if spatial_constraints is not None:
+        add_spatial_constraints(
+            model, spatial_constraints, var_list, input_size
+        )
+                
+    # if spatial_constraints:
+    #     indices = spatial_constraints['indices']
+    #     neighbors = spatial_constraints['neighbors']
+    #     lbs = spatial_constraints['lower_bounds']
+    #     ubs = spatial_constraints['upper_bounds']
 
-    if spatial_constraints:
-        indices = spatial_constraints['indices']
-        neighbors = spatial_constraints['neighbors']
-        lbs = spatial_constraints['lower_bounds']
-        ubs = spatial_constraints['upper_bounds']
-
-        for idx, nbr, lb, ub in zip(indices, neighbors, lbs, ubs):
-            model.addConstr(lb <= var_list[idx] - var_list[nbr])
-            model.addConstr(var_list[idx] - var_list[nbr] <= ub)
+    #     for idx, nbr, lb, ub in zip(indices, neighbors, lbs, ubs):
+    #         model.addConstr(lb <= var_list[idx] - var_list[nbr])
+    #         model.addConstr(var_list[idx] - var_list[nbr] <= ub)
 
     # model.setParam('TimeLimit', config.timeout_milp)
 
