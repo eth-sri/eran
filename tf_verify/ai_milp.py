@@ -668,7 +668,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
     #         model.addConstr(lb <= var_list[idx] - var_list[nbr])
     #         model.addConstr(var_list[idx] - var_list[nbr] <= ub)
 
-    model.setParam('TimeLimit', config.timeout_milp)
+    # model.setParam('TimeLimit', config.timeout_milp)
 
     for or_list in constraints:
         or_result = False
@@ -681,7 +681,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
                 model.optimize()
 
                 if model.status != GRB.OPTIMAL:
-                    raise ValueError('Gurobi: objective not optimal')
+                    raise ValueError(f'Gurobi model status {model.status}')
 
                 if model.objval > 0:
                     or_result = True
