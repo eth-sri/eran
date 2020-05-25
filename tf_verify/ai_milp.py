@@ -1,3 +1,4 @@
+import warnings
 from gurobipy import *
 import numpy as np
 from config import config
@@ -672,6 +673,14 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
                 obj += -1*var_list[counter + j]
                 model.setObjective(obj,GRB.MINIMIZE)
                 model.optimize()
+
+                if model.status == GRB.TIME_LIMIT:
+                    warnings.warn('Gurobi timed out', RuntimeWarning)
+                    return False, model.x[0:input_size]
+
+                if model.status == GRB.SUBOPTIMAL:
+                    warnings.warn('Gurobi solution suboptimal', RuntimeWarning)
+                    return False, model.x[0:input_size]
 
                 if model.status != GRB.OPTIMAL:
                     raise ValueError(f'Gurobi model status {model.status}')
