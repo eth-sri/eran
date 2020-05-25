@@ -678,11 +678,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
                     warnings.warn('Gurobi timed out', RuntimeWarning)
                     return False, model.x[0:input_size]
 
-                if model.status == GRB.SUBOPTIMAL:
-                    warnings.warn('Gurobi solution suboptimal', RuntimeWarning)
-                    return False, model.x[0:input_size]
-
-                if model.status != GRB.OPTIMAL:
+                if model.status not in [GRB.OPTIMAL, GRB.SUBOPTIMAL]:
                     raise ValueError(f'Gurobi model status {model.status}')
 
                 if model.objval > 0:
