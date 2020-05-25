@@ -642,7 +642,7 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
 
 def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
-                             use_milp=True, spatial_constraints=None):
+        timeout=None, use_milp=True, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
@@ -658,15 +658,8 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
             model, spatial_constraints, var_list, input_size
         )
                 
-    # if spatial_constraints:
-    #     indices = spatial_constraints['indices']
-    #     neighbors = spatial_constraints['neighbors']
-    #     lbs = spatial_constraints['lower_bounds']
-    #     ubs = spatial_constraints['upper_bounds']
-
-    #     for idx, nbr, lb, ub in zip(indices, neighbors, lbs, ubs):
-    #         model.addConstr(lb <= var_list[idx] - var_list[nbr])
-    #         model.addConstr(var_list[idx] - var_list[nbr] <= ub)
+    if timeout is not None:
+        model.setParam("TimeLimit", timeout);
 
     # model.setParam('TimeLimit', config.timeout_milp)
 
