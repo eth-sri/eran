@@ -122,24 +122,21 @@ class DeeppolyInput:
         else:
             self.uexpr_dim = None
 
-        self.has_spatial_constraints = (spatial_constraints is not None)
+        self.expr_size = expr_size
 
-        if self.has_spatial_constraints:
+        self.spatial_gamma = -1
+        self.spatial_indices = np.ascontiguousarray([], np.uint64)
+        self.spatial_neighbors = np.ascontiguousarray([], np.uint64)
+
+        if spatial_constraints is not None:
+            self.spatial_gamma = spatial_constraints['gamma']
             self.spatial_indices = np.ascontiguousarray(
                 spatial_constraints['indices'], np.uint64
             )
             self.spatial_neighbors = np.ascontiguousarray(
                 spatial_constraints['neighbors'], np.uint64
             )
-            self.spatial_lower_bounds = np.ascontiguousarray(
-                spatial_constraints['lower_bounds'], np.double
-            )
-            self.spatial_upper_bounds = np.ascontiguousarray(
-                spatial_constraints['upper_bounds'], np.double
-            )
-            self.spatial_use_gurobi = bool(spatial_constraints['use_gurobi'])
 
-        self.expr_size = expr_size
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
 
@@ -157,21 +154,16 @@ class DeeppolyInput:
         output : ElinaAbstract0Ptr
             new abstract element representing the element specified by self.specLB and self.specUB
         """
-        if self.has_spatial_constraints:
-            return fppoly_from_network_input_spatial(
-                man, 0, len(self.specLB), self.specLB, self.specUB,
-                self.spatial_indices, self.spatial_neighbors,
-                self.spatial_lower_bounds, self.spatial_upper_bounds,
-                len(self.spatial_indices), self.spatial_use_gurobi
-            )
-
         if self.expr_size == 0:
             return fppoly_from_network_input(man, 0, len(self.specLB), self.specLB, self.specUB)
         else:
-            return fppoly_from_network_input_poly(man, 0, len(self.specLB), self.specLB, self.specUB,
-                                                  self.lexpr_weights, self.lexpr_cst, self.lexpr_dim,
-                                                  self.uexpr_weights, self.uexpr_cst, self.uexpr_dim, self.expr_size)
-
+            return fppoly_from_network_input_poly(
+                man, 0, len(self.specLB), self.specLB, self.specUB,
+                self.lexpr_weights, self.lexpr_cst, self.lexpr_dim,
+                self.uexpr_weights, self.uexpr_cst, self.uexpr_dim,
+                self.expr_size, self.spatial_indices, self.spatial_neighbors,
+                len(self.spatial_indices), self.spatial_gamma
+            )
 
 
 class DeeppolyNode:
