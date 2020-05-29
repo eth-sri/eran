@@ -660,7 +660,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
         )
                 
     if timeout is not None:
-        model.setParam("TimeLimit", timeout);
+        model.setParam("TimeLimit", timeout)
 
     # model.setParam('TimeLimit', config.timeout_milp)
 
@@ -676,7 +676,10 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
 
                 if model.status == GRB.TIME_LIMIT:
                     warnings.warn('Gurobi timed out', RuntimeWarning)
-                    return False, model.x[0:input_size]
+                    return False, None
+
+                if model.status == GRB.INFEASIBLE:
+                    raise ValueError(f'Gurobi model infeasible')
 
                 if model.status not in [GRB.OPTIMAL, GRB.SUBOPTIMAL]:
                     raise ValueError(f'Gurobi model status {model.status}')
