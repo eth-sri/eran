@@ -595,6 +595,7 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
     delta = spatial_constraints.get('delta')
     gamma = spatial_constraints.get('gamma')
+    channels = spatial_constraints.get('channels')
 
     lower_planes = spatial_constraints.get('lower_planes')
     upper_planes = spatial_constraints.get('upper_planes')
@@ -604,7 +605,7 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
     vector_field = list()
 
-    for idx in range(input_size):
+    for idx in range(input_size // channels):
         vx = model.addVar(lb=-delta, ub=delta)
         vy = model.addVar(lb=-delta, ub=delta)
         add_norm_constraints(model, vx, vy)
@@ -612,20 +613,25 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
     if (lower_planes is not None) and (upper_planes is not None):
 
-        iterator = zip(var_list, vector_field, *lower_planes, *upper_planes)
+        for idx, vector in enumerate(vector_field):
+            for channel in range(channels):
+                index = channels * idx + channel
+                var = var_list[index]
+                lb_a, ub_a = lower_planes[0][index], upper_planes[0][index]
+                lb_b, ub_b = lower_planes[1][index], upper_planes[1][index]
+                lb_c, ub_c = lower_planes[2][index], upper_planes[2][index]
 
-        for var, vector, lb_a, lb_b, lb_c, ub_a, ub_b, ub_c in iterator:
-            model.addConstr(
-                var >= lb_a + lb_b * vector['vx'] + lb_c * vector['vy']
-            )
-            model.addConstr(
-                var <= ub_a + ub_b * vector['vx'] + ub_c * vector['vy']
-            )
+                model.addConstr(
+                    var >= lb_a + lb_b * vector['vx'] + lb_c * vector['vy']
+                )
+                model.addConstr(
+                    var <= ub_a + ub_b * vector['vx'] + ub_c * vector['vy']
+                )
 
     if (gamma is not None) and (gamma < float('inf')):
 
-        indices = neighboring_indices['indices']
-        neighbors = neighboring_indices['neighbors']
+        indices = neighboring_indices['indices'][::channels] / channels
+        neighbors = neighboring_indices['neighbors'][::channels] / channels
 
         for idx, nbr in zip(indices.tolist(), neighbors.tolist()):
             model.addConstr(
