@@ -630,8 +630,8 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
     if (gamma is not None) and (gamma < float('inf')):
 
-        indices = neighboring_indices['indices'][::channels] / channels
-        neighbors = neighboring_indices['neighbors'][::channels] / channels
+        indices = neighboring_indices['indices'][::channels] // channels
+        neighbors = neighboring_indices['neighbors'][::channels] // channels
 
         for idx, nbr in zip(indices.tolist(), neighbors.tolist()):
             model.addConstr(
