@@ -647,6 +647,12 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
                 vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
             )
 
+def callback(model, where):
+    if where == GRB.Callback.MIP:
+        obj_best = model.cbGet(GRB.Callback.MIP_OBJBST)
+        obj_bound = model.cbGet(GRB.Callback.MIP_OBJBND)
+        if obj_bound > 0 or obj_best < 0:
+            model.terminate()
 
 def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
         timeout=None, use_milp=True, spatial_constraints=None):
@@ -671,31 +677,26 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
     # model.setParam('TimeLimit', config.timeout_milp)
 
     for or_list in constraints:
-        or_result = False
         for (i, j) in or_list:
             obj = LinExpr()
             if i!=j:
                 obj += 1*var_list[counter + i]
                 obj += -1*var_list[counter + j]
                 model.setObjective(obj,GRB.MINIMIZE)
-                model.optimize()
+                model.optimize(callback)
 
                 if model.status == GRB.TIME_LIMIT:
                     warnings.warn('Gurobi timed out', RuntimeWarning)
                     return False, None
 
-                if model.status == GRB.INFEASIBLE:
-                    raise ValueError(f'Gurobi model infeasible')
+                # if model.status == GRB.INFEASIBLE:
+                #     raise ValueError(f'Gurobi model infeasible')
 
-                if model.status not in [GRB.OPTIMAL, GRB.SUBOPTIMAL]:
-                    raise ValueError(f'Gurobi model status {model.status}')
+                # if model.status not in [GRB.OPTIMAL, GRB.SUBOPTIMAL]:
+                #     raise ValueError(f'Gurobi model status {model.status}')
 
-                if model.objval > 0:
-                    or_result = True
-                    break
+                if model.objBound < 0:
+                    return False, None
 
-        if not or_result:
-            return False, model.x[0:input_size]
-
-    return True, model.x[0:input_size]
+    return True, None
 
