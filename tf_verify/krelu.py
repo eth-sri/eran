@@ -95,9 +95,8 @@ class Krelu:
                 element = elina_abstract0_assign_linexpr_array(self.man,True,self.element,self.tdim,linexpr0,1,None)
                 bound_linexpr = elina_abstract0_bound_dimension(self.man,self.element,self.offset+self.length)
             else:
-                bound_linexpr = get_bounds_for_linexpr0(self.man,self.element,linexpr0,self.layerno)
-            upper_bound = bound_linexpr.contents.sup.contents.val.dbl
-
+                bound_linexpr = get_upper_bound_for_linexpr0(self.man,self.element,linexpr0,self.layerno)
+            upper_bound = bound_linexpr
             cdd_hrepr.append([upper_bound] + [-c for c in coeffs])
 
         return cdd_hrepr
@@ -173,7 +172,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     candidate_vars = grouping_heuristic(candidate_vars, lbi, ubi)
 
     relucons = []
-
+    #print("UBI ",ubi)
     tdim = ElinaDim(offset+length)
     if domain == 'refinezono':
         element = dn.add_dimensions(man,element,offset+length,1)
@@ -201,7 +200,6 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
                         krelu_args.append(arg)
 
     klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
-
     for k in klist:
         while len(candidate_vars) >= k:
             krelu_args.append(candidate_vars[:k])

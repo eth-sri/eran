@@ -14,6 +14,11 @@ import argparse
 from onnx import helper
 from config import config
 
+is_tf_version_2=tf.__version__[0]=='2'
+
+if is_tf_version_2:
+    tf= tf.compat.v1
+
 parser = argparse.ArgumentParser(description='ERAN sanity check',  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--dataset', type=str,  help='the dataset to test with')
 parser.add_argument('--domain', nargs='+', type=str, default=['deepzono', 'refinezono', 'deeppoly', 'refinepoly'],  help='the domains to be tested. default:deepzono refinezono deeppoly refinepoly')
@@ -179,7 +184,7 @@ for dataset in datasets:
             print(', '.join([dataset, network, domain]), 'testing now')
 
             try:
-                label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, config.use_area_heuristic, testing=True)
+                label, nn, nlb, nub, output_info = eran.analyze_box(specLB, specUB, domain, 1, 1, config.use_default_heuristic, testing=True)
 
             except Exception as e:
                 tested_file.write(', '.join([dataset, network, domain, 'ERAN analyze error trace: '+traceback.format_exc()]) + '\n\n\n')

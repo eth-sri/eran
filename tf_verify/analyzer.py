@@ -27,6 +27,7 @@ class layers:
         self.conv_counter = 0
         self.residual_counter = 0
         self.pool_counter = 0
+        self.activation_counter = 0
         self.specLB = []
         self.specUB = []
         self.original = []
@@ -36,7 +37,7 @@ class layers:
         self.last_weights = None
 
     def calc_layerno(self):
-        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter
+        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter
 
     def is_ffn(self):
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
@@ -163,17 +164,18 @@ class Analyzer:
         if self.domain == 'deepzono' or self.domain == 'refinezono':
             output_size = self.ir_list[-1].output_length
         else:
-            output_size = reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
+            output_size = self.ir_list[-1].output_length#reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
     
         dominant_class = -1
         if(self.domain=='refinepoly'):
 
-            relu_needed = [1] * self.nn.numlayer
+            #relu_needed = [1] * self.nn.numlayer
             self.nn.ffn_counter = 0
             self.nn.conv_counter = 0
             self.nn.pool_counter = 0
             self.nn.residual_counter = 0
-            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False,relu_needed)
+            self.nn.activation_counter = 0
+            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False)
             #model.setParam('Timeout',1000)
             num_var = len(var_list)
             output_size = num_var - counter

@@ -405,10 +405,10 @@ class ONNXTranslator:
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
-				image_shape, kernel_shape, strides, padding, dilations, pads, ceil_mode, storage_order = self.pool_resources(node)
-				deeppoly_res =  (image_shape, kernel_shape, in_out_info[2]) + in_out_info
+				image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, ceil_mode, storage_order = self.pool_resources(node)
+				deeppoly_res =  (image_shape, kernel_shape, strides, pad_top, pad_left) + in_out_info
 				# TODO padding is expected to be string in tf. dilations, auto_pad, ceil_mode, storage_order are unused at the moment
-				deepzono_res = (image_shape, kernel_shape, strides, padding) + in_out_info
+				deepzono_res = (image_shape, kernel_shape, strides, pad_top, pad_left) + in_out_info
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "Placeholder":
 				assert 0, "Placeholder is not in the ONNX graph"
@@ -676,7 +676,7 @@ class ONNXTranslator:
 		output : tuple
 		    has 4 entries - (list, numpy.ndarray, numpy.ndarray, numpy.ndarray, int, int, str)
 		"""
-		image       = node.inputs[0]
+		image       = node.input[0]
 		
 		image_shape = self.get_shape(image)[1:]
 

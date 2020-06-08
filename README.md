@@ -3,9 +3,9 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification. ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, scalable, and extensible analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification and can be tuned to provide best precision and scalability (see recommended configuration settings at the bottom). ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
 
-ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following three analysis:
+ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following four analysis:
 
 * DeepZ [NIPS'18]: contains specialized abstract Zonotope transformers for handling ReLU, Sigmoid and Tanh activation functions.
 
@@ -244,6 +244,20 @@ will on the fly generate geometric perturbed images and evaluate the network aga
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/examples/example1/ --num_params 1 --dataset mnist --attack
 ```
 will evaluate the generated geometric perturbed images in the given data_dir and also evaluate generated attack images.
+
+
+Recommended Configuration for Scalable Complete Verification
+---------------------------------------------------------------------------------------------
+Use the "deeppoly" or "deepzono" domain with "--complete True" option
+
+
+Recommended Configuration for More Precise but relatively expensive Incomplete Verification
+----------------------------------------------------------------------------------------------
+Use the "refinepoly" domain with "--use_milp True", "--dyn_krelu", "timeout_milp 10", and "timeout_lp 10" options
+
+Recommended Configuration for Faster but relatively imprecise Incomplete Verification
+-----------------------------------------------------------------------------------------------
+Use the "deeppoly" domain
 
 
 Publications

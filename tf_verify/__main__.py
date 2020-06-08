@@ -983,7 +983,7 @@ else:
             normalize(specUB, means, stds, dataset)
             start = time.time()
             perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
-            print("nlb ", nlb[len(nlb)-1], " nub ", nub[len(nub)-1])
+            print("nlb ", nlb[-1], " nub ", nub[-1])
             if(perturbed_label==label):
                 print("img", i, "Verified", label)
                 verified_images += 1
