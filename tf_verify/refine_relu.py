@@ -14,6 +14,32 @@ else:
     from fppoly_gpu import *
 
 
+
+def update_relu_expr_bounds(man, element, layerno, bound_expr_list):
+    for i in range(len(bound_expr_list)):
+        Krelu_expr = bound_expr_list[i]
+        varsid = Krelu_expr.varsid
+        varsid = np.ascontiguousarray(varsid, dtype=np.uintp)
+        lower_bound_expr = Krelu_expr.lexpr
+        upper_bound_expr = Krelu_expr.uexpr
+        k = len(varsid)
+        for j in range(k):
+            uexpr = upper_bound_expr[j]
+            lexpr = lower_bound_expr[j]
+            nnz_l = 0
+            nnz_u = 0
+            for l in range(k):
+                if lexpr[l+1] != 0:
+                    nnz_l+=1
+                if uexpr[l+1] != 0:
+                    nnz_u+=1
+            #if nnz_l > 1:
+                #lexpr = np.ascontiguousarray(lexpr, dtype=np.double)
+                #update_relu_lower_bound_for_neuron(man, element, layerno, varsid[j], lexpr, varsid, k)
+            if nnz_u > 1:
+                uexpr = np.ascontiguousarray(uexpr, dtype=np.double)
+                #update_relu_upper_bound_for_neuron(man, element, layerno, varsid[j], uexpr, varsid, k)
+
 def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain):
     """
     refines the relu transformer
@@ -51,8 +77,10 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
             element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
             return element
         else:
-            encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
+            bound_expr_list = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
+            update_relu_expr_bounds(man, element, layerno, bound_expr_list)
+                   
     else:
         is_conv = False
         timeout = timeout_milp
@@ -99,8 +127,9 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
         else:
             for j in indices:
                 update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
-            encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
+            bound_expr_list = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
+            update_relu_expr_bounds(man, element, layerno, bound_expr_list)
       
      
     
