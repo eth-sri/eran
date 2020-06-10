@@ -94,9 +94,10 @@ class Krelu:
             if(self.domain=='refinezono'):
                 element = elina_abstract0_assign_linexpr_array(self.man,True,self.element,self.tdim,linexpr0,1,None)
                 bound_linexpr = elina_abstract0_bound_dimension(self.man,self.element,self.offset+self.length)
+                upper_bound = bound_linexpr.contents.sup.contents.val.dbl
             else:
                 bound_linexpr = get_upper_bound_for_linexpr0(self.man,self.element,linexpr0,self.layerno)
-            upper_bound = bound_linexpr
+                upper_bound = bound_linexpr
             cdd_hrepr.append([upper_bound] + [-c for c in coeffs])
 
         return cdd_hrepr
