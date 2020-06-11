@@ -499,6 +499,10 @@ Contributors
  
 * Adrian Hoffmann - adriahof@student.ethz.ch
 
+* Mislav Balunovic (https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
+
+* Maximilian Baader (https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
+
 * [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
 
 * [Dana Drachsler Cohen](https://www.sri.inf.ethz.ch/people/dana) - dana.drachsler@inf.ethz.ch 

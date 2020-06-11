@@ -263,6 +263,7 @@ parser.add_argument('--use_milp', type=str2bool, default=config.use_milp,  help=
 parser.add_argument('--dyn_krelu', action='store_true', default=config.dyn_krelu, help='dynamically select parameter k')
 parser.add_argument('--use_2relu', action='store_true', default=config.use_2relu, help='use 2-relu')
 parser.add_argument('--use_3relu', action='store_true', default=config.use_3relu, help='use 3-relu')
+parser.add_argument('--refine_neurons', action='store_true', default=config.refine_neurons, help='whether to refine intermediate neurons')
 parser.add_argument('--mean', nargs='+', type=float, default=config.mean, help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float, default=config.std, help='the standard deviation used to normalize the data with')
 parser.add_argument('--data_dir', type=str, default=config.data_dir, help='data location')

@@ -46,14 +46,15 @@ def generate_linexpr0(offset, varids, coeffs):
     return linexpr0
 
 class Krelu:
-    def __init__(self, varsid):
+    def __init__(self, cdd_hrepr):
         start = time.time()
 
         # krelu on variables in varsid
-        self.varsid = varsid
-        self.k = len(varsid)
-
-        cdd_hrepr = self.get_ineqs(varsid)
+        #self.varsid = varsid
+        self.k = len(cdd_hrepr[0])-1
+        self.cdd_hrepr = cdd_hrepr
+        #print("LENGTH ", len(cdd_hrepr[0]))
+        #cdd_hrepr = self.get_ineqs(varsid)
         check_pt1 = time.time()
 
         cdd_hrepr = cdd.Matrix(cdd_hrepr, number_type='fraction')
@@ -70,6 +71,7 @@ class Krelu:
 
         # Convert back to H-repr.
         cons = cdd.Polyhedron(cdd_vrepr).get_inequalities()
+        self.lin_set = cons.lin_set
         cons = np.asarray(cons, dtype=np.float64)
 
         # normalize constraints for numerical stability
@@ -81,7 +83,7 @@ class Krelu:
 
         return
 
-    def get_ineqs(self, varsid):
+    def get_ineqs_zono(self, varsid):
         cdd_hrepr = []
 
         # Get bounds on linear expressions over variables before relu
@@ -91,16 +93,12 @@ class Krelu:
                 continue
 
             linexpr0 = generate_linexpr0(self.offset, varsid, coeffs)
-            if(self.domain=='refinezono'):
-                element = elina_abstract0_assign_linexpr_array(self.man,True,self.element,self.tdim,linexpr0,1,None)
-                bound_linexpr = elina_abstract0_bound_dimension(self.man,self.element,self.offset+self.length)
-                upper_bound = bound_linexpr.contents.sup.contents.val.dbl
-            else:
-                bound_linexpr = get_upper_bound_for_linexpr0(self.man,self.element,linexpr0,self.layerno)
-                upper_bound = bound_linexpr
+            element = elina_abstract0_assign_linexpr_array(self.man,True,self.element,self.tdim,linexpr0,1,None)
+            bound_linexpr = elina_abstract0_bound_dimension(self.man,self.element,self.offset+self.length)
+            upper_bound = bound_linexpr.contents.sup.contents.val.dbl
             cdd_hrepr.append([upper_bound] + [-c for c in coeffs])
-
         return cdd_hrepr
+
 
     def get_orthant_points(self, cdd_hrepr):
         # Get points of polytope restricted to all possible orthtants
@@ -117,7 +115,6 @@ class Krelu:
 
             # remove reduntant constraints
             hrepr.canonicalize()
-
             # Convert to V-repr.
             pts_new = cdd.Polyhedron(hrepr).get_generators()
             assert all(row[0]==1 for row in pts_new)
@@ -196,10 +193,9 @@ def calculate_nnz(constraint, k):
             nnz = nnz+1
     return nnz            
 
-def compute_expr_bounds_from_candidates(krelu_inst, lbi, ubi, candidate_bounds, is_lower):
+def compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_bounds, is_lower):
     bound_expr = []
     k = krelu_inst.k
-    varsid = krelu_inst.varsid
     cons = krelu_inst.cons
     for j in range(k):
         candidate_rows = candidate_bounds[j]
@@ -214,13 +210,19 @@ def compute_expr_bounds_from_candidates(krelu_inst, lbi, ubi, candidate_bounds, 
             bound = compute_bound(cons[row_index], lbi, ubi, varsid, j, is_lower)
             nnz = calculate_nnz(cons[row_index],k)
             if nnz >= best_nnz:
-                if((is_lower and bound > best_bound/2) or ((not is_lower) and bound < best_bound)):
+                if((is_lower and bound > best_bound) or ((not is_lower) and bound < best_bound)):
                     best_index = row_index
                     best_bound = bound
                     best_nnz = nnz
         res = np.zeros(k+1)
         best_row = cons[best_index]
         divisor = -best_row[j+k+1]
+        #if divisor == 0:
+        #    print("ROW ",best_row)
+        #    print("CONS ", cons, krelu_inst)
+        #    print("CDD ", krelu_inst.cdd_hrepr)
+        #    print("j ", j, "lb ", lbi[varsid[0]], lbi[varsid[1]], "ub ", ubi[varsid[0]], ubi[varsid[1]] )
+        #    print("candidates ", len(candidate_rows))
         res[0] = best_row[0]/divisor
         for l in range(k):
             res[l+1] = best_row[l+1]/divisor
@@ -232,16 +234,28 @@ def compute_expr_bounds_from_candidates(krelu_inst, lbi, ubi, candidate_bounds, 
         bound_expr.append(res)
     return bound_expr
 
-def compute_expr_bounds(krelu_inst, lbi, ubi):
+def compute_expr_bounds(krelu_inst, varsid, lbi, ubi):
     cons = krelu_inst.cons
     nbrows = len(cons)
-    k = krelu_inst.k
-    varsid = krelu_inst.varsid
+    k = len(varsid)
     candidate_lower_bounds = []
     candidate_upper_bounds = []
     for j in range(k):
         candidate_lower_bounds.append([])
-        candidate_upper_bounds.append([])	
+        candidate_upper_bounds.append([])
+    lin_size = len(krelu_inst.lin_set)
+    new_cons = np.zeros((lin_size,2*k+1),dtype=np.float64)
+    lin_count = 0
+    for i in range(nbrows):
+        if i in krelu_inst.lin_set:
+            row = cons[i]
+            for j in range(2*k+1):
+                new_cons[lin_count][j] = -row[j]
+            lin_count = lin_count + 1
+
+    krelu_inst.cons = np.vstack([cons,new_cons])
+    cons = krelu_inst.cons
+    nbrows = len(cons)
     for i in range(nbrows):
         row = cons[i]
         for j in range(k):
@@ -249,10 +263,11 @@ def compute_expr_bounds(krelu_inst, lbi, ubi):
                 candidate_upper_bounds[j].append(i)
             elif row[j+k+1]>0:
                 candidate_lower_bounds[j].append(i)
-    lower_bound_expr = compute_expr_bounds_from_candidates(krelu_inst, lbi, ubi, candidate_lower_bounds, True)
-    upper_bound_expr = compute_expr_bounds_from_candidates(krelu_inst, lbi, ubi, candidate_upper_bounds, False)
+    lower_bound_expr = compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_lower_bounds, True)
+    upper_bound_expr = compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_upper_bounds, False)
     return lower_bound_expr, upper_bound_expr
 	         
+
 	        
 
 def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, need_pop, domain):
@@ -279,7 +294,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
         limit3relucalls = 500
         firstk = math.sqrt(6*limit3relucalls/len(candidate_vars))
         firstk = int(min(firstk, len(candidate_vars)))
-        if(layerno<3):
+        if(layerno<4):
             firstk = 1
         else:
             firstk = 5#int(max(1,firstk))
@@ -295,7 +310,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
                     for arg in itertools.combinations(head, 3):
                         krelu_args.append(arg)
 
-    klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
+    klist = ([3] if (config.use_3relu and layerno > 4) else []) + ([2] if (config.use_2relu and layerno > 4) else []) + [1]
     for k in klist:
         while len(candidate_vars) >= k:
             krelu_args.append(candidate_vars[:k])
@@ -309,13 +324,54 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     Krelu.domain = domain
 
     start = time.time()
+    if domain == 'refinezono':
+        with multiprocessing.Pool(config.numproc) as pool:
+            cdd_hrepr_array = pool.map(self.get_ineqs_zono, krelu_args)    
+    else:
+    #    krelu_results = []
+        total_size = 0
+        for varsid in krelu_args:
+            size = 3**len(varsid) - 1
+            total_size = total_size + size
+
+        linexpr0 = elina_linexpr0_array_alloc(total_size)
+        i = 0
+        for varsid in krelu_args:
+            for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+                if all(c==0 for c in coeffs):
+                    continue
+
+                linexpr0[i] = generate_linexpr0(offset, varsid, coeffs)
+                i = i + 1
+        upper_bound = get_upper_bound_for_linexpr0(man,element,linexpr0, total_size, layerno)
+        i=0
+        cdd_hrepr_array = []
+        for varsid in krelu_args:
+            cdd_hrepr = []
+            for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+                if all(c==0 for c in coeffs):
+                    continue
+                cdd_hrepr.append([upper_bound[i]] + [-c for c in coeffs])
+                #print("UPPER BOUND ", upper_bound[i], "COEFF ", coeffs)
+                #if len(varsid)>1:
+                #    print("LB ", lbi[varsid[0]],lbi[varsid[1]], "UB ", ubi[varsid[0]], ubi[varsid[1]])
+                i = i + 1
+            cdd_hrepr_array.append(cdd_hrepr)
+
     with multiprocessing.Pool(config.numproc) as pool:
-        krelu_results = pool.map(make_krelu_obj, krelu_args)
-    bound_expr_list = []    
+        krelu_results = pool.map(make_krelu_obj, cdd_hrepr_array)
+
+
+    #        krelu_results.append(make_krelu_obj(krelu_args[i]))
+    bound_expr_list = [] 
+    gid = 0
     for krelu_inst in krelu_results:
-        lower_bound_expr, upper_bound_expr = compute_expr_bounds(krelu_inst, lbi, ubi)
-        bound_expr_list.append(Krelu_expr(lower_bound_expr, upper_bound_expr, krelu_inst.varsid))
+        varsid = krelu_args[gid]
+        krelu_inst.varsid = varsid
+        lower_bound_expr, upper_bound_expr = compute_expr_bounds(krelu_inst,varsid, lbi, ubi)
+        bound_expr_list.append(Krelu_expr(lower_bound_expr, upper_bound_expr, varsid))
         relucons.append(krelu_inst)
+        gid = gid+1
     end = time.time()
 
     if config.debug:

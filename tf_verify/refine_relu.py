@@ -79,7 +79,8 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
         else:
             bound_expr_list = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
-            update_relu_expr_bounds(man, element, layerno, bound_expr_list)
+            if config.refine_neurons == True:
+                update_relu_expr_bounds(man, element, layerno, bound_expr_list)
                    
     else:
         is_conv = False
@@ -103,30 +104,35 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
             if((lbi[i]<0 and ubi[i]>0) or (lbi[i]>0)):
                  candidate_vars.append(i)
         #TODO handle residual layers here
-
-        resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index, predecessor_index, length, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
-        nlb[predecessor_index] = resl
-        nub[predecessor_index] = resu
+        if config.refine_neurons==True:
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index, predecessor_index, length, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
+            nlb[predecessor_index] = resl
+            nub[predecessor_index] = resu
 
         lbi = nlb[predecessor_index]
         ubi = nub[predecessor_index]
+            
         if domain == 'deepzono':
             encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinezono')
-            
-
-        j = 0
-        if domain == 'deepzono':
-            for i in range(length):
-                if((j < len(indices)) and (i==indices[j])):
+            if config.refine_neurons==True:
+                j = 0
+                for i in range(length):
+                    if((j < len(indices)) and (i==indices[j])):
              
-                    element = relu_zono_refined(man,True, element,i+offset, resl[i],resu[i])
-                    j=j+1
-                else:
-                    element = relu_zono(man,True,element,i+offset)
-            return element
+                        element = relu_zono_refined(man,True, element,i+offset, resl[i],resu[i])
+                        j=j+1
+                    else:
+                        element = relu_zono(man,True,element,i+offset)
+                return element
+
+            else:
+
+                element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
+                return element
         else:
-            for j in indices:
-                update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
+            if config.refine_neurons==True:
+                for j in indices:
+                    update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
             bound_expr_list = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             update_relu_expr_bounds(man, element, layerno, bound_expr_list)
