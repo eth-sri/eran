@@ -253,7 +253,7 @@ Use the "deeppoly" or "deepzono" domain with "--complete True" option
 
 Recommended Configuration for More Precise but relatively expensive Incomplete Verification
 ----------------------------------------------------------------------------------------------
-Use the "refinepoly" domain with "--use_milp True", "--dyn_krelu", "timeout_milp 10", and "timeout_lp 10" options
+Use the "refinepoly" domain with "--use_milp True", "--dyn_krelu", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10" options
 
 Recommended Configuration for Faster but relatively imprecise Incomplete Verification
 -----------------------------------------------------------------------------------------------
