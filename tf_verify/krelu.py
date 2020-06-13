@@ -128,10 +128,10 @@ def make_krelu_obj(varsid):
     return Krelu(varsid)
 
 class Krelu_expr:
-    def __init__(self, lexpr, uexpr, varsid):
-        self.lexpr = lexpr
-        self.uexpr = uexpr
+    def __init__(self, expr, varsid, bound):
+        self.expr = expr
         self.varsid = varsid
+        self.bound = bound
     
 # HEURISTIC
 def grouping_heuristic(ind, lb, ub):
@@ -193,8 +193,7 @@ def calculate_nnz(constraint, k):
             nnz = nnz+1
     return nnz            
 
-def compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_bounds, is_lower):
-    bound_expr = []
+def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi, candidate_bounds, is_lower):
     k = krelu_inst.k
     cons = krelu_inst.cons
     for j in range(k):
@@ -231,10 +230,15 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_
             coeff = best_row[l+k+1]/divisor
             if((is_lower and coeff<0) or ((not is_lower) and (coeff > 0))):
                 res[0] = res[0] + coeff*ubi[varsid[l]]  
-        bound_expr.append(res)
-    return bound_expr
+        if varsid[j] in bound_expr.keys():
+            current_bound = bound_expr[varsid[j]].bound
+            if (is_lower and best_bound > current_bound) or ((not is_lower) and bound < best_bound):
+                    bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
+        else:
+            bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
 
-def compute_expr_bounds(krelu_inst, varsid, lbi, ubi):
+
+def compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, lbi, ubi):
     cons = krelu_inst.cons
     nbrows = len(cons)
     k = len(varsid)
@@ -263,9 +267,9 @@ def compute_expr_bounds(krelu_inst, varsid, lbi, ubi):
                 candidate_upper_bounds[j].append(i)
             elif row[j+k+1]>0:
                 candidate_lower_bounds[j].append(i)
-    lower_bound_expr = compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_lower_bounds, True)
-    upper_bound_expr = compute_expr_bounds_from_candidates(krelu_inst, varsid, lbi, ubi, candidate_upper_bounds, False)
-    return lower_bound_expr, upper_bound_expr
+    #compute_expr_bounds_from_candidates(krelu_inst, varsid, lower_bound_expr, lbi, ubi, candidate_lower_bounds, True)
+    compute_expr_bounds_from_candidates(krelu_inst, varsid, upper_bound_expr, lbi, ubi, candidate_upper_bounds, False)
+    
 	         
 
 	        
@@ -274,6 +278,13 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     import deepzono_nodes as dn
     if(need_pop):
         relu_groups.pop()
+
+    last_conv = -1
+    is_conv = False
+    for i in range(nn.numlayer):
+        if nn.layertypes[i] == 'Conv':
+            last_conv = i
+            is_conv = True
 
     lbi = np.asarray(lbi, dtype=np.double)
     ubi = np.asarray(ubi, dtype=np.double)
@@ -289,12 +300,11 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
         element = dn.add_dimensions(man,element,offset+length,1)
 
     krelu_args = []
-
     if config.dyn_krelu and candidate_vars:
         limit3relucalls = 500
         firstk = math.sqrt(6*limit3relucalls/len(candidate_vars))
         firstk = int(min(firstk, len(candidate_vars)))
-        if(layerno<4):
+        if is_conv and layerno < last_conv:
             firstk = 1
         else:
             firstk = 5#int(max(1,firstk))
@@ -310,7 +320,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
                     for arg in itertools.combinations(head, 3):
                         krelu_args.append(arg)
 
-    klist = ([3] if (config.use_3relu and layerno > 4) else []) + ([2] if (config.use_2relu and layerno > 4) else []) + [1]
+    klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
     for k in klist:
         while len(candidate_vars) >= k:
             krelu_args.append(candidate_vars[:k])
@@ -363,13 +373,16 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
 
 
     #        krelu_results.append(make_krelu_obj(krelu_args[i]))
-    bound_expr_list = [] 
+    #bound_expr_list = [] 
     gid = 0
+    lower_bound_expr = {}
+    upper_bound_expr = {}
     for krelu_inst in krelu_results:
         varsid = krelu_args[gid]
         krelu_inst.varsid = varsid
-        lower_bound_expr, upper_bound_expr = compute_expr_bounds(krelu_inst,varsid, lbi, ubi)
-        bound_expr_list.append(Krelu_expr(lower_bound_expr, upper_bound_expr, varsid))
+        compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, lbi, ubi)
+        #print("VARSID ",varsid)
+        #bound_expr_list.append(Krelu_expr(lower_bound_expr, upper_bound_expr, varsid))
         relucons.append(krelu_inst)
         gid = gid+1
     end = time.time()
@@ -381,4 +394,4 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
 
     relu_groups.append(relucons)
 
-    return bound_expr_list
+    return lower_bound_expr, upper_bound_expr

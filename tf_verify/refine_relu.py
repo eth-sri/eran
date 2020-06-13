@@ -15,28 +15,22 @@ else:
 
 
 
-def update_relu_expr_bounds(man, element, layerno, bound_expr_list):
-    for i in range(len(bound_expr_list)):
-        Krelu_expr = bound_expr_list[i]
-        varsid = Krelu_expr.varsid
-        varsid = np.ascontiguousarray(varsid, dtype=np.uintp)
-        lower_bound_expr = Krelu_expr.lexpr
-        upper_bound_expr = Krelu_expr.uexpr
+def update_relu_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound_expr, lbi, ubi):
+    for var in upper_bound_expr.keys():
+        uexpr = upper_bound_expr[var].expr
+        varsid = upper_bound_expr[var].varsid
+        bound = upper_bound_expr[var].bound
         k = len(varsid)
+        varsid = np.ascontiguousarray(varsid, dtype=np.uintp)
         for j in range(k):
-            uexpr = upper_bound_expr[j]
-            lexpr = lower_bound_expr[j]
-            nnz_l = 0
             nnz_u = 0
             for l in range(k):
-                if lexpr[l+1] != 0:
-                    nnz_l+=1
                 if uexpr[l+1] != 0:
                     nnz_u+=1
             #if nnz_l > 1:
                 #lexpr = np.ascontiguousarray(lexpr, dtype=np.double)
                 #update_relu_lower_bound_for_neuron(man, element, layerno, varsid[j], lexpr, varsid, k)
-            if nnz_u > 1:
+            if nnz_u > 1 and bound < 2*ubi[var]:
                 uexpr = np.ascontiguousarray(uexpr, dtype=np.double)
                 update_relu_upper_bound_for_neuron(man, element, layerno, varsid[j], uexpr, varsid, k)
 
@@ -71,24 +65,26 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
         length = get_num_neurons_in_layer(man, element, predecessor_index)
     lbi = nlb[predecessor_index]
     ubi = nub[predecessor_index]
+    is_conv = False
+    timeout = timeout_milp
+    for i in range(nn.numlayer):
+        if nn.layertypes[i] == 'Conv':
+            is_conv = True
+            break
+            
     if nn.activation_counter==0:
         if domain=='deepzono':
             encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinezono')
             element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
             return element
         else:
-            bound_expr_list = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
+            lower_bound_expr, upper_bound_expr = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
-            if config.refine_neurons == True:
-                update_relu_expr_bounds(man, element, layerno, bound_expr_list)
+            #if config.refine_neurons == True:
+            update_relu_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound_expr, lbi, ubi)
                    
     else:
-        is_conv = False
-        timeout = timeout_milp
-        for i in range(nn.numlayer):
-            if nn.layertypes[i] == 'Conv2D':
-                is_conv = True
-                break
+
 
         if is_conv==True:
             use_milp = 1
@@ -133,9 +129,9 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
             if config.refine_neurons==True:
                 for j in indices:
                     update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
-            bound_expr_list = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
+            lower_bound_expr, upper_bound_expr = encode_krelu_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly')
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
-            update_relu_expr_bounds(man, element, layerno, bound_expr_list)
+            update_relu_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound_expr, lbi, ubi)
       
      
     
