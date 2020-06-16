@@ -65,11 +65,11 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
         length = get_num_neurons_in_layer(man, element, predecessor_index)
     lbi = nlb[predecessor_index]
     ubi = nub[predecessor_index]
-    is_conv = False
+    first_FC = -1
     timeout = timeout_milp
     for i in range(nn.numlayer):
-        if nn.layertypes[i] == 'Conv':
-            is_conv = True
+        if nn.layertypes[i] == 'FC':
+            first_FC = i
             break
             
     if nn.activation_counter==0:
@@ -85,15 +85,11 @@ def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups
                    
     else:
 
-
-        if is_conv==True:
+        if predecessor_index==first_FC:
             use_milp = 1
         else:
-            if predecessor_index<=3:
-               use_milp = 1
-            else:
-               use_milp = 0
-               timeout = timeout_lp
+            use_milp = 0
+            timeout = timeout_lp
         use_milp = use_milp and config.use_milp
         candidate_vars = []
         for i in range(length):
