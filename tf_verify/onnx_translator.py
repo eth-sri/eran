@@ -43,19 +43,23 @@ def nchw_to_nhwc(array):
 	return array
 
 
+
+
 def reshape_nhwc(shape_in, shape_out):
 	#print(shape_in, shape_out)
-	total = np.prod(shape_in)
-	assert int(total) == int(np.prod(shape_out)), "Reshape doesn't have same number of neurons before and after"
-	array = np.asarray(range(total)).reshape(shape_in)
-	if array.ndim == 4:
-		array = array.transpose((0, 3, 1, 2))
-	array = array.reshape(shape_out)
-	if array.ndim == 4:
-		return array.transpose((0, 2, 3, 1))
+	ndim_in = len(shape_in)
+	ndim_out = len(shape_out)
+	total_in = np.prod(shape_in[1:ndim_in])
+	total_out = np.prod(shape_out[1:ndim_out])
+	assert total_in == total_out, "Reshape doesn't have same number of neurons before and after"
+	array = np.asarray(range(total_in)).reshape(shape_in[1:ndim_in])
+	if array.ndim == 3:
+		array = array.transpose((2, 0, 1))
+	array = array.reshape(shape_out[1:ndim_out])
+	if array.ndim == 3:
+		return array.transpose((1, 2, 0))
 	else:
 		return array
-
 
 def prepare_model(model):
 	"""
@@ -75,7 +79,7 @@ def prepare_model(model):
 	input_node_map = {}
 
 	for initial in model.graph.initializer:
-		const = nchw_to_nhwc(numpy_helper.to_array(initial))
+		const = nchw_to_nhwc(numpy_helper.to_array(initial)).copy()
 		constants_map[initial.name] = const
 		shape_map[initial.name] = const.shape
 
@@ -173,7 +177,7 @@ def prepare_model(model):
 				output_shape.append(filter_shape[0])
 
 			shape_map[node.output[0]] = output_shape
-		elif node.op_type in ["Relu", "Sigmoid", "Tanh"]:
+		elif node.op_type in ["Relu", "Sigmoid", "Tanh", "Softmax"]:
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 
 		# Gather is for the moment solely for shapes
@@ -267,7 +271,6 @@ def prepare_model(model):
 
 				result = np.zeros(shape_map[node.output[0]]) + constants_map[node.input[0]]
 				constants_map[node.output[0]] = result
-
 		else:
 			assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
@@ -322,7 +325,7 @@ class ONNXTranslator:
 		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
-		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze"]
+		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax"]
 
 		for node in self.nodes:
 			if node.op_type == "Constant":
@@ -519,7 +522,7 @@ class ONNXTranslator:
 			if config.debug:
 				print('reshape adjust ', str(shape_in), 'to', str(shape_out))
 			indexes = reshape_nhwc(shape_in, shape_out)
-			indexes = indexes[0]
+			#indexes = indexes[0]
 			inverse_perm = np.arange(len(indexes))[np.argsort(indexes)]
 			if is_right:
 				matrix = matrix[inverse_perm, :]

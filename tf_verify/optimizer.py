@@ -27,7 +27,7 @@ class Optimizer:
         total_neurons = 0
         for op, res in zip(self.operations, self.resources):
             if op in operations_for_neuron_count:
-                total_neurons += np.prod(res['deepzono'][-1])
+                total_neurons += np.prod(res['deepzono'][-1][1:len(res['deepzono'][-1])])
         return total_neurons
 
     def get_abstract_element(self, nn, i, execute_list, output_info, domain):
@@ -39,7 +39,6 @@ class Optimizer:
                 if i < nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
                     matrix,  m_input_names, _, _           = self.resources[i][domain]
                     bias, _, output_name, b_output_shape = self.resources[i+1][domain]
-                    
                     i += 2
                 else:
                     #self.resources[i][domain].append(refine)
