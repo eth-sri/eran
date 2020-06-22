@@ -59,7 +59,10 @@ def add_input_output_information_deeppoly(self, input_names, output_name, output
     ------
     None 
     """
-    self.output_length = reduce((lambda x, y: x*y), output_shape[1:len(output_shape)])
+    if len(output_shape)==4:
+        self.output_length = reduce((lambda x, y: x*y), output_shape[1:len(output_shape)])
+    else:
+        self.output_length = reduce((lambda x, y: x*y), output_shape[0:len(output_shape)])
     self.input_names   = input_names
     self.output_name   = output_name
 
