@@ -27,7 +27,10 @@ class Optimizer:
         total_neurons = 0
         for op, res in zip(self.operations, self.resources):
             if op in operations_for_neuron_count:
-                total_neurons += np.prod(res['deepzono'][-1][1:len(res['deepzono'][-1])])
+                if len(res['deepzono'][-1])==4:
+                    total_neurons += np.prod(res['deepzono'][-1][1:len(res['deepzono'][-1])])
+                else:
+                    total_neurons += np.prod(res['deepzono'][-1][0:len(res['deepzono'][-1])])
         return total_neurons
 
     def get_abstract_element(self, nn, i, execute_list, output_info, domain):

@@ -202,6 +202,7 @@ def print_progress(depth):
 
 def acasxu_recursive(specLB, specUB, max_depth=99, depth=0):
     hold,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+    
     if hold:
         print_progress(depth)
         return hold

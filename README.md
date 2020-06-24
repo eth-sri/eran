@@ -197,13 +197,15 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<attack>```: specifies whether to verify attack images (default is false).
 
+* ```<specnumber>```: the property number for the ACASXu networks
+
 * Refinezono and RefinePoly refines the analysis results from the DeepZ and DeepPoly domain respectively using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
 * Since Refinezono and RefinePoly uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
 * Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. When complete verification fails, ERAN prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. 
 
-* ERAN currently supports verifying only the property 9 for ACAS Xu as defined in [https://arxiv.org/pdf/1702.01135.pdf] (known to be hard). Support for other properties will be added soon.
+
 
 Example
 -------------
@@ -231,6 +233,12 @@ will check if the Zonotope specification specified in "zonotope_example" holds f
 
 Similarly, for the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
 
+
+ACASXu Specification
+```
+python3 . --netname ../data/acasxu/nets/ACASXU_run2a_3_3_batch_2000.onnx --dataset acasxu --domain deepzono  --specnumber 9
+```
+will run ERAN for analyzing property 9 of ACASXu benchmarks. The ACASXU networks are in data/acasxu/nets directory and the one chosen for a given property is defined in the Reluplex paper. 
 
 Geometric analysis
 
