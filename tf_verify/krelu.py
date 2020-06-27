@@ -83,21 +83,7 @@ class Krelu:
 
         return
 
-    def get_ineqs_zono(self, varsid):
-        cdd_hrepr = []
 
-        # Get bounds on linear expressions over variables before relu
-        # Order of coefficients determined by logic here
-        for coeffs in itertools.product([-1, 0, 1], repeat=self.k):
-            if all(c==0 for c in coeffs):
-                continue
-
-            linexpr0 = generate_linexpr0(self.offset, varsid, coeffs)
-            element = elina_abstract0_assign_linexpr_array(self.man,True,self.element,self.tdim,linexpr0,1,None)
-            bound_linexpr = elina_abstract0_bound_dimension(self.man,self.element,self.offset+self.length)
-            upper_bound = bound_linexpr.contents.sup.contents.val.dbl
-            cdd_hrepr.append([upper_bound] + [-c for c in coeffs])
-        return cdd_hrepr
 
 
     def get_orthant_points(self, cdd_hrepr):
@@ -132,6 +118,24 @@ class Krelu_expr:
         self.expr = expr
         self.varsid = varsid
         self.bound = bound
+
+
+
+def get_ineqs_zono(varsid):
+    cdd_hrepr = []
+
+    # Get bounds on linear expressions over variables before relu
+    # Order of coefficients determined by logic here
+    for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
+        if all(c==0 for c in coeffs):
+            continue
+
+        linexpr0 = generate_linexpr0(Krelu.offset, varsid, coeffs)
+        element = elina_abstract0_assign_linexpr_array(Krelu.man,True,Krelu.element,Krelu.tdim,linexpr0,1,None)
+        bound_linexpr = elina_abstract0_bound_dimension(Krelu.man,Krelu.element,Krelu.offset+Krelu.length)
+        upper_bound = bound_linexpr.contents.sup.contents.val.dbl
+        cdd_hrepr.append([upper_bound] + [-c for c in coeffs])
+    return cdd_hrepr
     
 # HEURISTIC
 def grouping_heuristic(ind, lb, ub):
@@ -336,7 +340,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     start = time.time()
     if domain == 'refinezono':
         with multiprocessing.Pool(config.numproc) as pool:
-            cdd_hrepr_array = pool.map(self.get_ineqs_zono, krelu_args)    
+            cdd_hrepr_array = pool.map(get_ineqs_zono, krelu_args)    
     else:
     #    krelu_results = []
         total_size = 0
