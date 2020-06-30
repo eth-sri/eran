@@ -8,7 +8,7 @@ import sys
 def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
 
     num_out_neurons = np.prod(out_shape)
-    num_in_neurons = input_shape[0]*input_shape[1]*input_shape[2]
+    num_in_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
 
     start = len(var_list)
     for j in range(num_out_neurons):
@@ -52,7 +52,7 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
     use_milp = use_milp and config.use_milp
 
     start = len(var_list)
-    num_neurons = input_shape[0]*input_shape[1]*input_shape[2]
+    num_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
     binary_counter = start
     maxpool_counter = start
     if(use_milp==1):
@@ -62,9 +62,9 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
             var = model.addVar(vtype=GRB.BINARY, name=var_name)
 
             var_list.append(var)
-    o1 = output_shape[0]
-    o2 = output_shape[1]
-    o3 = output_shape[2]
+    o1 = output_shape[1]
+    o2 = output_shape[2]
+    o3 = output_shape[3]
     output_size = o1*o2*o3
 
     for j in range(output_size):
@@ -386,7 +386,6 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
 
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
-
             counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
 
             start_counter.append(counter)
@@ -401,7 +400,6 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
 
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
-
             counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, out_shape, nlb[i],nub[i], nlb[i-1], nub[i-1],use_milp)
             start_counter.append(counter)
             nn.pool_counter+=1
