@@ -176,7 +176,7 @@ class Analyzer:
             self.nn.residual_counter = 0
             self.nn.activation_counter = 0
             counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False)
-            #model.setParam('Timeout',1000)
+            model.setParam(GRB.Param.TimeLimit,self.timeout_lp)
             num_var = len(var_list)
             output_size = num_var - counter
 

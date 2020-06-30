@@ -47,10 +47,9 @@ def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_s
     return start
 
 
-def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, output_shape, lbi, ubi, lbi_prev, ubi_prev, use_milp):
+def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, strides, output_shape, pad_top, pad_left, lbi, ubi, lbi_prev, ubi_prev, use_milp):
 
     use_milp = use_milp and config.use_milp
-
     start = len(var_list)
     num_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
     binary_counter = start
@@ -66,89 +65,100 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
     o2 = output_shape[2]
     o3 = output_shape[3]
     output_size = o1*o2*o3
-
+    i12 = input_shape[1]*input_shape[2]
+    o12 = output_shape[2]*output_shape[3]
+    #print("strides ", strides, pad_top, pad_left)
     for j in range(output_size):
         var_name = "x" + str(maxpool_counter+j)
         var = model.addVar(vtype=GRB.CONTINUOUS, lb = lbi[j], ub=ubi[j],  name=var_name)
         var_list.append(var)
 
-    output_offset = 0
-    for out_x in range(o1):
-        for out_y in range(o2):
-            for out_z in range(o3):
-                sum_u = 0.0
-                sum_l = 0.0
-                max_u = float("-inf")
-                max_l = float("-inf")
-                pool_map = []
-                inf = []
-                sup = []
-                l = 0
-                for x_shift in range(pool_size[0]):
-                    for y_shift in range(pool_size[1]):
-                        x_val = out_x*2 + x_shift
-                        y_val = out_y*2 + y_shift
-                        mat_offset = x_val*input_shape[1]*input_shape[2] + y_val*input_shape[2] + out_z
-                        pool_map.append(mat_offset)
-                        inf.append(lbi_prev[mat_offset])
-                        sup.append(ubi_prev[mat_offset])
-                        sum_u = sum_u + sup[l]
-                        sum_l = sum_l + inf[l]
-                        if(sup[l]>max_u):
-                           max_u = sup[l]
-                        if(inf[l] > max_l):
-                           max_l = inf[l]
-                        l = l+1
-                dst_index = maxpool_counter+output_offset
-                p01 = pool_size[0]*pool_size[1]
-                if(use_milp==1):
-                    binary_expr = LinExpr()
-                    for l in range(p01):
-                       src_index = pool_map[l]
-                       src_var = src_index + src_counter
-                       binary_var = src_index + binary_counter
-                       if(ubi_prev[src_index]<max_l):
-                           continue
+    for out_pos in range(output_size):
+        out_x = int(out_pos / o12)
+        out_y = int((out_pos-out_x*o12) / output_shape[3])
+        out_z = int(out_pos-out_x*o12 - out_y*output_shape[3])
+        inp_z = out_z
+               
+        max_u = float("-inf")
+        max_l = float("-inf")
+        sum_l = 0.0
+        max_l_var = 0.0
+        max_u_var = 0.0
+        pool_map = []
+        l = 0
+        for x_shift in range(pool_size[0]):
+            for y_shift in range(pool_size[1]):
+                x_val = out_x*strides[0] + x_shift - pad_top
+                if(x_val<0 or x_val>=input_shape[0]):
+                    continue
+                y_val = out_y*strides[1] + y_shift - pad_left
+                if(y_val < 0 or y_val>=input_shape[1]):
+                    continue
+                pool_cur_dim = x_val*i12 + y_val*input_shape[2] + inp_z
+                if pool_cur_dim >= num_neurons:
+                    
+                    continue    
+                pool_map.append(pool_cur_dim)
+                lb = lbi_prev[pool_cur_dim] 
+                ub = ubi_prev[pool_cur_dim]
+                sum_l = sum_l + lb       
+                if ub>max_u:
+                    max_u = ub
+                    max_u_var = pool_cur_dim
+                if lb > max_l:   
+                    max_l = lb
+                    max_l_var = pool_cur_dim
+                l = l + 1     
+        dst_index = maxpool_counter+out_pos
+                
+        p01 = pool_size[0]*pool_size[1]
+        if use_milp==1:
+            binary_expr = LinExpr()
+            for l in range(p01):
+                src_index = pool_map[l]
+                src_var = src_index + src_counter
+                binary_var = src_index + binary_counter
+                if(ubi_prev[src_index]<max_l):
+                    continue
 
-                       # y >= x
+                # y >= x
 
-                       expr = var_list[dst_index] -  var_list[src_var]
-                       model.addConstr(expr, GRB.GREATER_EQUAL, 0)
+                expr = var_list[dst_index] -  var_list[src_var]
+                model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
-                       # y <= x + (1-a)*(u_{rest}-l)
-                       max_u_rest = float("-inf")
-                       for j in range(p01):
-                           if(j==l):
-                              continue
-                           if(sup[j]>max_u_rest):
-                              max_u_rest = sup[j]
+                # y <= x + (1-a)*(u_{rest}-l)
+                max_u_rest = float("-inf")
+                for j in range(p01):
+                    if j==l:
+                        continue
+                    if(sup[j]>max_u_rest):
+                        max_u_rest = sup[j]
 
-                       cst = max_u_rest-inf[l]
+                cst = max_u_rest-inf[l]
 
-                       expr = var_list[dst_index] - var_list[src_var] + cst*var_list[binary_var]
-                       model.addConstr(expr, GRB.LESS_EQUAL, cst)
+                expr = var_list[dst_index] - var_list[src_var] + cst*var_list[binary_var]
+                model.addConstr(expr, GRB.LESS_EQUAL, cst)
 
-	               # indicator constraints
-                       model.addGenConstrIndicator(var_list[binary_var], True, var_list[dst_index]-var_list[src_var], GRB.EQUAL, 0.0)
+	        # indicator constraints
+                model.addGenConstrIndicator(var_list[binary_var], True, var_list[dst_index]-var_list[src_var], GRB.EQUAL, 0.0)
 
-                       binary_expr+=var_list[binary_var]
+                binary_expr+=var_list[binary_var]
 
-                    model.addConstr(binary_expr, GRB.EQUAL, 1)
+            model.addConstr(binary_expr, GRB.EQUAL, 1)
 
-                else:
-                    add_expr = LinExpr()
-                    add_expr+=-1*var_list[dst_index]
-                    for l in range(p01):
-                        src_index = pool_map[l]
-                        src_var = src_index + src_counter
-                        # y >= x
-                        expr = var_list[dst_index] - var_list[src_var]
-                        model.addConstr(expr, GRB.GREATER_EQUAL, 0)
+        else:
+            add_expr = LinExpr()
+            add_expr+=-1*var_list[dst_index]
+            for l in range(len(pool_map)):
+                src_index = pool_map[l]
+                src_var = src_index + src_counter
+                # y >= x
+                expr = var_list[dst_index] - var_list[src_var]
+                model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
-                        add_expr+=var_list[src_var]
-                    model.addConstr(add_expr, GRB.GREATER_EQUAL, sum_l - max_l)
+                add_expr+=var_list[src_var]
+            model.addConstr(add_expr, GRB.GREATER_EQUAL, sum_l - max_l)
 
-                output_offset += 1
 
     return maxpool_counter
 
@@ -397,10 +407,11 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
             pool_size = nn.pool_size[nn.pool_counter]
             input_shape = nn.input_shape[nn.conv_counter + nn.pool_counter]
             out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter]
-
+            padding = nn.padding[nn.conv_counter + nn.pool_counter]
+            strides = nn.strides[nn.conv_counter + nn.pool_counter]
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
-            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, out_shape, nlb[i],nub[i], nlb[i-1], nub[i-1],use_milp)
+            counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i], nlb[i-1], nub[i-1],use_milp)
             start_counter.append(counter)
             nn.pool_counter+=1
 
