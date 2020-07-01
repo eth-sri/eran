@@ -111,10 +111,9 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
                 l = l + 1     
         dst_index = maxpool_counter+out_pos
                 
-        p01 = pool_size[0]*pool_size[1]
         if use_milp==1:
             binary_expr = LinExpr()
-            for l in range(p01):
+            for l in range(len(pool_map)):
                 src_index = pool_map[l]
                 src_var = src_index + src_counter
                 binary_var = src_index + binary_counter
@@ -128,7 +127,7 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
 
                 # y <= x + (1-a)*(u_{rest}-l)
                 max_u_rest = float("-inf")
-                for j in range(p01):
+                for j in range(len(pool_map)):
                     if j==l:
                         continue
                     if(sup[j]>max_u_rest):
@@ -147,17 +146,31 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
             model.addConstr(binary_expr, GRB.EQUAL, 1)
 
         else:
-            add_expr = LinExpr()
-            add_expr+=-1*var_list[dst_index]
+            flag = True
             for l in range(len(pool_map)):
-                src_index = pool_map[l]
-                src_var = src_index + src_counter
-                # y >= x
+                if pool_map[l] == max_l_var:
+                    continue
+                ub = ubi_prev[pool_map[l]]
+                if ub >= max_l:
+                   
+                   flag = False
+                   break
+            if flag==True:
+                src_var = max_l_var + src_counter
                 expr = var_list[dst_index] - var_list[src_var]
-                model.addConstr(expr, GRB.GREATER_EQUAL, 0)
+                model.addConstr(expr, GRB.EQUAL, 0)
+            else:
+                add_expr = LinExpr()
+                add_expr+=-1*var_list[dst_index]
+                for l in range(len(pool_map)):
+                    src_index = pool_map[l]
+                    src_var = src_index + src_counter
+                    # y >= x
+                    expr = var_list[dst_index] - var_list[src_var]
+                    model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
-                add_expr+=var_list[src_var]
-            model.addConstr(add_expr, GRB.GREATER_EQUAL, sum_l - max_l)
+                    add_expr+=var_list[src_var]
+                model.addConstr(add_expr, GRB.GREATER_EQUAL, sum_l - max_l)
 
 
     return maxpool_counter
