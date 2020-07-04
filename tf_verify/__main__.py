@@ -501,7 +501,7 @@ if dataset=='acasxu':
                             #    sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec' % (i, j, k, l, m, time.time()-start))
 
         #print(time.time() - rec_start, "seconds")
-        print("LENGTH ", multi_bounds)
+        #print("LENGTH ", multi_bounds)
         failed_already = Value('i',1)
         with Pool(processes=config.numproc, initializer=init, initargs=(failed_already,)) as pool:
             res = pool.starmap(acasxu_recursive, multi_bounds)
