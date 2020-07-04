@@ -17,7 +17,7 @@ from config import config
 from constraint_utils import *
 import re
 import itertools
-from multiprocessing import Pool
+from multiprocessing import Pool, Value
 import onnxruntime.backend as rt
 
 #ZONOTOPE_EXTENSION = '.zt'
@@ -27,6 +27,7 @@ is_tf_version_2=tf.__version__[0]=='2'
 
 if is_tf_version_2:
     tf= tf.compat.v1
+
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -200,16 +201,21 @@ def print_progress(depth):
         sys.stdout.write('\r%.10f percent, %.02f s' % (100 * progress, time.time()-rec_start))
 
 
-def acasxu_recursive(specLB, specUB, max_depth=99, depth=0):
+def acasxu_recursive(specLB, specUB, max_depth=40, depth=0):
     hold,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
-    
+    global failed_already
     if hold:
         print_progress(depth)
         return hold
     elif depth >= max_depth:
-        if config.complete:
+        if failed_already.value and config.complete:
             verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
             print_progress(depth)
+            if verified_flag == False:
+                hold,_,nlb,nub = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                if hold == False:
+                   print("property violated at ", adv_image, "output_score", nlb[-1])
+                failed_already.value = 0
             return verified_flag
         else:
             return False
@@ -225,8 +231,8 @@ def acasxu_recursive(specLB, specUB, max_depth=99, depth=0):
         index = np.argmax(smears)
         m = (specLB[index]+specUB[index])/2
 
-        result =  acasxu_recursive(specLB, [ub if i != index else m for i, ub in enumerate(specUB)], max_depth, depth + 1)
-        result = result and acasxu_recursive([lb if i != index else m for i, lb in enumerate(specLB)], specUB, max_depth, depth + 1)
+        result =  failed_already.value and acasxu_recursive(specLB, [ub if i != index else m for i, ub in enumerate(specUB)], max_depth, depth + 1)
+        result = failed_already.value and result and acasxu_recursive([lb if i != index else m for i, lb in enumerate(specLB)], specUB, max_depth, depth + 1)
         return result
 
 
@@ -413,6 +419,10 @@ if dataset:
     else:
         tests = open(config.input_box, 'r').read()
 
+def init(args):
+    global failed_already
+    failed_already = args
+
 if dataset=='acasxu':
     if config.debug:
         print('Constraints: ', constraints)
@@ -428,7 +438,6 @@ if dataset=='acasxu':
         rec_start = time.time()
 
         _,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
-
         # expensive min/max gradient calculation
         nn.set_last_weights(constraints)
         grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
@@ -492,8 +501,9 @@ if dataset=='acasxu':
                             #    sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec' % (i, j, k, l, m, time.time()-start))
 
         #print(time.time() - rec_start, "seconds")
-
-        with Pool(processes=config.numproc) as pool:
+        print("LENGTH ", multi_bounds)
+        failed_already = Value('i',1)
+        with Pool(processes=config.numproc, initializer=init, initargs=(failed_already,)) as pool:
             res = pool.starmap(acasxu_recursive, multi_bounds)
 
         if all(res):

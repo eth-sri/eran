@@ -12,8 +12,15 @@ def get_constraints_for_dominant_label(label, num_labels):
     and_list = []
     for other in range(num_labels):
         if other != label:
-            and_list.append([(label, other)])
+            and_list.append([(label, other, 0)])
     return and_list
+
+def isfloat(value):
+  try:
+    float(value)
+    return True
+  except ValueError:
+    return False
 
 def get_constraints_from_file(file):
     and_list = []
@@ -34,31 +41,33 @@ def get_constraints_from_file(file):
         if constraint == 'min':
             for other in range(num_labels):
                 if other not in labels:
-                    and_list.append([(other, label) for label in labels])
+                    and_list.append([(other, label, 0) for label in labels])
 
         if constraint == 'max':
             for other in range(num_labels):
                 if other not in labels:
-                    and_list.append([(label, other) for label in labels])
+                    and_list.append([(label, other, 0) for label in labels])
 
         if constraint == 'notmin':
             others = filter(lambda x: x not in labels, range(num_labels))
             # this constraint makes only sense with one label
             label = labels[0]
-            and_list.append([(label, other) for other in others])
+            and_list.append([(label, other, 0) for other in others])
 
         if constraint == 'notmax':
             others = filter(lambda x: x not in labels, range(num_labels))
             # this constraint makes only sense with one label
             label = labels[0]
-            and_list.append([(other, label) for other in others])
+            and_list.append([(other, label, 0) for other in others])
 
         if constraint == '<':
             label2 = label_index(elements[i])
-            and_list.append([(label2, label) for label in labels])
+            and_list.append([(label2, label, 0) for label in labels])
 
         if constraint == '>':
             label2 = label_index(elements[i])
-            and_list.append([(label, label2) for label in labels])
+            and_list.append([(label, label2, 0) for label in labels])
+        if constraint == '<=' and isfloat(elements[i]):
+            and_list.append([(label, -1, float(elements[i])) for label in labels])
 
     return and_list

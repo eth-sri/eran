@@ -43,11 +43,14 @@ class layers:
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
 
     def set_last_weights(self, constraints):
-        length = 0.0
+        length = 0.0       
         last_weights = [0 for weights in self.weights[-1][0]]
         for or_list in constraints:
-            for (i, j) in or_list:
-                last_weights = [l + w_i + w_j for l,w_i, w_j in zip(last_weights, self.weights[-1][i], self.weights[-1][j])]
+            for (i, j, cons) in or_list:
+                if j == -1:
+                    last_weights = [l + w_i + float(cons) for l,w_i in zip(last_weights, self.weights[-1][i])]
+                else:
+                    last_weights = [l + w_i + w_j + float(cons) for l,w_i, w_j in zip(last_weights, self.weights[-1][i], self.weights[-1][j])]
                 length += 1
         self.last_weights = [w/length for w in last_weights]
 
@@ -222,15 +225,21 @@ class Analyzer:
             for or_list in self.output_constraints:
                 # OR
                 or_result = False
+                
                 for is_greater_tuple in or_list:
-                    if self.domain == 'deepzono' or self.domain == 'refinezono':
-                        if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                    if is_greater_tuple[1] == -1:
+                        if nub[-1][is_greater_tuple[0]] <= float(is_greater_tuple[2]):
                             or_result = True
                             break
-                    else:
-                        if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1], self.use_default_heuristic):
-                            or_result = True
-                            break
+                    else: 
+                        if self.domain == 'deepzono' or self.domain == 'refinezono':
+                            if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                                or_result = True
+                                break
+                        else:
+                            if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1], self.use_default_heuristic):
+                                or_result = True
+                                break
 
                 if not or_result:
                     dominant_class = False

@@ -616,16 +616,24 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
 
     for or_list in constraints:
         or_result = False
-        for (i, j) in or_list:
+        for (i, j, k) in or_list:
             obj = LinExpr()
-            if i!=j:
+            if j== -1:
                 obj += 1*var_list[counter + i]
-                obj += -1*var_list[counter + j]
-                model.setObjective(obj,GRB.MINIMIZE)
+                model.setObjective(obj,GRB.MAXIMIZE)
                 model.optimize()
-                if model.objval > 0:
+                if model.status==2 and model.objval <= float(k):
                     or_result = True
                     break
+            else:
+                if i!=j:
+                    obj += 1*var_list[counter + i]
+                    obj += -1*var_list[counter + j]
+                    model.setObjective(obj,GRB.MINIMIZE)
+                    model.optimize()
+                    if model.status==2 and model.objval > 0:
+                        or_result = True
+                        break
 
         if not or_result:
             return False, model.x[0:input_size]

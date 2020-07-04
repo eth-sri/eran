@@ -89,7 +89,6 @@ def prepare_model(model):
 		if input.name not in shape_map:
 			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
 			input_node_map[input.name] = input
-
 	for node in model.graph.node:
 		#print(node)
 		output_node_map[node.output[0]] = node
