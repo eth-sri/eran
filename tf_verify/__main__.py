@@ -201,7 +201,7 @@ def print_progress(depth):
         sys.stdout.write('\r%.10f percent, %.02f s' % (100 * progress, time.time()-rec_start))
 
 
-def acasxu_recursive(specLB, specUB, max_depth=40, depth=0):
+def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
     hold,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
     global failed_already
     if hold:
@@ -445,15 +445,19 @@ if dataset=='acasxu':
 
         smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
         split_multiple = 20 / np.sum(smears)
+        
         num_splits = [int(np.ceil(smear * split_multiple)) for smear in smears]
         step_size = []
         for i in range(5):
+            if num_splits[i]==0:
+                num_splits[i] = 1
             step_size.append((specUB[i]-specLB[i])/num_splits[i])
         #sorted_indices = np.argsort(widths)
         #input_to_split = sorted_indices[0]
         #print("input to split ", input_to_split)
 
         #step_size = widths/num_splits
+        #print("step size", step_size,num_splits)
         start_val = np.copy(specLB)
         end_val = np.copy(specUB)
         flag = True
@@ -503,13 +507,16 @@ if dataset=='acasxu':
         #print(time.time() - rec_start, "seconds")
         #print("LENGTH ", multi_bounds)
         failed_already = Value('i',1)
-        with Pool(processes=config.numproc, initializer=init, initargs=(failed_already,)) as pool:
-            res = pool.starmap(acasxu_recursive, multi_bounds)
+        try:
+            with Pool(processes=config.numproc, initializer=init, initargs=(failed_already,)) as pool:
+                res = pool.starmap(acasxu_recursive, multi_bounds)
 
-        if all(res):
-            print("AcasXu property", config.specnumber, "Verified for Box", box_index, "out of",len(boxes))
-        else:
-            print("AcasXu property", config.specnumber, "Failed for Box", box_index, "out of",len(boxes))
+            if all(res):
+                print("AcasXu property", config.specnumber, "Verified for Box", box_index, "out of",len(boxes))
+            else:
+                print("AcasXu property", config.specnumber, "Failed for Box", box_index, "out of",len(boxes))
+        except Exception as e:
+            print("AcasXu property", config.specnumber, "Failed for Box", box_index, "out of",len(boxes),"because of an exception ",e)
 
         print(time.time() - rec_start, "seconds")
     print("Total time needed:", time.time() - total_start, "seconds")
