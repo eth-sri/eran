@@ -19,6 +19,7 @@ import re
 import itertools
 from multiprocessing import Pool, Value
 import onnxruntime.backend as rt
+import logging
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -212,9 +213,10 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
             verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
             print_progress(depth)
             if verified_flag == False:
-                hold,_,nlb,nub = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
-                if hold == False:
-                   print("property violated at ", adv_image, "output_score", nlb[-1])
+                if adv_image!=None:
+                    hold,_,nlb,nub = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                    if hold == False:
+                        print("property violated at ", adv_image, "output_score", nlb[-1])
                 failed_already.value = 0
             return verified_flag
         else:
@@ -505,10 +507,10 @@ if dataset=='acasxu':
                             #    sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec' % (i, j, k, l, m, time.time()-start))
 
         #print(time.time() - rec_start, "seconds")
-        #print("LENGTH ", multi_bounds)
+        #print("LENGTH ", len(multi_bounds))
         failed_already = Value('i',1)
         try:
-            with Pool(processes=config.numproc, initializer=init, initargs=(failed_already,)) as pool:
+            with Pool(processes=10, initializer=init, initargs=(failed_already,)) as pool:
                 res = pool.starmap(acasxu_recursive, multi_bounds)
 
             if all(res):
