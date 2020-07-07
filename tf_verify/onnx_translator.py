@@ -89,12 +89,15 @@ def prepare_model(model):
 		if input.name not in shape_map:
 			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
 			input_node_map[input.name] = input
+			
 	for node in model.graph.node:
 		#print(node)
 		output_node_map[node.output[0]] = node
 		for input in node.input:
 			input_node_map[input] = node
-		if node.op_type == "Constant":
+		if node.op_type == "Flatten":
+			shape_map[node.output[0]] = shape_map[node.input[0]]
+		elif node.op_type == "Constant":
 			const = node.attribute
 			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t))
 			constants_map[node.output[0]] = const
@@ -107,7 +110,7 @@ def prepare_model(model):
 				if 'transA' == attribute.name:
 					transA = attribute.i
 				elif 'transB' == attribute.name:
-					transB = attribute.i
+					transB = attribute.i	
 			M = shape_map[node.input[0]][transA]
 			if len(shape_map[node.input[1]]) == 1 and transB == 0:
 				N = 1
@@ -276,7 +279,7 @@ def prepare_model(model):
 	#print('const_map')
 	#print(constants_map)
 	#print('shape_map')
-	#print(shape_map)
+	print(shape_map)
 	return shape_map, constants_map, output_node_map, input_node_map, placeholdernames
 
 
@@ -324,7 +327,7 @@ class ONNXTranslator:
 		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
-		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax"]
+		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax", "Flatten"]
 
 		for node in self.nodes:
 			if node.op_type == "Constant":
