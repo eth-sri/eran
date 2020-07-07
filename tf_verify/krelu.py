@@ -136,36 +136,7 @@ def get_ineqs_zono(varsid):
         upper_bound = bound_linexpr.contents.sup.contents.val.dbl
         cdd_hrepr.append([upper_bound] + [-c for c in coeffs])
     return cdd_hrepr
-    
-# HEURISTIC
-def grouping_heuristic(ind, lb, ub):
-    # groups elements based on distance in 2D plane
-    # each element represented by point (lb[i], ub[i])
 
-    sortlist = sorted(ind, key=lambda k: lb[k]*ub[k])
-    return sortlist
-
-    # ret_order = []
-
-    # while ind:
-    #     # select element with most L1 norm
-    #     x = max(range(len(ind)), key=lambda i: np.abs(ub[ind[i]]*lb[ind[i]]))
-    #     indx = ind.pop(x)
-    #     ret_order.append(indx)
-
-    #     # select next (k-1) elements closest to x (L2 distance wise)
-    #     elems_toadd = 0
-    #     if len(ind)>=2 and config.use_3relu:
-    #         elems_toadd = 2
-    #     elif len(ind)>=1 and config.use_2relu:
-    #         elems_toadd = 1
-
-    #     for _ in range(elems_toadd):
-    #         y = min(range(len(ind)), key=lambda i: (ub[ind[i]]-ub[indx])**2 + (lb[ind[i]]-lb[indx])**2)
-    #         indy = ind.pop(y)
-    #         ret_order.append(indy)
-
-    # return ret_order
 
 def compute_bound(constraint, lbi, ubi, varsid, j, is_lower):
     k = len(varsid)
@@ -274,9 +245,55 @@ def compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, 
     #compute_expr_bounds_from_candidates(krelu_inst, varsid, lower_bound_expr, lbi, ubi, candidate_lower_bounds, True)
     compute_expr_bounds_from_candidates(krelu_inst, varsid, upper_bound_expr, lbi, ubi, candidate_upper_bounds, False)
     
-	         
+def get_sparse_cover_for_group_of_vars(vars):
+    """Function is fast for len(vars) = 50 and becomes slow for len(vars) ~ 100."""
+    K = 3
+    assert len(vars) > K
 
-	        
+    sparsed_combs = []
+
+    for comb in itertools.combinations(vars, K):
+        add = True
+        for selected_comb in sparsed_combs:
+            if len(set(comb).intersection(set(selected_comb))) >= K - 1:
+                add = False
+                break
+        if add:
+            sparsed_combs.append(comb)
+
+    return sparsed_combs
+
+
+def sparse_heuristic_with_cutoff(all_vars, areas):
+    assert len(all_vars) == len(areas)
+    K = 3
+    sparse_n = 50
+    cutoff = 0.05
+
+    # Sort vars by descending area
+    all_vars = sorted(all_vars, key=lambda var: -areas[var])
+
+    vars_above_cutoff = [i for i in all_vars if areas[i] >= cutoff]
+
+    krelu_args = []
+    while len(vars_above_cutoff) > 0:
+        grouplen = min(sparse_n, len(vars_above_cutoff))
+        group = vars_above_cutoff[:grouplen]
+        vars_above_cutoff = vars_above_cutoff[grouplen:]
+        if grouplen <= K:
+            krelu_args.append(group)
+        else:
+            group_args = get_sparse_cover_for_group_of_vars(group)
+
+            for arg in group_args:
+                krelu_args.append(arg)
+
+    # Also just apply 1-relu for every var.
+    for var in all_vars:
+        krelu_args.append([var])
+
+    return krelu_args
+
 
 def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, need_pop, domain):
     import deepzono_nodes as dn
@@ -293,9 +310,13 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     lbi = np.asarray(lbi, dtype=np.double)
     ubi = np.asarray(ubi, dtype=np.double)
 
-    candidate_vars = [i for i in range(length) if lbi[i]<0 and ubi[i]>0]
-    candidate_vars = sorted(candidate_vars, key=lambda i: ubi[i]-lbi[i], reverse=True)
-    candidate_vars = grouping_heuristic(candidate_vars, lbi, ubi)
+    candidate_vars = [i for i in range(length) if lbi[i] < 0 and ubi[i] > 0]
+    candidate_vars_areas = {var: -lbi[var] * ubi[var] for var in candidate_vars}
+    # Sort vars by descending area
+    candidate_vars = sorted(candidate_vars, key=lambda var: -candidate_vars_areas[var])
+
+    # Use sparse heuristic to select args (uncomment to use)
+    # krelu_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
 
     relucons = []
     #print("UBI ",ubi)
