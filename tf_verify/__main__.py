@@ -267,6 +267,7 @@ parser.add_argument('--complete', type=str2bool, default=config.complete,  help=
 parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help='timeout for the LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
 parser.add_argument('--numproc', type=int, default=config.numproc,  help='number of processes for MILP / LP / k-ReLU')
+parser.add_argument('--sparse_n', type=int, default=config.sparse_n,  help='Number of variables to group by k-ReLU')
 parser.add_argument('--use_default_heuristic', type=str2bool, default=config.use_default_heuristic,  help='whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation')
 parser.add_argument('--use_milp', type=str2bool, default=config.use_milp,  help='whether to use milp or not')
 parser.add_argument('--dyn_krelu', action='store_true', default=config.dyn_krelu, help='dynamically select parameter k')
@@ -1003,7 +1004,7 @@ else:
             normalize(specLB, means, stds, dataset)
             normalize(specUB, means, stds, dataset)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label)
             print("nlb ", nlb[-1], " nub ", nub[-1])
             if(perturbed_label==label):
                 print("img", i, "Verified", label)

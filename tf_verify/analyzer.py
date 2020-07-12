@@ -35,6 +35,7 @@ class layers:
         self.predecessors = []
         self.lastlayer = None
         self.last_weights = None
+        self.label = -1
 
     def calc_layerno(self):
         return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter
@@ -94,7 +95,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, testing = False):
         """
         Arguments
         ---------
@@ -122,6 +123,7 @@ class Analyzer:
         self.use_default_heuristic = use_default_heuristic
         self.testing = testing
         self.relu_groups = []
+        self.label = label
 
     
     def __del__(self):
@@ -185,7 +187,13 @@ class Analyzer:
 
 
         if self.output_constraints is None:
-            for i in range(output_size):
+            candidate_labels = []
+            if self.label == -1:
+                for i in range(output_size):
+                    candidate_labels.append(i)
+            else:
+                candidate_labels.append(self.label)
+            for i in candidate_labels:
                 flag = True
                 label = i
                 for j in range(output_size):
@@ -208,6 +216,7 @@ class Analyzer:
                                     flag = False
                                     break
                                 elif(model.objval<0):
+                                    print("objval ",model.objval)
                                     flag = False
                                     break
 

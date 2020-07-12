@@ -31,6 +31,7 @@ class config:
     use_2relu = False # use 2-relu
     use_3relu = False # use 3-relu
     refine_neurons = False # refine neurons
+    sparse_n = 70
     numproc = multiprocessing.cpu_count() # number of processes for milp/lp/krelu
 
     # Geometric options
