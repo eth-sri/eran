@@ -141,25 +141,27 @@ def get_ineqs_zono(varsid):
 def compute_bound(constraint, lbi, ubi, varsid, j, is_lower):
     k = len(varsid)
     divisor = -constraint[j+k+1]
-    res = constraint[0]/divisor
+    actual_bound = constraint[0]/divisor
+    potential_improvement = 0
     for l in range(k):
         coeff = constraint[l+1]/divisor
         if is_lower:
            if coeff < 0:
-              res = res + coeff*ubi[varsid[l]]
+               actual_bound += coeff * ubi[varsid[l]]
            elif coeff > 0:
-              res = res + coeff*lbi[varsid[l]]
+               actual_bound += coeff * lbi[varsid[l]]
         else:
            if coeff < 0:
-              res = res + coeff*lbi[varsid[l]]
+               actual_bound += coeff * lbi[varsid[l]]
            elif coeff > 0:
-              res = res + coeff*ubi[varsid[l]]
+               actual_bound += coeff * ubi[varsid[l]]
+        potential_improvement += abs(coeff * (ubi[varsid[l]] - lbi[varsid[l]]))
         if l==j:
             continue
         coeff = constraint[l+k+1]/divisor
         if((is_lower and coeff<0) or ((not is_lower) and (coeff > 0))):
-            res = res + coeff*ubi[varsid[l]]  
-    return res
+            actual_bound += coeff * ubi[varsid[l]]
+    return actual_bound, potential_improvement
 
 def calculate_nnz(constraint, k):
     nnz = 0
@@ -169,6 +171,7 @@ def calculate_nnz(constraint, k):
     return nnz            
 
 def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi, candidate_bounds, is_lower):
+    assert not is_lower
     k = krelu_inst.k
     cons = krelu_inst.cons
     for j in range(k):
@@ -177,20 +180,23 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi
             best_bound = -math.inf
         else:
             best_bound = math.inf
-        best_index = 0
-        best_nnz = 0
+        best_index = -1
         for i in range(len(candidate_rows)):
             row_index = candidate_rows[i]
-            bound = compute_bound(cons[row_index], lbi, ubi, varsid, j, is_lower)
-            nnz = calculate_nnz(cons[row_index],k)
-            if nnz >= best_nnz:
-                if((is_lower and bound > best_bound) or ((not is_lower) and bound < best_bound)):
-                    best_index = row_index
-                    best_bound = bound
-                    best_nnz = nnz
+            actual_bound, potential_improvement = compute_bound(cons[row_index], lbi, ubi, varsid, j, is_lower)
+            bound = actual_bound - potential_improvement / 2
+            nnz = calculate_nnz(cons[row_index], k)
+            if nnz < 2:
+                continue
+            if((is_lower and bound > best_bound) or ((not is_lower) and bound < best_bound)):
+                best_index = row_index
+                best_bound = bound
+        if best_index == -1:
+            continue
         res = np.zeros(k+1)
         best_row = cons[best_index]
         divisor = -best_row[j+k+1]
+        assert divisor > 0
         #if divisor == 0:
         #    print("ROW ",best_row)
         #    print("CONS ", cons, krelu_inst)
@@ -207,7 +213,7 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi
                 res[0] = res[0] + coeff*ubi[varsid[l]]  
         if varsid[j] in bound_expr.keys():
             current_bound = bound_expr[varsid[j]].bound
-            if (is_lower and best_bound > current_bound) or ((not is_lower) and bound < best_bound):
+            if (is_lower and best_bound > current_bound) or ((not is_lower) and best_bound < current_bound):
                     bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
         else:
             bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
