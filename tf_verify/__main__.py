@@ -243,7 +243,11 @@ def get_tests(dataset, geometric):
     if geometric:
         csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
     else:
-        csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+        if config.subset == None:
+            csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+        else:
+            filename = '../data/'+ dataset+ '_test_' + config.subset + '.csv'
+            csvfile = open(filename, 'r')
     tests = csv.reader(csvfile, delimiter=',')
     return tests
 
@@ -260,6 +264,8 @@ parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=ar
 parser.add_argument('--netname', type=isnetworkfile, default=config.netname, help='the network name, the extension can be only .pb, .pyt, .tf, .meta, and .onnx')
 parser.add_argument('--epsilon', type=float, default=config.epsilon, help='the epsilon for L_infinity perturbation')
 parser.add_argument('--zonotope', type=str, default=config.zonotope, help='file to specify the zonotope matrix')
+parser.add_argument('--subset', type=str, default=config.subset, help='suffix of the file to specify the subset of the test dataset to use')
+parser.add_argument('--target', type=str, default=config.target, help='file specify the targets for the attack')
 parser.add_argument('--specnumber', type=int, default=config.specnumber, help='the property number for the acasxu networks')
 parser.add_argument('--domain', type=str, default=config.domain, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
 parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
@@ -971,6 +977,15 @@ elif config.input_box is not None:
 
 
 else:
+    prop = []
+    if config.target == None:
+        for i in enumerate(tests):
+            prop.append(-1)
+    else:
+        targetfile = open(config.target, 'r')
+        targets = csv.reader(targetfile, delimiter=',')
+        for i, val in enumerate(targets):
+            prop = val   
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
             continue
@@ -1004,7 +1019,7 @@ else:
             normalize(specLB, means, stds, dataset)
             normalize(specUB, means, stds, dataset)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label)
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=int(prop[i]))
             print("nlb ", nlb[-1], " nub ", nub[-1])
             if(perturbed_label==label):
                 print("img", i, "Verified", label)

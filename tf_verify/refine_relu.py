@@ -31,6 +31,7 @@ def update_relu_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound
                 #update_relu_lower_bound_for_neuron(man, element, layerno, varsid[j], lexpr, varsid, k)
         if nnz_u > 1 and bound < 2*ubi[var]:
             uexpr = np.ascontiguousarray(uexpr, dtype=np.double)
+            print("uexpr ",uexpr, var, varsid)
             update_relu_upper_bound_for_neuron(man, element, layerno, var, uexpr, varsid, k)
 
 def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain):

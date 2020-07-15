@@ -36,6 +36,7 @@ class layers:
         self.lastlayer = None
         self.last_weights = None
         self.label = -1
+        self.prop = -1
 
     def calc_layerno(self):
         return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter
@@ -95,7 +96,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False):
         """
         Arguments
         ---------
@@ -124,7 +125,7 @@ class Analyzer:
         self.testing = testing
         self.relu_groups = []
         self.label = label
-
+        self.prop = prop
     
     def __del__(self):
         elina_manager_free(self.man)
@@ -193,10 +194,16 @@ class Analyzer:
                     candidate_labels.append(i)
             else:
                 candidate_labels.append(self.label)
+            adv_labels = []
+            if self.prop == -1:
+                for i in range(output_size):
+                    adv_labels.append(i)
+            else:
+                adv_labels.append(self.prop)
             for i in candidate_labels:
                 flag = True
                 label = i
-                for j in range(output_size):
+                for j in adv_labels:
                     if self.domain == 'deepzono' or self.domain == 'refinezono':
                         if i!=j and not self.is_greater(self.man, element, i, j):
                             flag = False

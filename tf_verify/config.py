@@ -24,6 +24,8 @@ class config:
     num_tests = None # Number of images to test
     from_test = 0 # From which number to start testing
     debug = False # Whether to display debug info
+    subset = None
+    target = None # 
 
     # refine options
     use_milp = True # Whether to use MILP
