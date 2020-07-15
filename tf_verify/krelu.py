@@ -321,7 +321,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     candidate_vars = sorted(candidate_vars, key=lambda var: -candidate_vars_areas[var])
 
     # Use sparse heuristic to select args (uncomment to use)
-    #krelu_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
+    krelu_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
 
     relucons = []
     #print("UBI ",ubi)
@@ -329,32 +329,32 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     if domain == 'refinezono':
         element = dn.add_dimensions(man,element,offset+length,1)
 
-    krelu_args = []
-    if config.dyn_krelu and candidate_vars:
-        limit3relucalls = 500
-        firstk = math.sqrt(6*limit3relucalls/len(candidate_vars))
-        firstk = int(min(firstk, len(candidate_vars)))
-        if is_conv and layerno < last_conv:
-            firstk = 1
-        else:
-            firstk = 5#int(max(1,firstk))
+    #krelu_args = []
+    #if config.dyn_krelu and candidate_vars:
+    #    limit3relucalls = 500
+    #    firstk = math.sqrt(6*limit3relucalls/len(candidate_vars))
+    #    firstk = int(min(firstk, len(candidate_vars)))
+    #    if is_conv and layerno < last_conv:
+    #        firstk = 1
+    #    else:
+    #        firstk = 5#int(max(1,firstk))
     #    print("firstk ",firstk)
-        if firstk>3:
-            while candidate_vars:
-                headlen = min(firstk, len(candidate_vars))
-                head = candidate_vars[:headlen]
-                candidate_vars = candidate_vars[headlen:]
-                if len(head)<=3:
-                    krelu_args.append(head)
-                else:
-                    for arg in itertools.combinations(head, 3):
-                        krelu_args.append(arg)
+    #    if firstk>3:
+    #        while candidate_vars:
+    #            headlen = min(firstk, len(candidate_vars))
+    #            head = candidate_vars[:headlen]
+    #            candidate_vars = candidate_vars[headlen:]
+    #            if len(head)<=3:
+    #               krelu_args.append(head)
+    #            else:
+    #                for arg in itertools.combinations(head, 3):
+    #                    krelu_args.append(arg)
 
-    klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
-    for k in klist:
-        while len(candidate_vars) >= k:
-            krelu_args.append(candidate_vars[:k])
-            candidate_vars = candidate_vars[k:]
+    #klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
+    #for k in klist:
+    #    while len(candidate_vars) >= k:
+    #        krelu_args.append(candidate_vars[:k])
+    #        candidate_vars = candidate_vars[k:]
     Krelu.man = man
     Krelu.element = element
     Krelu.tdim = tdim
