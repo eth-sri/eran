@@ -249,6 +249,7 @@ def get_tests(dataset, geometric):
             filename = '../data/'+ dataset+ '_test_' + config.subset + '.csv'
             csvfile = open(filename, 'r')
     tests = csv.reader(csvfile, delimiter=',')
+
     return tests
 
 
@@ -977,15 +978,12 @@ elif config.input_box is not None:
 
 
 else:
-    prop = []
-    if config.target == None:
-        for i in enumerate(tests):
-            prop.append(-1)
-    else:
+    target = []
+    if config.target != None:
         targetfile = open(config.target, 'r')
         targets = csv.reader(targetfile, delimiter=',')
         for i, val in enumerate(targets):
-            prop = val   
+            target = val   
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
             continue
@@ -1019,7 +1017,11 @@ else:
             normalize(specLB, means, stds, dataset)
             normalize(specUB, means, stds, dataset)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=int(prop[i]))
+            if config.target == None:
+                prop = -1
+            else:
+                prop = int(target[i])
+            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
             print("nlb ", nlb[-1], " nub ", nub[-1])
             if(perturbed_label==label):
                 print("img", i, "Verified", label)
