@@ -141,25 +141,27 @@ def get_ineqs_zono(varsid):
 def compute_bound(constraint, lbi, ubi, varsid, j, is_lower):
     k = len(varsid)
     divisor = -constraint[j+k+1]
-    res = constraint[0]/divisor
+    actual_bound = constraint[0]/divisor
+    potential_improvement = 0
     for l in range(k):
         coeff = constraint[l+1]/divisor
         if is_lower:
            if coeff < 0:
-              res = res + coeff*ubi[varsid[l]]
+               actual_bound += coeff * ubi[varsid[l]]
            elif coeff > 0:
-              res = res + coeff*lbi[varsid[l]]
+               actual_bound += coeff * lbi[varsid[l]]
         else:
            if coeff < 0:
-              res = res + coeff*lbi[varsid[l]]
+               actual_bound += coeff * lbi[varsid[l]]
            elif coeff > 0:
-              res = res + coeff*ubi[varsid[l]]
+               actual_bound += coeff * ubi[varsid[l]]
+        potential_improvement += abs(coeff * (ubi[varsid[l]] - lbi[varsid[l]]))
         if l==j:
             continue
         coeff = constraint[l+k+1]/divisor
         if((is_lower and coeff<0) or ((not is_lower) and (coeff > 0))):
-            res = res + coeff*ubi[varsid[l]]  
-    return res
+            actual_bound += coeff * ubi[varsid[l]]
+    return actual_bound, potential_improvement
 
 def calculate_nnz(constraint, k):
     nnz = 0
@@ -169,6 +171,7 @@ def calculate_nnz(constraint, k):
     return nnz            
 
 def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi, candidate_bounds, is_lower):
+    assert not is_lower
     k = krelu_inst.k
     cons = krelu_inst.cons
     for j in range(k):
@@ -177,20 +180,23 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi
             best_bound = -math.inf
         else:
             best_bound = math.inf
-        best_index = 0
-        best_nnz = 0
+        best_index = -1
         for i in range(len(candidate_rows)):
             row_index = candidate_rows[i]
-            bound = compute_bound(cons[row_index], lbi, ubi, varsid, j, is_lower)
-            nnz = calculate_nnz(cons[row_index],k)
-            if nnz >= best_nnz:
-                if((is_lower and bound > best_bound) or ((not is_lower) and bound < best_bound)):
-                    best_index = row_index
-                    best_bound = bound
-                    best_nnz = nnz
+            actual_bound, potential_improvement = compute_bound(cons[row_index], lbi, ubi, varsid, j, is_lower)
+            bound = actual_bound - potential_improvement / 2
+            nnz = calculate_nnz(cons[row_index], k)
+            if nnz < 2:
+                continue
+            if((is_lower and bound > best_bound) or ((not is_lower) and bound < best_bound)):
+                best_index = row_index
+                best_bound = bound
+        if best_index == -1:
+            continue
         res = np.zeros(k+1)
         best_row = cons[best_index]
         divisor = -best_row[j+k+1]
+        assert divisor > 0
         #if divisor == 0:
         #    print("ROW ",best_row)
         #    print("CONS ", cons, krelu_inst)
@@ -207,11 +213,10 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi
                 res[0] = res[0] + coeff*ubi[varsid[l]]  
         if varsid[j] in bound_expr.keys():
             current_bound = bound_expr[varsid[j]].bound
-            if (is_lower and best_bound > current_bound) or ((not is_lower) and bound < best_bound):
+            if (is_lower and best_bound > current_bound) or ((not is_lower) and best_bound < current_bound):
                     bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
         else:
             bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
-
 
 def compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, lbi, ubi):
     cons = krelu_inst.cons
@@ -316,7 +321,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     candidate_vars = sorted(candidate_vars, key=lambda var: -candidate_vars_areas[var])
 
     # Use sparse heuristic to select args (uncomment to use)
-    krelu_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
+    #krelu_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
 
     relucons = []
     #print("UBI ",ubi)
@@ -324,32 +329,32 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     if domain == 'refinezono':
         element = dn.add_dimensions(man,element,offset+length,1)
 
-    #krelu_args = []
-    #if config.dyn_krelu and candidate_vars:
-    #    limit3relucalls = 500
-    #    firstk = math.sqrt(6*limit3relucalls/len(candidate_vars))
-    #    firstk = int(min(firstk, len(candidate_vars)))
-    #    if is_conv and layerno < last_conv:
-    #        firstk = 1
-    #    else:
-    #        firstk = 5#int(max(1,firstk))
+    krelu_args = []
+    if config.dyn_krelu and candidate_vars:
+        limit3relucalls = 500
+        firstk = math.sqrt(6*limit3relucalls/len(candidate_vars))
+        firstk = int(min(firstk, len(candidate_vars)))
+        if is_conv and layerno < last_conv:
+            firstk = 1
+        else:
+            firstk = 5#int(max(1,firstk))
     #    print("firstk ",firstk)
-    #    if firstk>3:
-    #        while candidate_vars:
-    #            headlen = min(firstk, len(candidate_vars))
-    #            head = candidate_vars[:headlen]
-    #            candidate_vars = candidate_vars[headlen:]
-    #            if len(head)<=3:
-    #                krelu_args.append(head)
-    #            else:
-    #                for arg in itertools.combinations(head, 3):
-    #                    krelu_args.append(arg)
+        if firstk>3:
+            while candidate_vars:
+                headlen = min(firstk, len(candidate_vars))
+                head = candidate_vars[:headlen]
+                candidate_vars = candidate_vars[headlen:]
+                if len(head)<=3:
+                    krelu_args.append(head)
+                else:
+                    for arg in itertools.combinations(head, 3):
+                        krelu_args.append(arg)
 
-    #klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
-    #for k in klist:
-    #    while len(candidate_vars) >= k:
-    #        krelu_args.append(candidate_vars[:k])
-    #        candidate_vars = candidate_vars[k:]
+    klist = ([3] if (config.use_3relu) else []) + ([2] if (config.use_2relu) else []) + [1]
+    for k in klist:
+        while len(candidate_vars) >= k:
+            krelu_args.append(candidate_vars[:k])
+            candidate_vars = candidate_vars[k:]
     Krelu.man = man
     Krelu.element = element
     Krelu.tdim = tdim
