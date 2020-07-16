@@ -624,7 +624,6 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                 model.setObjective(obj,GRB.MAXIMIZE)
                 model.optimize()
                 status.append(model.SolCount>0)
-                print("model status ", model.Status)
                 if model.SolCount>0 and model.objval <= float(k):
                     or_result = True
                     break

@@ -1035,10 +1035,11 @@ else:
                         verified_images += 1
                     else:
                         print("img", i, "Failed")
-                        cex_label,_,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
-                        if(cex_label!=label):
-                            denormalize(adv_image, means, stds, dataset)
-                            print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+                        if adv_image != None:
+                            cex_label,_,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                            if(cex_label!=label):
+                                denormalize(adv_image, means, stds, dataset)
+                                print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
                 else:
                     print("img", i, "Failed")
 
