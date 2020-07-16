@@ -200,6 +200,7 @@ class Analyzer:
                     adv_labels.append(i)
             else:
                 adv_labels.append(self.prop)
+            label_failed=[]    
             for i in candidate_labels:
                 flag = True
                 label = i
@@ -229,7 +230,10 @@ class Analyzer:
 
                             else:
                                 flag = False
-                                break
+                                if self.label!=-1:
+                                    label_failed.append(j)
+                                if config.complete == False:
+                                    break
 
 
                 if flag:
@@ -262,4 +266,4 @@ class Analyzer:
                     break
 
         elina_abstract0_free(self.man, element)
-        return dominant_class, nlb, nub
+        return dominant_class, nlb, nub, label_failed

@@ -611,8 +611,8 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     input_size = len(LB_N0)
 
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
-
-    model.setParam('TimeLimit', config.timeout_milp)
+    #print("timeout ", config.timeout_milp)
+    model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
 
     for or_list in constraints:
         or_result = False
@@ -624,6 +624,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                 model.setObjective(obj,GRB.MAXIMIZE)
                 model.optimize()
                 status.append(model.SolCount>0)
+                print("model status ", model.Status)
                 if model.SolCount>0 and model.objval <= float(k):
                     or_result = True
                     break

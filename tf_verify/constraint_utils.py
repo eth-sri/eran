@@ -8,9 +8,9 @@ def clean_string(string):
 def label_index(label):
     return int(clean_string(label)[1:])
 
-def get_constraints_for_dominant_label(label, num_labels):
+def get_constraints_for_dominant_label(label, failed_labels):
     and_list = []
-    for other in range(num_labels):
+    for other in failed_labels:
         if other != label:
             and_list.append([(label, other, 0)])
     return and_list
