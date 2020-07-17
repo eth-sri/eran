@@ -186,7 +186,7 @@ class Analyzer:
             num_var = len(var_list)
             output_size = num_var - counter
 
-
+        label_failed = []
         if self.output_constraints is None:
             candidate_labels = []
             if self.label == -1:
@@ -200,7 +200,7 @@ class Analyzer:
                     adv_labels.append(i)
             else:
                 adv_labels.append(self.prop)
-            label_failed=[]    
+                
             for i in candidate_labels:
                 flag = True
                 label = i
