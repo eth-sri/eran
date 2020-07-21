@@ -229,8 +229,9 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
     start= len(var_list)
     binary_counter = start
     relu_counter = start
-
+    #print("neurons ", num_neurons)
     if(use_milp==1):
+    #if num_neurons <= 1000:
         #indicator variables
         relu_counter = start + num_neurons
         for j in range(num_neurons):
@@ -247,6 +248,8 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
 
 
     if(use_milp==1):
+        #print("MILP here")
+    #if num_neurons <= 1000:
         for j in range(num_neurons):
             if(ubi[j]<=0):
                expr = var_list[relu_counter+j]
@@ -295,6 +298,53 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
                 model.addConstr(expr >= 0)
 
     return relu_counter
+
+def handle_sigmoid(model,var_list, affine_counter, num_neurons, lbi, ubi):
+
+    start= len(var_list)
+    binary_counter = start
+    sigmoid_counter = start
+
+    # sigmoid variables
+    for j in range(num_neurons):
+        var_name = "x" + str(sigmoid_counter+j)
+        upper_bound = max(0,ubi[j])
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
+        var_list.append(var)
+
+    for j in range(num_neurons):
+        if(ubi[j]<=0):
+            expr = var_list[relu_counter+j]
+            model.addConstr(expr, GRB.EQUAL, 0)
+        elif(lbi[j]>=0):
+            expr = var_list[relu_counter+j] - var_list[affine_counter+j]
+            model.addConstr(expr, GRB.EQUAL, 0)
+
+    return sigmoid_counter
+
+def handle_tanh(model,var_list, affine_counter, num_neurons, lbi, ubi):
+
+    start= len(var_list)
+    binary_counter = start
+    tanh_counter = start
+
+    # tanh variables
+    for j in range(num_neurons):
+        var_name = "x" + str(tanh_counter+j)
+        upper_bound = max(0,ubi[j])
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
+        var_list.append(var)
+
+    for j in range(num_neurons):
+        if(ubi[j]<=0):
+            expr = var_list[relu_counter+j]
+            model.addConstr(expr, GRB.EQUAL, 0)
+        elif(lbi[j]>=0):
+            expr = var_list[relu_counter+j] - var_list[affine_counter+j]
+            model.addConstr(expr, GRB.EQUAL, 0)
+
+    return tanh_counter
+
 
 
 def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
@@ -385,7 +435,12 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
 
         elif(nn.layertypes[i]=='ReLU'):
             index = nn.predecessors[i+1][0]
+            #print("i ", i,numlayer)
             #print("curr ", i, "Pred", index,  "nlb ", len(nlb), "relu groups ", len(relu_groups), "activation counter ", nn.activation_counter)
+            #if i <= 1:
+            #    use_milp = True
+            #else:
+            #    use_milp = False
             if relu_groups is None:
                 counter = handle_relu(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1], [], use_milp)
             elif(use_milp):
@@ -395,7 +450,18 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
             nn.activation_counter += 1
             start_counter.append(counter)
 
+        elif(nn.layertypes[i]=='Sigmoid'):
+            index = nn.predecessors[i+1][0]
+            counter = handle_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1])
+            nn.activation_counter += 1
+            start_counter.append(counter)
 
+        elif(nn.layertypes[i]=='Tanh'):
+            index = nn.predecessors[i+1][0]
+            counter = handle_tanh(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1])
+            nn.activation_counter += 1
+            start_counter.append(counter)
+            
         elif nn.layertypes[i] in ['Conv']:
             filters = nn.filters[nn.conv_counter]
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
@@ -624,7 +690,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                 model.setObjective(obj,GRB.MAXIMIZE)
                 model.optimize()
                 status.append(model.SolCount>0)
-                if model.SolCount>0 and model.objval <= float(k):
+                if model.SolCount>0 and model.objbound <= float(k):
                     or_result = True
                     break
             else:
@@ -634,10 +700,12 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                     model.setObjective(obj,GRB.MINIMIZE)
                     model.optimize()
                     status.append(model.SolCount>0)
-                    if model.SolCount>0 and model.objval > 0:
+                    
+                    if model.SolCount>0 and model.objbound > 0:
                         or_result = True
                         break
         is_opt = True
+#        print(status)
         for s in status:
             if s==False:
                 is_opt = False
