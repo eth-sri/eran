@@ -218,7 +218,6 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi
         else:
             bound_expr[varsid[j]] = Krelu_expr(res, varsid, best_bound)
 
-
 def compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, lbi, ubi):
     cons = krelu_inst.cons
     nbrows = len(cons)
@@ -346,7 +345,7 @@ def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_
     #            head = candidate_vars[:headlen]
     #            candidate_vars = candidate_vars[headlen:]
     #            if len(head)<=3:
-    #                krelu_args.append(head)
+    #               krelu_args.append(head)
     #            else:
     #                for arg in itertools.combinations(head, 3):
     #                    krelu_args.append(arg)

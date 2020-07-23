@@ -203,7 +203,7 @@ def print_progress(depth):
 
 
 def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
-    hold,nn,nlb,nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+    hold,nn,nlb,nub,_ = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
     global failed_already
     if hold:
         print_progress(depth)
@@ -214,7 +214,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
             print_progress(depth)
             if verified_flag == False:
                 if adv_image!=None:
-                    hold,_,nlb,nub = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                    hold,_,nlb,nub,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
                     if hold == False:
                         print("property violated at ", adv_image, "output_score", nlb[-1])
                 failed_already.value = 0
@@ -243,8 +243,13 @@ def get_tests(dataset, geometric):
     if geometric:
         csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
     else:
-        csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+        if config.subset == None:
+            csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+        else:
+            filename = '../data/'+ dataset+ '_test_' + config.subset + '.csv'
+            csvfile = open(filename, 'r')
     tests = csv.reader(csvfile, delimiter=',')
+
     return tests
 
 
@@ -260,6 +265,8 @@ parser = argparse.ArgumentParser(description='ERAN Example',  formatter_class=ar
 parser.add_argument('--netname', type=isnetworkfile, default=config.netname, help='the network name, the extension can be only .pb, .pyt, .tf, .meta, and .onnx')
 parser.add_argument('--epsilon', type=float, default=config.epsilon, help='the epsilon for L_infinity perturbation')
 parser.add_argument('--zonotope', type=str, default=config.zonotope, help='file to specify the zonotope matrix')
+parser.add_argument('--subset', type=str, default=config.subset, help='suffix of the file to specify the subset of the test dataset to use')
+parser.add_argument('--target', type=str, default=config.target, help='file specify the targets for the attack')
 parser.add_argument('--specnumber', type=int, default=config.specnumber, help='the property number for the acasxu networks')
 parser.add_argument('--domain', type=str, default=config.domain, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
 parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
@@ -440,7 +447,7 @@ if dataset=='acasxu':
 
         rec_start = time.time()
 
-        _,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+        _,nn,nlb,nub,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         # expensive min/max gradient calculation
         nn.set_last_weights(constraints)
         grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
@@ -464,7 +471,7 @@ if dataset=='acasxu':
         start_val = np.copy(specLB)
         end_val = np.copy(specUB)
         flag = True
-        _,nn,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+        _,nn,_,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         start = time.time()
         #complete_list = []
         multi_bounds = []
@@ -525,7 +532,7 @@ if dataset=='acasxu':
     print("Total time needed:", time.time() - total_start, "seconds")
 
 elif zonotope_bool:
-    perturbed_label, nn, nlb, nub = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+    perturbed_label, nn, nlb, nub,_ = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
     print("nlb ",nlb[-1])
     print("nub ",nub[-1])
     if(perturbed_label!=-1):
@@ -571,7 +578,7 @@ elif config.geometric:
             normalize(spec_lb, means, stds, config.dataset)
             normalize(spec_ub, means, stds, config.dataset)
 
-            label, nn, nlb, nub = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
+            label, nn, nlb, nub,_ = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
                                                    config.use_default_heuristic)
             print('Label: ', label)
 
@@ -604,7 +611,7 @@ elif config.geometric:
                     attack_imgs.append((params, attack_lb, attack_ub))
                     checked.append(False)
 
-                    predict_label, _, _, _ = eran.analyze_box(
+                    predict_label, _, _, _,_ = eran.analyze_box(
                         attack_lb[:dim], attack_ub[:dim], 'deeppoly',
                         config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                     if predict_label != int(test[0]):
@@ -696,13 +703,13 @@ elif config.geometric:
                         print('Running the analysis...')
 
                     t_begin = time.time()
-                    perturbed_label_poly, _, _, _ = eran.analyze_box(
+                    perturbed_label_poly, _, _, _,_ = eran.analyze_box(
                         spec_lb, spec_ub, 'deeppoly',
                         config.timeout_lp, config.timeout_milp, config.use_default_heuristic, None,
                         lexpr_weights, lexpr_cst, lexpr_dim,
                         uexpr_weights, uexpr_cst, uexpr_dim,
                         expr_size)
-                    perturbed_label_box, _, _, _ = eran.analyze_box(
+                    perturbed_label_box, _, _, _,_ = eran.analyze_box(
                         spec_lb[:dim], spec_ub[:dim], 'deeppoly',
                         config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                     t_end = time.time()
@@ -765,7 +772,7 @@ elif config.geometric:
             normalize(spec_lb, means, stds, config.dataset)
             normalize(spec_ub, means, stds, config.dataset)
 
-            label, nn, nlb, nub = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
+            label, nn, nlb, nub,_ = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
                                                    config.use_default_heuristic)
             print('Label: ', label)
 
@@ -801,7 +808,7 @@ elif config.geometric:
                         attack_imgs.append((params, attack_lb, attack_ub))
                         checked.append(False)
 
-                        predict_label, _, _, _ = eran.analyze_box(
+                        predict_label, _, _, _,_ = eran.analyze_box(
                             attack_lb[:dim], attack_ub[:dim], 'deeppoly',
                             config.timeout_lp, config.timeout_milp, config.use_default_heuristic, 0)
                         if predict_label != int(test[0]):
@@ -896,13 +903,13 @@ elif config.geometric:
                             print('Running the analysis...')
 
                         t_begin = time.time()
-                        perturbed_label_poly, _, _, _ = eran.analyze_box(
+                        perturbed_label_poly, _, _, _ ,_= eran.analyze_box(
                             spec_lb, spec_ub, 'deeppoly',
                             config.timeout_lp, config.timeout_milp, config.use_default_heuristic, 0,
                             lexpr_weights, lexpr_cst, lexpr_dim,
                             uexpr_weights, uexpr_cst, uexpr_dim,
                             expr_size)
-                        perturbed_label_box, _, _, _ = eran.analyze_box(
+                        perturbed_label_box, _, _, _,_ = eran.analyze_box(
                             spec_lb[:dim], spec_ub[:dim], 'deeppoly',
                             config.timeout_lp, config.timeout_milp, config.use_default_heuristic, 0)
                         t_end = time.time()
@@ -958,7 +965,7 @@ elif config.input_box is not None:
         specUB = [interval[1] for interval in box]
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
-        hold, nn, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+        hold, nn, nlb, nub,_ = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         if hold:
             print('constraints hold for box ' + str(index) + ' out of ' + str(sum([1 for b in boxes])))
             correct += 1
@@ -971,6 +978,12 @@ elif config.input_box is not None:
 
 
 else:
+    target = []
+    if config.target != None:
+        targetfile = open(config.target, 'r')
+        targets = csv.reader(targetfile, delimiter=',')
+        for i, val in enumerate(targets):
+            target = val   
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
             continue
@@ -986,7 +999,7 @@ else:
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
 
-        label,nn,nlb,nub = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+        label,nn,nlb,nub,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
@@ -1004,24 +1017,29 @@ else:
             normalize(specLB, means, stds, dataset)
             normalize(specUB, means, stds, dataset)
             start = time.time()
-            perturbed_label, _, nlb, nub = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label)
-            print("nlb ", nlb[-1], " nub ", nub[-1])
+            if config.target == None:
+                prop = -1
+            else:
+                prop = int(target[i])
+            perturbed_label, _, nlb, nub,failed_labels = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
+            print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
             if(perturbed_label==label):
                 print("img", i, "Verified", label)
                 verified_images += 1
             else:
                 if complete==True:
-                    constraints = get_constraints_for_dominant_label(label, 10)
+                    constraints = get_constraints_for_dominant_label(label, failed_labels)
                     verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                     if(verified_flag==True):
                         print("img", i, "Verified", label)
                         verified_images += 1
                     else:
                         print("img", i, "Failed")
-                        cex_label,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
-                        if(cex_label!=label):
-                            denormalize(adv_image, means, stds, dataset)
-                            print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+                        if adv_image != None:
+                            cex_label,_,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                            if(cex_label!=label):
+                                denormalize(adv_image, means, stds, dataset)
+                                print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
                 else:
                     print("img", i, "Failed")
 

@@ -22,17 +22,16 @@ def update_relu_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound
         bound = upper_bound_expr[var].bound
         k = len(varsid)
         varsid = np.ascontiguousarray(varsid, dtype=np.uintp)
-        for j in range(k):
-            nnz_u = 0
-            for l in range(k):
-                if uexpr[l+1] != 0:
-                    nnz_u+=1
+        nnz_u = 0
+        for l in range(k):
+            if uexpr[l+1] != 0:
+                nnz_u+=1
             #if nnz_l > 1:
                 #lexpr = np.ascontiguousarray(lexpr, dtype=np.double)
                 #update_relu_lower_bound_for_neuron(man, element, layerno, varsid[j], lexpr, varsid, k)
-            if nnz_u > 1 and bound < 2*ubi[var]:
-                uexpr = np.ascontiguousarray(uexpr, dtype=np.double)
-                update_relu_upper_bound_for_neuron(man, element, layerno, varsid[j], uexpr, varsid, k)
+        if nnz_u > 1 and bound < 2*ubi[var]:
+            uexpr = np.ascontiguousarray(uexpr, dtype=np.double)
+            update_relu_upper_bound_for_neuron(man, element, layerno, var, uexpr, varsid, k)
 
 def refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain):
     """
