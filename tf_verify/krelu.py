@@ -57,22 +57,51 @@ class Krelu:
         #cdd_hrepr = self.get_ineqs(varsid)
         check_pt1 = time.time()
 
+        # We get orthant points using exact precision, because it allows to guarantee soundness of the algorithm.
         cdd_hrepr = cdd.Matrix(cdd_hrepr, number_type='fraction')
         cdd_hrepr.rep_type = cdd.RepType.INEQUALITY
-
         pts = self.get_orthant_points(cdd_hrepr)
 
         # Generate extremal points in the space of variables before and
         # after relu
         pts = [([1] + row + [x if x>0 else 0 for x in row]) for row in pts]
 
-        cdd_vrepr = cdd.Matrix(pts, number_type='fraction')
-        cdd_vrepr.rep_type = cdd.RepType.GENERATOR
+        adjust_constraints_to_make_sound = False
+        # Floating point CDD is much faster then the precise CDD, however for some inputs it fails
+        # due to numerical errors. If that is the case we fall back to using precise CDD.
+        try:
+            cdd_vrepr = cdd.Matrix(pts, number_type='float')
+            cdd_vrepr.rep_type = cdd.RepType.GENERATOR
+            # Convert back to H-repr.
+            cons = cdd.Polyhedron(cdd_vrepr).get_inequalities()
+            adjust_constraints_to_make_sound = True
+            # I don't adjust linearities, so just setting lin_set to an empty set.
+            self.lin_set = frozenset([])
+        except:
+            cdd_vrepr = cdd.Matrix(pts, number_type='fraction')
+            cdd_vrepr.rep_type = cdd.RepType.GENERATOR
+            # Convert back to H-repr.
+            cons = cdd.Polyhedron(cdd_vrepr).get_inequalities()
+            self.lin_set = cons.lin_set
 
-        # Convert back to H-repr.
-        cons = cdd.Polyhedron(cdd_vrepr).get_inequalities()
-        self.lin_set = cons.lin_set
         cons = np.asarray(cons, dtype=np.float64)
+
+        # If floating point CDD was run, then we have to adjust constraints to make sure taht
+        if adjust_constraints_to_make_sound:
+            pts = np.asarray(pts, dtype=np.float64)
+            cons_abs = np.abs(cons)
+            pts_abs = np.abs(pts)
+            cons_x_pts = np.matmul(cons, np.transpose(pts))
+            cons_x_pts_err = np.matmul(cons_abs, np.transpose(pts_abs))
+            # Since we use double precision number of bits to represent fraction is 52.
+            # I'll use generous over-approximation by using 2^-40 as a relative error coefficient.
+            rel_err = pow(2, -40)
+            cons_x_pts_err *= rel_err
+            cons_x_pts -= cons_x_pts_err
+            for ci in range(len(cons)):
+                min_val = np.min(cons_x_pts[ci, :])
+                if min_val < 0:
+                    cons[ci, 0] -= min_val
 
         # normalize constraints for numerical stability
         # more info: http://files.gurobi.com/Numerics.pdf
@@ -411,7 +440,8 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     for krelu_inst in krelu_results:
         varsid = krelu_args[gid]
         krelu_inst.varsid = varsid
-        compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, lbi, ubi)
+        # For now disabling since in the experiments updating expression bounds makes results worse.
+        # compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, lbi, ubi)
         #print("VARSID ",varsid)
         #bound_expr_list.append(Krelu_expr(lower_bound_expr, upper_bound_expr, varsid))
         relucons.append(krelu_inst)
