@@ -12,7 +12,7 @@ from elina_dimension import *
 from functools import reduce
 from ai_milp import *
 from config import config
-from refine_relu import refine_relu_with_solver_bounds
+from refine_activation import *
 
 
 
@@ -684,7 +684,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         """
         offset, length = self.abstract_information
         if refine:
-            element = refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deepzono')
+            element = refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deepzono')
         else:
             element = relu_zono_layerwise(*self.get_arguments(man, element), use_default_heuristic)
 

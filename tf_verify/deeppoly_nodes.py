@@ -17,7 +17,7 @@ from elina_abstract0 import *
 from elina_manager import *
 from ai_milp import *
 from functools import reduce
-from refine_relu import *
+from refine_activation import *
 
 
 def calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer = False, destroy=True, use_krelu = False):
@@ -275,7 +275,7 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
         """
         length = self.output_length
         if refine:
-            refine_relu_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
         else:
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=False)
@@ -304,8 +304,10 @@ class DeeppolySigmoidNode(DeeppolyNonlinearity):
             abstract element after the transformer
         """
         length = self.output_length
-        
-        handle_sigmoid_layer(*self.get_arguments(man, element))
+        if refine:
+            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+        else:
+            handle_sigmoid_layer(*self.get_arguments(man, element))
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:
@@ -333,7 +335,10 @@ class DeeppolyTanhNode(DeeppolyNonlinearity):
         """
         length = self.output_length
         
-        handle_tanh_layer(*self.get_arguments(man, element))
+        if refine:
+            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+        else:
+            handle_tanh_layer(*self.get_arguments(man, element))
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:

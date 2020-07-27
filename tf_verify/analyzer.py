@@ -187,6 +187,7 @@ class Analyzer:
             output_size = num_var - counter
 
         label_failed = []
+        x = None
         if self.output_constraints is None:
             candidate_labels = []
             if self.label == -1:
@@ -199,8 +200,7 @@ class Analyzer:
                 for i in range(output_size):
                     adv_labels.append(i)
             else:
-                adv_labels.append(self.prop)
-                
+                adv_labels.append(self.prop)   
             for i in candidate_labels:
                 flag = True
                 label = i
@@ -218,14 +218,23 @@ class Analyzer:
                                 obj += -1*var_list[counter + j]
                                 model.setObjective(obj,GRB.MINIMIZE)
                                 model.optimize()
+                                #print("objval ", model.objval)
+                                #if model.SolCount>0 and model.objbound > 0:
                                 if model.Status!=2:
                                     model.write("final.mps")
-                                    print (f"Model failed to solve, {model.Status}")
+                                 #   print (f"Model failed to solve, {model.Status}")
+                                    #flag = True
+                                    #print("verify objbound ", model.objbound,model.poolobjbound, model.Status)
                                     flag = False
+                                    #continue
                                     break
-                                elif(model.objval<0):
-                                    print("objval ",model.objval)
+                                elif model.objval < 0:
+                                #else:
+                                    #print("objval ",model.objbound, model.poolobjbound, model.Status, model.solcount)
                                     flag = False
+                                    if model.objval != math.inf:
+                                        x = model.x[0:len(self.nn.specLB)]
+                                        print("abstract adv example", len(x))
                                     break
 
                             else:
@@ -264,6 +273,5 @@ class Analyzer:
                 if not or_result:
                     dominant_class = False
                     break
-
         elina_abstract0_free(self.man, element)
-        return dominant_class, nlb, nub, label_failed
+        return dominant_class, nlb, nub, label_failed, x

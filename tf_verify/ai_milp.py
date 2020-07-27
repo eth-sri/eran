@@ -5,6 +5,16 @@ import multiprocessing
 
 import sys
 
+
+def milp_callback(model, where):
+    if where == GRB.Callback.MIP:
+        obj_best = model.cbGet(GRB.Callback.MIP_OBJBST)
+        obj_bound = model.cbGet(GRB.Callback.MIP_OBJBND)
+        if obj_bound > 0:
+            model.terminate()
+
+
+
 def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
 
     num_out_neurons = np.prod(out_shape)
@@ -679,42 +689,47 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
     #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
-
+    adv_examples = []
+    non_adv_examples = []
     for or_list in constraints:
         or_result = False
-        status = []
         for (i, j, k) in or_list:
             obj = LinExpr()
             if j== -1:
-                obj += 1*var_list[counter + i]
-                model.setObjective(obj,GRB.MAXIMIZE)
-                model.optimize()
-                status.append(model.SolCount>0)
-                if model.SolCount>0 and model.objbound <= float(k):
+                obj += float(k)- 1*var_list[counter + i]
+                model.setObjective(obj,GRB.MINIMIZE)
+                model.optimize(milp_callback)
+                #status.append(model.SolCount>0)
+                if model.objbound > 0:
                     or_result = True
+                    if model.solcount > 0:
+                        non_adv_examples.append(model.x[0:input_size])
                     break
+                elif model.solcount > 0:
+                    adv_examples.append(model.x[0:input_size])
+
             else:
                 if i!=j:
                     obj += 1*var_list[counter + i]
                     obj += -1*var_list[counter + j]
                     model.setObjective(obj,GRB.MINIMIZE)
-                    model.optimize()
-                    status.append(model.SolCount>0)
-                    
-                    if model.SolCount>0 and model.objbound > 0:
+                    model.optimize(milp_callback)
+                    #status.append(model.solcount>0)
+                    #print("status ", model.status, model.objbound)                    
+                    if model.objbound > 0:
                         or_result = True
+                        if model.solcount > 0:
+                            non_adv_examples.append(model.x[0:input_size])
                         break
-        is_opt = True
-#        print(status)
-        for s in status:
-            if s==False:
-                is_opt = False
-        if is_opt==True:
-            x = model.x[0:input_size]
-        else:
-            x = None
+                    elif model.solcount > 0:
+                        adv_examples.append(model.x[0:input_size])
         if not or_result:
-            return False, x
-
-    return True, x
+            if len(adv_examples) > 0:
+                return False, adv_examples
+            else:
+                return False, None
+    if len(non_adv_examples) > 0:
+        return True, non_adv_examples
+    else:
+        return True, None
 

@@ -211,6 +211,7 @@ def compute_expr_bounds_from_candidates(krelu_inst, varsid, bound_expr, lbi, ubi
             coeff = best_row[l+k+1]/divisor
             if((is_lower and coeff<0) or ((not is_lower) and (coeff > 0))):
                 res[0] = res[0] + coeff*ubi[varsid[l]]  
+                print("res ", res, "best_row ", best_row,"j ", j)
         if varsid[j] in bound_expr.keys():
             current_bound = bound_expr[varsid[j]].bound
             if (is_lower and best_bound > current_bound) or ((not is_lower) and best_bound < current_bound):
@@ -273,7 +274,7 @@ def sparse_heuristic_with_cutoff(all_vars, areas):
     assert len(all_vars) == len(areas)
     K = 3
     sparse_n = config.sparse_n
-    cutoff = 0
+    cutoff = 0.05
     print("sparse n", sparse_n)
     # Sort vars by descending area
     all_vars = sorted(all_vars, key=lambda var: -areas[var])
@@ -300,7 +301,7 @@ def sparse_heuristic_with_cutoff(all_vars, areas):
     return krelu_args
 
 
-def encode_krelu_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, need_pop, domain):
+def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, relu_groups, need_pop, domain, activation_type):
     import deepzono_nodes as dn
     if(need_pop):
         relu_groups.pop()

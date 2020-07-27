@@ -84,6 +84,7 @@ def prepare_model(model):
 		shape_map[initial.name] = const.shape
 
 	placeholdernames = []
+	#print("graph ", model.graph.input)
 	for input in model.graph.input:
 		placeholdernames.append(input.name)
 		if input.name not in shape_map:
@@ -91,7 +92,7 @@ def prepare_model(model):
 			input_node_map[input.name] = input
 			
 	for node in model.graph.node:
-		#print(node)
+		#print(node.op_type)
 		output_node_map[node.output[0]] = node
 		for input in node.input:
 			input_node_map[input] = node
@@ -279,7 +280,7 @@ def prepare_model(model):
 	#print('const_map')
 	#print(constants_map)
 	#print('shape_map')
-	print(shape_map)
+	#print(shape_map)
 	return shape_map, constants_map, output_node_map, input_node_map, placeholdernames
 
 
@@ -328,7 +329,7 @@ class ONNXTranslator:
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
 		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax", "Flatten"]
-
+		#print("nodes ", self.nodes, "placeholder ", self.model.graph.input[0])
 		for node in self.nodes:
 			if node.op_type == "Constant":
 				continue
@@ -468,6 +469,7 @@ class ONNXTranslator:
 	def ignore_node(self, node, operation_types, reshape_map):
 		operation_types.pop()
 		input_name = node.input[0]
+		#print("ignore ", len(node.input), reshape_map)
 		output_name = node.output[0]
 		if input_name in reshape_map:
 			reshape_map[output_name] = reshape_map[input_name]

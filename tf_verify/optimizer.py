@@ -389,6 +389,7 @@ class Optimizer:
             output_index_store[node.output_name] = index_o
             index_o += 1
         for node in output:
+            #print("output ", node, node.input_names)
             predecessors = (c_size_t * len(node.input_names))()
             i = 0
             for input_name in node.input_names:

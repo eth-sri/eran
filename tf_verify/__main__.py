@@ -83,7 +83,8 @@ def normalize(image, means, stds, dataset):
     if len(means) == len(image):
         for i in range(len(image)):
             image[i] -= means[i]
-            image[i] /= stds[i]
+            if stds!=None:
+                image[i] /= stds[i]
     elif dataset == 'mnist'  or dataset == 'fashion':
         for i in range(len(image)):
             image[i] = (image[i] - means[0])/stds[0]
@@ -203,21 +204,25 @@ def print_progress(depth):
 
 
 def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
-    hold,nn,nlb,nub,_ = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+    hold,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
     global failed_already
     if hold:
         print_progress(depth)
         return hold
     elif depth >= max_depth:
         if failed_already.value and config.complete:
-            verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+            verified_flag, adv_examples = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
             print_progress(depth)
             if verified_flag == False:
-                if adv_image!=None:
-                    hold,_,nlb,nub,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
-                    if hold == False:
-                        print("property violated at ", adv_image, "output_score", nlb[-1])
-                failed_already.value = 0
+                if adv_examples!=None:
+                    #print("adv image ", adv_image)
+                    for adv_image in adv_examples:
+                        hold,_,nlb,nub,_,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                        #print("hold ", hold, "domain", domain)
+                        if hold == False:
+                            print("property violated at ", adv_image, "output_score", nlb[-1])
+                            failed_already.value = 0
+                            break
             return verified_flag
         else:
             return False
@@ -326,7 +331,7 @@ is_onnx = file_extension == ".onnx"
 assert is_trained_with_pytorch or is_saved_tf_model or is_pb_file or is_tensorflow or is_onnx, "file extension not supported"
 
 epsilon = config.epsilon
-assert (epsilon >= 0) and (epsilon <= 1), "epsilon can only be between 0 and 1"
+#assert (epsilon >= 0) and (epsilon <= 1), "epsilon can only be between 0 and 1"
 
 zonotope_file = config.zonotope
 zonotope = None
@@ -447,7 +452,7 @@ if dataset=='acasxu':
 
         rec_start = time.time()
 
-        _,nn,nlb,nub,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+        _,nn,nlb,nub,_ ,_= eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         # expensive min/max gradient calculation
         nn.set_last_weights(constraints)
         grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
@@ -471,7 +476,7 @@ if dataset=='acasxu':
         start_val = np.copy(specLB)
         end_val = np.copy(specUB)
         flag = True
-        _,nn,_,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+        _,nn,_,_,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         start = time.time()
         #complete_list = []
         multi_bounds = []
@@ -578,7 +583,7 @@ elif config.geometric:
             normalize(spec_lb, means, stds, config.dataset)
             normalize(spec_ub, means, stds, config.dataset)
 
-            label, nn, nlb, nub,_ = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
+            label, nn, nlb, nub,_,_ = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
                                                    config.use_default_heuristic)
             print('Label: ', label)
 
@@ -984,22 +989,23 @@ else:
         targets = csv.reader(targetfile, delimiter=',')
         for i, val in enumerate(targets):
             target = val   
+    img_no = [7,9,11,13,22,24,27,28,30,38,41,42,44,45,47,49,52,53,58,59,61,64,66,68,69,71,72,75,77,78,80,81,84,87,91,93,95,98]
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
             continue
 
-        if config.num_tests is not None and i >= config.num_tests:
+        if config.num_tests is not None and i >= config.from_test + config.num_tests:
             break
-
+        #if i < 7:
+        #    continue
         image= np.float64(test[1:len(test)])/np.float64(255)
-
         specLB = np.copy(image)
         specUB = np.copy(image)
 
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
 
-        label,nn,nlb,nub,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+        label,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
         #for number in range(len(nub)):
         #    for element in range(len(nub[number])):
         #        if(nub[number][element]<=0):
@@ -1021,7 +1027,7 @@ else:
                 prop = -1
             else:
                 prop = int(target[i])
-            perturbed_label, _, nlb, nub,failed_labels = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
+            perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
             print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
             if(perturbed_label==label):
                 print("img", i, "Verified", label)
@@ -1036,12 +1042,18 @@ else:
                     else:
                         print("img", i, "Failed")
                         if adv_image != None:
-                            cex_label,_,_,_,_ = eran.analyze_box(adv_image, adv_image, 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                            cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                             if(cex_label!=label):
-                                denormalize(adv_image, means, stds, dataset)
+                                denormalize(adv_image[0], means, stds, dataset)
                                 print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
                 else:
                     print("img", i, "Failed")
+                    if x != None:
+                        cex_label,_,_,_,_,_ = eran.analyze_box(x,x,'deepzono',config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                        print("cex label ", cex_label, "label ", label)
+                        if(cex_label!=label):
+                            denormalize(x,means, stds, dataset)
+                            print("adversarial image ", x, "cex label ", cex_label, "correct label ", label)
 
             correctly_classified_images +=1
             end = time.time()
