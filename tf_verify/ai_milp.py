@@ -286,16 +286,17 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
 
                # indicator constraint
                model.addGenConstrIndicator(var_list[binary_counter+j], True, var_list[affine_counter+j], GRB.GREATER_EQUAL, 0.0)
-    else:
-        for j in range(num_neurons):
-            if(ubi[j]<=0):
-                #print("POSITIVE")
-                expr = var_list[relu_counter+j]
-                model.addConstr(expr, GRB.EQUAL, 0)
-            elif(lbi[j]>=0):
-                #print("NEGATIVE")
-                expr = var_list[relu_counter+j] - var_list[affine_counter+j]
-                model.addConstr(expr, GRB.EQUAL, 0)
+    if len(relu_groupsi)>0:
+        if use_milp==0:
+            for j in range(num_neurons):
+                if(ubi[j]<=0):
+                    #print("POSITIVE")
+                    expr = var_list[relu_counter+j]
+                    model.addConstr(expr, GRB.EQUAL, 0)
+                elif(lbi[j]>=0):
+                    #print("NEGATIVE")
+                    expr = var_list[relu_counter+j] - var_list[affine_counter+j]
+                    model.addConstr(expr, GRB.EQUAL, 0)
         for krelu_inst in relu_groupsi:
             for row in krelu_inst.cons:
                 k = len(krelu_inst.varsid)
@@ -453,8 +454,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
             #    use_milp = False
             if relu_groups is None:
                 counter = handle_relu(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1], [], use_milp)
-            elif(use_milp):
-                counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp)
+            #elif(use_milp):
+            #    counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp)
             else:
                 counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp)
             nn.activation_counter += 1
@@ -685,7 +686,6 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
-
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
     #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
@@ -702,6 +702,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                 #status.append(model.SolCount>0)
                 if model.objbound > 0:
                     or_result = True
+                    #print("objbound ", model.objbound)
                     if model.solcount > 0:
                         non_adv_examples.append(model.x[0:input_size])
                     break
@@ -718,6 +719,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
                     #print("status ", model.status, model.objbound)                    
                     if model.objbound > 0:
                         or_result = True
+                        #print("objbound ", model.objbound)
                         if model.solcount > 0:
                             non_adv_examples.append(model.x[0:input_size])
                         break

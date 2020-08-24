@@ -178,11 +178,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<use_milp>```: specifies whether to use MILP (default is true).
 
-* ```<use_2relu>```: specifies whether to use 2-ReLU (default is false).
-
-* ```<use_3relu>```: specifies whether to use 3-ReLU (default is false).
-
-* ```<dyn_krelu>```: specifies whether to dynamically select parameter k for k-ReLU (default is false).
+* ```<sparse_n>```: specifies the size of "k" for the kReLU framework (default is 70).
 
 * ```<numproc>```: specifies how many processes to use for MILP, LP and k-ReLU (default is the number of processors in your machine).
 
@@ -203,7 +199,9 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * Since Refinezono and RefinePoly uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
-* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. When complete verification fails, ERAN prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. 
+* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. 
+
+* When ERAN fails to prove the robustness of a given network in a specified region, it searches for an adversarial example and prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. ERAN does so for both complete and incomplete verification. 
 
 
 
@@ -217,7 +215,13 @@ python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --epsilon 0.1 --do
 
 will evaluate the local robustness of the MNIST convolutional network (upto 35K neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:
 
-* 'Verified' for an image when it can prove the robustness of the network and 'Failed' when it cannot. It will also print an error message when the network misclassifies an image.
+* 'Verified safe' for an image when it can prove the robustness of the network 
+
+* 'Verified unsafe' for an image for which it can provide a concrete adversarial example
+
+* 'Failed' when it cannot. 
+
+* It will also print an error message when the network misclassifies an image.
 
 * the timing in seconds.
 
@@ -229,7 +233,7 @@ Zonotope Specification
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --zonotope some_path/zonotope_example.txt --domain deepzono 
 ```
 
-will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output either "Verified" or "Failed" along with the timing.
+will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output "Verified safe", "Verified unsafe" or "Failed" along with the timing.
 
 Similarly, for the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
 
@@ -261,7 +265,7 @@ Use the "deeppoly" or "deepzono" domain with "--complete True" option
 
 Recommended Configuration for More Precise but relatively expensive Incomplete Verification
 ----------------------------------------------------------------------------------------------
-Use the "refinepoly" domain with "--use_milp True", "--dyn_krelu", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10" options
+Use the "refinepoly" domain with "--use_milp True", "--sparse_n 12", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10" options
 
 Recommended Configuration for Faster but relatively imprecise Incomplete Verification
 -----------------------------------------------------------------------------------------------
@@ -490,6 +494,80 @@ The table below compares the performance and precision of DeepZ and DeepPoly on 
 
 </table>
 
+
+The table below compares the timings of complete verification with ERAN for all ACASXu benchmarks. 
+
+
+<table aligh="center">
+  <tr>
+    <td>Property</td>
+    <td>Networks</td>
+    <td colspan="1">% Average Runtime (s)</td>
+  </tr>
+  
+  <tr>
+   <td> 1</td>
+   <td> all 45</td>
+   <td> 15.5 </td>
+  </tr>
+
+<tr>
+   <td> 2</td>
+   <td> all 45</td>
+   <td> 11.4 </td>
+  </tr>
+
+<tr>
+   <td> 3</td>
+   <td> all 45</td>
+   <td> 1.9 </td>
+  </tr>
+  
+<tr>
+   <td> 4</td>
+   <td> all 45</td>
+   <td> 1.1 </td>
+  </tr>
+
+<tr>
+   <td> 5</td>
+   <td> 1_1</td>
+   <td> 26 </td>
+  </tr>
+
+<tr>
+   <td> 6</td>
+   <td> 1_1</td>
+   <td> 10 </td>
+  </tr>
+  
+<tr>
+   <td> 7</td>
+   <td> 1_9</td>
+   <td> 83 </td>
+  </tr>
+
+<tr>
+   <td> 8</td>
+   <td> 2_9</td>
+   <td> 111 </td>
+  </tr>
+
+<tr>
+   <td> 9</td>
+   <td> 3_3</td>
+   <td> 9 </td>
+  </tr>
+  
+<tr>
+   <td> 10</td>
+   <td> 4_5</td>
+   <td> 2.1 </td>
+  </tr>
+
+</table>
+
+
 More experimental results can be found in our papers.
 
 Contributors
@@ -522,5 +600,5 @@ Contributors
 License and Copyright
 ---------------------
 
-* Copyright (c) 2018 [Secure, Reliable, and Intelligent Systems Lab (SRI), Department of Computer Science ETH Zurich](https://www.sri.inf.ethz.ch/)
+* Copyright (c) 2020 [Secure, Reliable, and Intelligent Systems Lab (SRI), Department of Computer Science ETH Zurich](https://www.sri.inf.ethz.ch/)
 * Licensed under the [Apache License](https://www.apache.org/licenses/LICENSE-2.0)

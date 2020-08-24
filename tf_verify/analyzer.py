@@ -7,6 +7,7 @@ from elina_manager import *
 from deeppoly_nodes import *
 from deepzono_nodes import *
 from functools import reduce
+from ai_milp import milp_callback
 import gc
 
 class layers:
@@ -181,8 +182,11 @@ class Analyzer:
             self.nn.pool_counter = 0
             self.nn.residual_counter = 0
             self.nn.activation_counter = 0
-            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False)
-            model.setParam(GRB.Param.TimeLimit,self.timeout_lp)
+            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, config.complete==True)
+            if config.complete==True:
+                model.setParam(GRB.Param.TimeLimit,self.timeout_milp)
+            else:
+                model.setParam(GRB.Param.TimeLimit,self.timeout_lp)
             num_var = len(var_list)
             output_size = num_var - counter
 
@@ -217,25 +221,27 @@ class Analyzer:
                                 obj += 1*var_list[counter+label]
                                 obj += -1*var_list[counter + j]
                                 model.setObjective(obj,GRB.MINIMIZE)
-                                model.optimize()
-                                #print("objval ", model.objval)
-                                #if model.SolCount>0 and model.objbound > 0:
-                                if model.Status!=2:
-                                    model.write("final.mps")
-                                 #   print (f"Model failed to solve, {model.Status}")
-                                    #flag = True
-                                    #print("verify objbound ", model.objbound,model.poolobjbound, model.Status)
-                                    flag = False
-                                    #continue
-                                    break
-                                elif model.objval < 0:
-                                #else:
-                                    #print("objval ",model.objbound, model.poolobjbound, model.Status, model.solcount)
-                                    flag = False
-                                    if model.objval != math.inf:
-                                        x = model.x[0:len(self.nn.specLB)]
-                                        print("abstract adv example", len(x))
-                                    break
+                                if config.complete == True:
+                                    model.optimize(milp_callback)
+                                    if model.objbound <= 0:
+                                        flag = False
+                                        if self.label!=-1:
+                                            label_failed.append(j)
+                                        if model.solcount > 0:
+                                            x = model.x[0:len(self.nn.specLB)]
+                                        break    
+                                else:
+                                    model.optimize()
+                                    if model.Status!=2:
+                                        model.write("final.mps")
+                                        flag = False
+                                        break
+                                    elif model.objval < 0:
+                               
+                                        flag = False
+                                        if model.objval != math.inf:
+                                            x = model.x[0:len(self.nn.specLB)]
+                                        break
 
                             else:
                                 flag = False

@@ -989,7 +989,6 @@ else:
         targets = csv.reader(targetfile, delimiter=',')
         for i, val in enumerate(targets):
             target = val   
-    img_no = [7,9,11,13,22,24,27,28,30,38,41,42,44,45,47,49,52,53,58,59,61,64,66,68,69,71,72,75,77,78,80,81,84,87,91,93,95,98]
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
             continue
@@ -1033,27 +1032,32 @@ else:
                 print("img", i, "Verified", label)
                 verified_images += 1
             else:
-                if complete==True:
+                if complete==True and (domain == 'deeppoly' or domain == 'deepzono'):
                     constraints = get_constraints_for_dominant_label(label, failed_labels)
                     verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                     if(verified_flag==True):
-                        print("img", i, "Verified", label)
+                        print("img", i, "Verified as Safe", label)
                         verified_images += 1
                     else:
-                        print("img", i, "Failed")
+                        
                         if adv_image != None:
                             cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                             if(cex_label!=label):
                                 denormalize(adv_image[0], means, stds, dataset)
-                                print("adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+                                print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+                        print("img", i, "Failed")
                 else:
-                    print("img", i, "Failed")
+                    
                     if x != None:
                         cex_label,_,_,_,_,_ = eran.analyze_box(x,x,'deepzono',config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                         print("cex label ", cex_label, "label ", label)
                         if(cex_label!=label):
                             denormalize(x,means, stds, dataset)
-                            print("adversarial image ", x, "cex label ", cex_label, "correct label ", label)
+                            print("Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
+                        else:
+                            print("img", i, "Failed")
+                    else:
+                        print("img", i, "Failed")
 
             correctly_classified_images +=1
             end = time.time()
