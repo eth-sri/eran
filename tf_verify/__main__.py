@@ -272,6 +272,7 @@ parser.add_argument('--epsilon', type=float, default=config.epsilon, help='the e
 parser.add_argument('--zonotope', type=str, default=config.zonotope, help='file to specify the zonotope matrix')
 parser.add_argument('--subset', type=str, default=config.subset, help='suffix of the file to specify the subset of the test dataset to use')
 parser.add_argument('--target', type=str, default=config.target, help='file specify the targets for the attack')
+parser.add_argument('--epsfile', type=str, default=config.epsfile, help='file specify the epsilons for the L_oo attack')
 parser.add_argument('--specnumber', type=int, default=config.specnumber, help='the property number for the acasxu networks')
 parser.add_argument('--domain', type=str, default=config.domain, help='the domain name can be either deepzono, refinezono, deeppoly or refinepoly')
 parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
@@ -282,9 +283,6 @@ parser.add_argument('--numproc', type=int, default=config.numproc,  help='number
 parser.add_argument('--sparse_n', type=int, default=config.sparse_n,  help='Number of variables to group by k-ReLU')
 parser.add_argument('--use_default_heuristic', type=str2bool, default=config.use_default_heuristic,  help='whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation')
 parser.add_argument('--use_milp', type=str2bool, default=config.use_milp,  help='whether to use milp or not')
-parser.add_argument('--dyn_krelu', action='store_true', default=config.dyn_krelu, help='dynamically select parameter k')
-parser.add_argument('--use_2relu', action='store_true', default=config.use_2relu, help='use 2-relu')
-parser.add_argument('--use_3relu', action='store_true', default=config.use_3relu, help='use 3-relu')
 parser.add_argument('--refine_neurons', action='store_true', default=config.refine_neurons, help='whether to refine intermediate neurons')
 parser.add_argument('--mean', nargs='+', type=float, default=config.mean, help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float, default=config.std, help='the standard deviation used to normalize the data with')
@@ -298,7 +296,7 @@ parser.add_argument('--attack', action='store_true', default=config.attack, help
 parser.add_argument('--geometric', '-g', dest='geometric', default=config.geometric, action='store_true', help='Whether to do geometric analysis')
 parser.add_argument('--input_box', default=config.input_box,  help='input box to use')
 parser.add_argument('--output_constraints', default=config.output_constraints, help='custom output constraints to check')
-
+parser.add_argument('--normalized_region', type=str2bool, default=config.normalized_region, help='Whether to normalize the adversarial region')
 
 # Logging options
 parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
@@ -989,6 +987,14 @@ else:
         targets = csv.reader(targetfile, delimiter=',')
         for i, val in enumerate(targets):
             target = val   
+   
+   
+    if config.epsfile != None:
+        epsfile = open(config.epsfile, 'r')
+        epsilons = csv.reader(epsfile, delimiter=',')
+        for i, val in enumerate(epsilons):
+            eps_array = val  
+            
     for i, test in enumerate(tests):
         if config.from_test and i < config.from_test:
             continue
@@ -1011,16 +1017,20 @@ else:
         #            print('False')
         #        else:
         #            print('True')
-
+        if config.epsfile!= None:
+            epsilon = np.float64(eps_array[i])
         print("concrete ", nlb[-1])
         #if(label == int(test[0])):
         if(label == int(test[0])):
             perturbed_label = None
-
-            specLB = np.clip(image - epsilon,0,1)
-            specUB = np.clip(image + epsilon,0,1)
-            normalize(specLB, means, stds, dataset)
-            normalize(specUB, means, stds, dataset)
+            if config.normalized_region==True:
+                specLB = np.clip(image - epsilon,0,1)
+                specUB = np.clip(image + epsilon,0,1)
+                normalize(specLB, means, stds, dataset)
+                normalize(specUB, means, stds, dataset)
+            else:
+                specLB = specLB - epsilon
+                specUB = specUB + epsilon
             start = time.time()
             if config.target == None:
                 prop = -1
