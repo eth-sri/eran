@@ -1,4 +1,3 @@
-import warnings
 from gurobipy import *
 import numpy as np
 from config import config
@@ -735,23 +734,16 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
                 vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
             )
 
-def callback(model, where):
-    if where == GRB.Callback.MIP:
-        obj_best = model.cbGet(GRB.Callback.MIP_OBJBST)
-        obj_bound = model.cbGet(GRB.Callback.MIP_OBJBND)
-        if obj_bound > 0 or obj_best < 0:
-            model.terminate()
-
 def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
-        timeout=None, use_milp=True, spatial_constraints=None):
+        use_milp=True, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
-
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp)
+    #print("timeout", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
     
     if spatial_constraints is not None:
@@ -768,7 +760,6 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
             if j== -1:
                 obj += float(k)- 1*var_list[counter + i]
                 model.setObjective(obj,GRB.MINIMIZE)
-
                 model.optimize(milp_callback)
                 #status.append(model.SolCount>0)
                 if model.objbound > 0:
