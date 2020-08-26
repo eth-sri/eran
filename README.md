@@ -3,9 +3,9 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, and scalable analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification. ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, scalable, and extensible analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification and can be tuned to provide best precision and scalability (see recommended configuration settings at the bottom). ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
 
-ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following three analysis:
+ERAN supports networks with ReLU, Sigmoid and Tanh activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following four analysis:
 
 * DeepZ [NIPS'18]: contains specialized abstract Zonotope transformers for handling ReLU, Sigmoid and Tanh activation functions.
 
@@ -179,11 +179,7 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<use_milp>```: specifies whether to use MILP (default is true).
 
-* ```<use_2relu>```: specifies whether to use 2-ReLU (default is false).
-
-* ```<use_3relu>```: specifies whether to use 3-ReLU (default is false).
-
-* ```<dyn_krelu>```: specifies whether to dynamically select parameter k for k-ReLU (default is false).
+* ```<sparse_n>```: specifies the size of "k" for the kReLU framework (default is 70).
 
 * ```<numproc>```: specifies how many processes to use for MILP, LP and k-ReLU (default is the number of processors in your machine).
 
@@ -198,13 +194,17 @@ python3 . --netname <path to the network file> --epsilon <float between 0 and 1>
 
 * ```<attack>```: specifies whether to verify attack images (default is false).
 
+* ```<specnumber>```: the property number for the ACASXu networks
+
 * Refinezono and RefinePoly refines the analysis results from the DeepZ and DeepPoly domain respectively using the approach in our ICLR'19 paper. The optional parameters timeout_lp and timeout_milp (default is 1 sec for both) specify the timeouts for the LP and MILP forumlations of the network respectively. 
 
 * Since Refinezono and RefinePoly uses timeout for the gurobi solver, the results will vary depending on the processor speeds. 
 
-* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. When complete verification fails, ERAN prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. 
+* Setting the parameter "complete" (default is False) to True will enable MILP based complete verification using the bounds provided by the specified domain. 
 
-* ERAN currently supports verifying only the property 9 for ACAS Xu as defined in [https://arxiv.org/pdf/1702.01135.pdf] (known to be hard). Support for other properties will be added soon.
+* When ERAN fails to prove the robustness of a given network in a specified region, it searches for an adversarial example and prints an adversarial image within the specified adversarial region along with the misclassified label and the correct label. ERAN does so for both complete and incomplete verification. 
+
+
 
 Example
 -------------
@@ -216,7 +216,13 @@ python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --epsilon 0.1 --do
 
 will evaluate the local robustness of the MNIST convolutional network (upto 35K neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:
 
-* 'Verified' for an image when it can prove the robustness of the network and 'Failed' when it cannot. It will also print an error message when the network misclassifies an image.
+* 'Verified safe' for an image when it can prove the robustness of the network 
+
+* 'Verified unsafe' for an image for which it can provide a concrete adversarial example
+
+* 'Failed' when it cannot. 
+
+* It will also print an error message when the network misclassifies an image.
 
 * the timing in seconds.
 
@@ -228,10 +234,16 @@ Zonotope Specification
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --zonotope some_path/zonotope_example.txt --domain deepzono 
 ```
 
-will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output either "Verified" or "Failed" along with the timing.
+will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output "Verified safe", "Verified unsafe" or "Failed" along with the timing.
 
 Similarly, for the ACAS Xu networks, ERAN will output whether the property has been verified along with the timing.
 
+
+ACASXu Specification
+```
+python3 . --netname ../data/acasxu/nets/ACASXU_run2a_3_3_batch_2000.onnx --dataset acasxu --domain deepzono  --specnumber 9
+```
+will run DeepZ for analyzing property 9 of ACASXu benchmarks. The ACASXU networks are in data/acasxu/nets directory and the one chosen for a given property is defined in the Reluplex paper. 
 
 Geometric analysis
 
@@ -245,6 +257,20 @@ will on the fly generate geometric perturbed images and evaluate the network aga
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/examples/example1/ --num_params 1 --dataset mnist --attack
 ```
 will evaluate the generated geometric perturbed images in the given data_dir and also evaluate generated attack images.
+
+
+Recommended Configuration for Scalable Complete Verification
+---------------------------------------------------------------------------------------------
+Use the "deeppoly" or "deepzono" domain with "--complete True" option
+
+
+Recommended Configuration for More Precise but relatively expensive Incomplete Verification
+----------------------------------------------------------------------------------------------
+Use the "refinepoly" domain with "--use_milp True", "--sparse_n 12", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10" options
+
+Recommended Configuration for Faster but relatively imprecise Incomplete Verification
+-----------------------------------------------------------------------------------------------
+Use the "deeppoly" domain
 
 
 Publications
@@ -469,6 +495,80 @@ The table below compares the performance and precision of DeepZ and DeepPoly on 
 
 </table>
 
+
+The table below compares the timings of complete verification with ERAN for all ACASXu benchmarks. 
+
+
+<table aligh="center">
+  <tr>
+    <td>Property</td>
+    <td>Networks</td>
+    <td colspan="1">% Average Runtime (s)</td>
+  </tr>
+  
+  <tr>
+   <td> 1</td>
+   <td> all 45</td>
+   <td> 15.5 </td>
+  </tr>
+
+<tr>
+   <td> 2</td>
+   <td> all 45</td>
+   <td> 11.4 </td>
+  </tr>
+
+<tr>
+   <td> 3</td>
+   <td> all 45</td>
+   <td> 1.9 </td>
+  </tr>
+  
+<tr>
+   <td> 4</td>
+   <td> all 45</td>
+   <td> 1.1 </td>
+  </tr>
+
+<tr>
+   <td> 5</td>
+   <td> 1_1</td>
+   <td> 26 </td>
+  </tr>
+
+<tr>
+   <td> 6</td>
+   <td> 1_1</td>
+   <td> 10 </td>
+  </tr>
+  
+<tr>
+   <td> 7</td>
+   <td> 1_9</td>
+   <td> 83 </td>
+  </tr>
+
+<tr>
+   <td> 8</td>
+   <td> 2_9</td>
+   <td> 111 </td>
+  </tr>
+
+<tr>
+   <td> 9</td>
+   <td> 3_3</td>
+   <td> 9 </td>
+  </tr>
+  
+<tr>
+   <td> 10</td>
+   <td> 4_5</td>
+   <td> 2.1 </td>
+  </tr>
+
+</table>
+
+
 More experimental results can be found in our papers.
 
 Contributors
@@ -486,6 +586,10 @@ Contributors
  
 * Adrian Hoffmann - adriahof@student.ethz.ch
 
+* Mislav Balunovic (https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
+
+* Maximilian Baader (https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
+
 * [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
 
 * [Dana Drachsler Cohen](https://www.sri.inf.ethz.ch/people/dana) - dana.drachsler@inf.ethz.ch 
@@ -497,5 +601,5 @@ Contributors
 License and Copyright
 ---------------------
 
-* Copyright (c) 2018 [Secure, Reliable, and Intelligent Systems Lab (SRI), Department of Computer Science ETH Zurich](https://www.sri.inf.ethz.ch/)
+* Copyright (c) 2020 [Secure, Reliable, and Intelligent Systems Lab (SRI), Department of Computer Science ETH Zurich](https://www.sri.inf.ethz.ch/)
 * Licensed under the [Apache License](https://www.apache.org/licenses/LICENSE-2.0)

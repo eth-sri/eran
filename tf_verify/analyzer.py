@@ -7,6 +7,7 @@ from elina_manager import *
 from deeppoly_nodes import *
 from deepzono_nodes import *
 from functools import reduce
+from ai_milp import milp_callback
 import gc
 
 class layers:
@@ -27,6 +28,7 @@ class layers:
         self.conv_counter = 0
         self.residual_counter = 0
         self.pool_counter = 0
+        self.activation_counter = 0
         self.specLB = []
         self.specUB = []
         self.original = []
@@ -34,19 +36,24 @@ class layers:
         self.predecessors = []
         self.lastlayer = None
         self.last_weights = None
+        self.label = -1
+        self.prop = -1
 
     def calc_layerno(self):
-        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter
+        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter
 
     def is_ffn(self):
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
 
     def set_last_weights(self, constraints):
-        length = 0.0
+        length = 0.0       
         last_weights = [0 for weights in self.weights[-1][0]]
         for or_list in constraints:
-            for (i, j) in or_list:
-                last_weights = [l + w_i + w_j for l,w_i, w_j in zip(last_weights, self.weights[-1][i], self.weights[-1][j])]
+            for (i, j, cons) in or_list:
+                if j == -1:
+                    last_weights = [l + w_i + float(cons) for l,w_i in zip(last_weights, self.weights[-1][i])]
+                else:
+                    last_weights = [l + w_i + w_j + float(cons) for l,w_i, w_j in zip(last_weights, self.weights[-1][i], self.weights[-1][j])]
                 length += 1
         self.last_weights = [w/length for w in last_weights]
 
@@ -90,7 +97,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False):
         """
         Arguments
         ---------
@@ -118,7 +125,8 @@ class Analyzer:
         self.use_default_heuristic = use_default_heuristic
         self.testing = testing
         self.relu_groups = []
-
+        self.label = label
+        self.prop = prop
     
     def __del__(self):
         elina_manager_free(self.man)
@@ -163,27 +171,44 @@ class Analyzer:
         if self.domain == 'deepzono' or self.domain == 'refinezono':
             output_size = self.ir_list[-1].output_length
         else:
-            output_size = reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
+            output_size = self.ir_list[-1].output_length#reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
     
         dominant_class = -1
         if(self.domain=='refinepoly'):
 
-            relu_needed = [1] * self.nn.numlayer
+            #relu_needed = [1] * self.nn.numlayer
             self.nn.ffn_counter = 0
             self.nn.conv_counter = 0
             self.nn.pool_counter = 0
             self.nn.residual_counter = 0
-            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, False,relu_needed)
-            #model.setParam('Timeout',1000)
+            self.nn.activation_counter = 0
+            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, config.complete==True)
+            if config.complete==True:
+                model.setParam(GRB.Param.TimeLimit,self.timeout_milp)
+            else:
+                model.setParam(GRB.Param.TimeLimit,self.timeout_lp)
             num_var = len(var_list)
             output_size = num_var - counter
 
-
+        label_failed = []
+        x = None
         if self.output_constraints is None:
-            for i in range(output_size):
+            candidate_labels = []
+            if self.label == -1:
+                for i in range(output_size):
+                    candidate_labels.append(i)
+            else:
+                candidate_labels.append(self.label)
+            adv_labels = []
+            if self.prop == -1:
+                for i in range(output_size):
+                    adv_labels.append(i)
+            else:
+                adv_labels.append(self.prop)   
+            for i in candidate_labels:
                 flag = True
                 label = i
-                for j in range(output_size):
+                for j in adv_labels:
                     if self.domain == 'deepzono' or self.domain == 'refinezono':
                         if i!=j and not self.is_greater(self.man, element, i, j):
                             flag = False
@@ -196,19 +221,34 @@ class Analyzer:
                                 obj += 1*var_list[counter+label]
                                 obj += -1*var_list[counter + j]
                                 model.setObjective(obj,GRB.MINIMIZE)
-                                model.optimize()
-                                if model.Status!=2:
-                                    model.write("final.mps")
-                                    print (f"Model failed to solve, {model.Status}")
-                                    flag = False
-                                    break
-                                elif(model.objval<0):
-                                    flag = False
-                                    break
+                                if config.complete == True:
+                                    model.optimize(milp_callback)
+                                    if model.objbound <= 0:
+                                        flag = False
+                                        if self.label!=-1:
+                                            label_failed.append(j)
+                                        if model.solcount > 0:
+                                            x = model.x[0:len(self.nn.specLB)]
+                                        break    
+                                else:
+                                    model.optimize()
+                                    if model.Status!=2:
+                                        model.write("final.mps")
+                                        flag = False
+                                        break
+                                    elif model.objval < 0:
+                               
+                                        flag = False
+                                        if model.objval != math.inf:
+                                            x = model.x[0:len(self.nn.specLB)]
+                                        break
 
                             else:
                                 flag = False
-                                break
+                                if self.label!=-1:
+                                    label_failed.append(j)
+                                if config.complete == False:
+                                    break
 
 
                 if flag:
@@ -220,19 +260,24 @@ class Analyzer:
             for or_list in self.output_constraints:
                 # OR
                 or_result = False
+                
                 for is_greater_tuple in or_list:
-                    if self.domain == 'deepzono' or self.domain == 'refinezono':
-                        if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                    if is_greater_tuple[1] == -1:
+                        if nub[-1][is_greater_tuple[0]] <= float(is_greater_tuple[2]):
                             or_result = True
                             break
-                    else:
-                        if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1], self.use_default_heuristic):
-                            or_result = True
-                            break
+                    else: 
+                        if self.domain == 'deepzono' or self.domain == 'refinezono':
+                            if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1]):
+                                or_result = True
+                                break
+                        else:
+                            if self.is_greater(self.man, element, is_greater_tuple[0], is_greater_tuple[1], self.use_default_heuristic):
+                                or_result = True
+                                break
 
                 if not or_result:
                     dominant_class = False
                     break
-
         elina_abstract0_free(self.man, element)
-        return dominant_class, nlb, nub
+        return dominant_class, nlb, nub, label_failed, x
