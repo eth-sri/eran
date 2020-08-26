@@ -743,7 +743,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
     numlayer = nn.numlayer
     input_size = len(LB_N0)
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp)
-    #print("timeout", config.timeout_milp)
+    #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
     
     if spatial_constraints is not None:
