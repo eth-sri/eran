@@ -59,9 +59,9 @@ make install
 cd ..
 rm cddlib-0.94j.tar.gz
 
-wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
-tar -xvf gurobi9.0.0_linux64.tar.gz
-cd gurobi900/linux64/src/build
+wget https://packages.gurobi.com/9.0/gurobi9.0.2_linux64.tar.gz
+tar -xvf gurobi9.0.2_linux64.tar.gz
+cd gurobi902/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
@@ -69,9 +69,9 @@ cp ../../lib/libgurobi90.so /usr/lib
 cd ../..
 python3 setup.py install
 cd ../..
-rm gurobi9.0.0_linux64.tar.gz
+rm gurobi9.0.2_linux64.tar.gz
 
-export GUROBI_HOME="$(pwd)/gurobi900/linux64"
+export GUROBI_HOME="$(pwd)/gurobi902/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export CPATH="${CPATH}:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
