@@ -71,12 +71,12 @@ python3 setup.py install
 cd ../..
 rm gurobi9.0.3_linux64.tar.gz
 
-export GUROBI_HOME="$(pwd)/gurobi902/linux64"
+export GUROBI_HOME="$(pwd)/gurobi903/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
 export CPATH="${CPATH}:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 
-git clone https://github.com/anianruoss/ELINA.git
+git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 if test "$has_cuda" -eq 1
 then

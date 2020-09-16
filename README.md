@@ -37,7 +37,7 @@ Installation
 ------------
 Clone the ERAN repository via git as follows:
 ```
-git clone https://github.com/anianruoss/ERAN.git
+git clone https://github.com/eth-sri/ERAN.git
 cd ERAN
 ```
 
@@ -119,7 +119,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 
 Install ELINA:
 ```
-git clone https://github.com/anianruoss/ELINA.git
+git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 ./configure -use-deeppoly -use-gurobi
 make
@@ -586,9 +586,11 @@ Contributors
  
 * Adrian Hoffmann - adriahof@student.ethz.ch
 
-* Mislav Balunovic (https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
+* [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
 
-* Maximilian Baader (https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
+* [Maximilian Baader](https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
+
+* Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
 * [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
 
