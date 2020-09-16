@@ -59,22 +59,9 @@ make install
 cd ..
 rm cddlib-0.94j.tar.gz
 
-git clone https://github.com/eth-sri/ELINA.git
-cd ELINA
-if test "$has_cuda" -eq 1
-then
-    ./configure -use-cuda -use-deepoly
-else
-    ./configure -use-deeppoly
-fi
-
-make
-make install
-cd ..
-
-wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
-tar -xvf gurobi9.0.0_linux64.tar.gz
-cd gurobi900/linux64/src/build
+wget https://packages.gurobi.com/9.0/gurobi9.0.3_linux64.tar.gz
+tar -xvf gurobi9.0.3_linux64.tar.gz
+cd gurobi903/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
@@ -82,10 +69,25 @@ cp ../../lib/libgurobi90.so /usr/lib
 cd ../..
 python3 setup.py install
 cd ../..
+rm gurobi9.0.3_linux64.tar.gz
 
-export GUROBI_HOME="$(pwd)/gurobi900/linux64"
+export GUROBI_HOME="$(pwd)/gurobi903/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
+export CPATH="${CPATH}:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
+
+git clone https://github.com/eth-sri/ELINA.git
+cd ELINA
+if test "$has_cuda" -eq 1
+then
+    ./configure -use-cuda -use-deepoly -use-gurobi
+else
+    ./configure -use-deeppoly -use-gurobi
+fi
+
+make
+make install
+cd ..
 
 git clone https://github.com/eth-sri/deepg.git
 cd deepg/code

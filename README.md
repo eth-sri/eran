@@ -93,16 +93,6 @@ rm cddlib-0.94j.tar.gz
 
 ```
 
-Install ELINA:
-```
-git clone https://github.com/eth-sri/ELINA.git
-cd ELINA
-./configure -use-deeppoly
-make
-make install
-cd ..
-```
-
 Install Gurobi:
 ```
 wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
@@ -122,8 +112,19 @@ Update environment variables:
 ```
 export GUROBI_HOME="Current_directory/gurobi900/linux64"
 export PATH="${PATH}:${GUROBI_HOME}/bin"
+export CPATH="${CPATH}:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
 
+```
+
+Install ELINA:
+```
+git clone https://github.com/eth-sri/ELINA.git
+cd ELINA
+./configure -use-deeppoly -use-gurobi
+make
+make install
+cd ..
 ```
 
 Install DeepG (note that with an already existing version of ERAN you have to start at step Install Gurobi):
@@ -585,9 +586,11 @@ Contributors
  
 * Adrian Hoffmann - adriahof@student.ethz.ch
 
-* Mislav Balunovic (https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
+* [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
 
-* Maximilian Baader (https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
+* [Maximilian Baader](https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
+
+* Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
 * [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
 

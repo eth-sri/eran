@@ -678,8 +678,63 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     return resl, resu, sorted(indices)
 
 
+def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
+    delta = spatial_constraints.get('delta')
+    gamma = spatial_constraints.get('gamma')
+    channels = spatial_constraints.get('channels')
+
+    lower_planes = spatial_constraints.get('lower_planes')
+    upper_planes = spatial_constraints.get('upper_planes')
+
+    add_norm_constraints = spatial_constraints.get('add_norm_constraints')
+    neighboring_indices = spatial_constraints.get('neighboring_indices')
+
+    vector_field = list()
+
+    for idx in range(input_size // channels):
+        vx = model.addVar(lb=-delta, ub=delta)
+        vy = model.addVar(lb=-delta, ub=delta)
+        add_norm_constraints(model, vx, vy)
+        vector_field.append({'vx': vx, 'vy': vy})
+
+    if (lower_planes is not None) and (upper_planes is not None):
+
+        for idx, vector in enumerate(vector_field):
+            for channel in range(channels):
+                index = channels * idx + channel
+                var = var_list[index]
+                lb_a, ub_a = lower_planes[0][index], upper_planes[0][index]
+                lb_b, ub_b = lower_planes[1][index], upper_planes[1][index]
+                lb_c, ub_c = lower_planes[2][index], upper_planes[2][index]
+
+                model.addConstr(
+                    var >= lb_a + lb_b * vector['vx'] + lb_c * vector['vy']
+                )
+                model.addConstr(
+                    var <= ub_a + ub_b * vector['vx'] + ub_c * vector['vy']
+                )
+
+    if (gamma is not None) and (gamma < float('inf')):
+
+        indices = neighboring_indices['indices'][::channels] // channels
+        neighbors = neighboring_indices['neighbors'][::channels] // channels
+
+        for idx, nbr in zip(indices.tolist(), neighbors.tolist()):
+            model.addConstr(
+                vector_field[idx]['vx'] - vector_field[nbr]['vx'] <= gamma
+            )
+            model.addConstr(
+                vector_field[nbr]['vx'] - vector_field[idx]['vx'] <= gamma
+            )
+            model.addConstr(
+                vector_field[idx]['vy'] - vector_field[nbr]['vy'] <= gamma
+            )
+            model.addConstr(
+                vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
+            )
+
+def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
@@ -689,6 +744,12 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints):
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
     #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
+    
+    if spatial_constraints is not None:
+        add_spatial_constraints(
+            model, spatial_constraints, var_list, input_size
+        )
+                
     adv_examples = []
     non_adv_examples = []
     for or_list in constraints:

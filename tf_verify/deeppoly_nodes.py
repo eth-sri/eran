@@ -71,7 +71,7 @@ class DeeppolyInput:
     def __init__(self, specLB, specUB, input_names, output_name, output_shape,
                  lexpr_weights=None, lexpr_cst=None, lexpr_dim=None,
                  uexpr_weights=None, uexpr_cst=None, uexpr_dim=None,
-                 expr_size=0):
+                 expr_size=0, spatial_constraints=None):
         """
         Arguments
         ---------
@@ -124,6 +124,20 @@ class DeeppolyInput:
             self.uexpr_dim = None
 
         self.expr_size = expr_size
+
+        self.spatial_gamma = -1
+        self.spatial_indices = np.ascontiguousarray([], np.uint64)
+        self.spatial_neighbors = np.ascontiguousarray([], np.uint64)
+
+        if spatial_constraints is not None:
+            self.spatial_gamma = spatial_constraints['gamma']
+            self.spatial_indices = np.ascontiguousarray(
+                spatial_constraints['indices'], np.uint64
+            )
+            self.spatial_neighbors = np.ascontiguousarray(
+                spatial_constraints['neighbors'], np.uint64
+            )
+
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
 
@@ -144,10 +158,13 @@ class DeeppolyInput:
         if self.expr_size == 0:
             return fppoly_from_network_input(man, 0, len(self.specLB), self.specLB, self.specUB)
         else:
-            return fppoly_from_network_input_poly(man, 0, len(self.specLB), self.specLB, self.specUB,
-                                                  self.lexpr_weights, self.lexpr_cst, self.lexpr_dim,
-                                                  self.uexpr_weights, self.uexpr_cst, self.uexpr_dim, self.expr_size)
-
+            return fppoly_from_network_input_poly(
+                man, 0, len(self.specLB), self.specLB, self.specUB,
+                self.lexpr_weights, self.lexpr_cst, self.lexpr_dim,
+                self.uexpr_weights, self.uexpr_cst, self.uexpr_dim,
+                self.expr_size, self.spatial_indices, self.spatial_neighbors,
+                len(self.spatial_indices), self.spatial_gamma
+            )
 
 
 class DeeppolyNode:

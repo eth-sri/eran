@@ -347,7 +347,7 @@ class Optimizer:
 
 
 
-    def get_deeppoly(self, nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size):
+    def get_deeppoly(self, nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size, spatial_constraints=None):
         """
         This function will go through self.operations and self.resources and create a list of Deeppoly-Nodes which then can be run by an Analyzer object.
         It is assumed that self.resources[i]['deeppoly'] holds the resources for an operation of type self.operations[i].
@@ -376,7 +376,7 @@ class Optimizer:
         input_names, output_name, output_shape = self.resources[0][domain]
         output_info.append(self.resources[0][domain][-2:])
         execute_list.append(DeeppolyInput(specLB, specUB, input_names, output_name, output_shape,
-                                            lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size))
+                                            lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size, spatial_constraints))
 
         self.get_abstract_element(nn, 1, execute_list, output_info, 'deeppoly')
         self.set_predecessors(nn, execute_list)
