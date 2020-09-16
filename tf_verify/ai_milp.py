@@ -734,17 +734,16 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
                 vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
             )
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints,
-        timeout=None, use_milp=True, spatial_constraints=None):
+def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
     #print("timeout ", config.timeout_milp)
-    model.setParam(GRB.Param.TimeLimit, timeout)
+    model.setParam(GRB.Param.TimeLimit, config.timeout_milp)
     
     if spatial_constraints is not None:
         add_spatial_constraints(
