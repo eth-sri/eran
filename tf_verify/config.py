@@ -50,3 +50,10 @@ class config:
 
     # GPU options
     device = Device.CPU # Which device Deeppoly should run on
+
+    # spatial options
+    spatial = True
+    t_norm = 'inf'
+    delta = 0.1
+    gamma = float('inf')
+
