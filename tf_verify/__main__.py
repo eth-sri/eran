@@ -22,6 +22,7 @@ import onnxruntime.backend as rt
 import logging
 import torch
 import spatial
+from copy import deepcopy
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -114,6 +115,16 @@ def normalize(image, means, stds, dataset):
                 image[i+2048] = tmp[count]
                 count = count+1
 
+
+def normalize_plane(plane, mean, std, channel, is_constant):
+    plane_ = plane.clone()
+
+    if is_constant:
+        plane_ -= mean[channel]
+
+    plane_ /= std[channel]
+
+    return plane_
 
 
 def normalize_poly(num_params, lexpr_cst, lexpr_weights, lexpr_dim, uexpr_cst, uexpr_weights, uexpr_dim, means, stds, dataset):
@@ -299,6 +310,10 @@ parser.add_argument('--geometric', '-g', dest='geometric', default=config.geomet
 parser.add_argument('--input_box', default=config.input_box,  help='input box to use')
 parser.add_argument('--output_constraints', default=config.output_constraints, help='custom output constraints to check')
 parser.add_argument('--normalized_region', type=str2bool, default=config.normalized_region, help='Whether to normalize the adversarial region')
+parser.add_argument('--spatial', action='store_true', default=config.spatial, help='whether to do vector field analysis')
+parser.add_argument('--t-norm', type=str, default=config.t_norm, help='vector field norm (1, 2, or inf)')
+parser.add_argument('--delta', type=float, default=config.delta, help='vector field displacement magnitude')
+parser.add_argument('--gamma', type=float, default=config.gamma, help='vector field smoothness constraint')
 
 # Logging options
 parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
@@ -1001,7 +1016,7 @@ elif config.spatial:
         image = torch.from_numpy(
             np.float64(test[1:len(test)]) / np.float64(255)
         ).reshape(1, height, width, channels).permute(0, 3, 1, 2).to(device)
-        label = torch.from_numpy(np.asarray([test[0]], np.int)).to(device)
+        label = np.int(test[0])
 
         specLB = image.clone().permute(0, 2, 3, 1).flatten().cpu()
         specUB = image.clone().permute(0, 2, 3, 1).flatten().cpu()
@@ -1018,16 +1033,16 @@ elif config.spatial:
         print(f'concrete {nlb[-1]}')
 
         if label != predicted_label:
-            print(f'img {idx} not considered, correct_label {label.item()}, classified label {predicted_label}')
+            print(f'img {idx} not considered, correct_label {label}, classified label {predicted_label}')
             continue
 
         correctly_classified_images += 1
         start = time.time()
 
-        t_norm_transformer = getattr(
+        transformer = getattr(
             spatial, f'T{config.t_norm.capitalize()}NormTransformer'
         )(image, config.delta)
-        box_lb, box_ub = t_norm_transformer.box_constraints()
+        box_lb, box_ub = transformer.box_constraints()
 
         lower_bounds = box_lb.permute(0, 2, 3, 1).flatten()
         upper_bounds = box_ub.permute(0, 2, 3, 1).flatten()
@@ -1051,63 +1066,59 @@ elif config.spatial:
             lexpr_weights, lexpr_cst, lexpr_dim = list(), list(), list()
             uexpr_weights, uexpr_cst, uexpr_dim = list(), list(), list()
 
-            with Timer() as timer_linear_constraints:
-                linear_lb, linear_ub = transformer.linear_constraints()
+            linear_lb, linear_ub = transformer.linear_constraints()
 
-                for channel in range(image.shape[1]):
-                    lb_a, lb_b, lb_c = linear_lb[channel]
-                    ub_a, ub_b, ub_c = linear_ub[channel]
+            for channel in range(image.shape[1]):
+                lb_a, lb_b, lb_c = linear_lb[channel]
+                ub_a, ub_b, ub_c = linear_ub[channel]
 
-                    linear_lb[channel][0] = normalize_plane(
-                        lb_a, channel, is_constant=True
-                    )
-                    linear_lb[channel][1] = normalize_plane(
-                        lb_b, channel, is_constant=False
-                    )
-                    linear_lb[channel][2] = normalize_plane(
-                        lb_c, channel, is_constant=False
-                    )
+                linear_lb[channel][0] = normalize_plane(
+                    lb_a, means, stds, channel, is_constant=True
+                )
+                linear_lb[channel][1] = normalize_plane(
+                    lb_b, means, stds, channel, is_constant=False
+                )
+                linear_lb[channel][2] = normalize_plane(
+                    lb_c, means, stds, channel, is_constant=False
+                )
 
-                    linear_ub[channel][0] = normalize_plane(
-                        ub_a, channel, is_constant=True
-                    )
-                    linear_ub[channel][1] = normalize_plane(
-                        ub_b, channel, is_constant=False
-                    )
-                    linear_ub[channel][2] = normalize_plane(
-                        ub_c, channel, is_constant=False
-                    )
+                linear_ub[channel][0] = normalize_plane(
+                    ub_a, means, stds, channel, is_constant=True
+                )
+                linear_ub[channel][1] = normalize_plane(
+                    ub_b, means, stds, channel, is_constant=False
+                )
+                linear_ub[channel][2] = normalize_plane(
+                    ub_c, means, stds, channel, is_constant=False
+                )
 
-                for idx in range(3):
-                    lower_planes.append(
-                        torch.cat(
-                            [
-                                linear_lb[channel][idx].unsqueeze(-1)
-                                for channel in range(image.shape[1])
-                            ], dim=-1
-                        ).flatten().tolist()
-                    )
-                    upper_planes.append(
-                        torch.cat(
-                            [
-                                linear_ub[channel][idx].unsqueeze(-1)
-                                for channel in range(image.shape[1])
-                            ], dim=-1
-                        ).flatten().tolist()
-                    )
+            for i in range(3):
+                lower_planes.append(
+                    torch.cat(
+                        [
+                            linear_lb[channel][i].unsqueeze(-1)
+                            for channel in range(image.shape[1])
+                        ], dim=-1
+                    ).flatten().tolist()
+                )
+                upper_planes.append(
+                    torch.cat(
+                        [
+                            linear_ub[channel][i].unsqueeze(-1)
+                            for channel in range(image.shape[1])
+                        ], dim=-1
+                    ).flatten().tolist()
+                )
 
-            results.loc[
-                0, 'time_linear_constraints'
-            ] = timer_linear_constraints.duration
-
-            deeppoly_spatial_constraints = {'gamma': gamma}
+            deeppoly_spatial_constraints = {'gamma': config.gamma}
 
             for key, val in transformer.flow_constraint_pairs.items():
                 deeppoly_spatial_constraints[key] = val.cpu()
 
             milp_spatial_constraints = {
-                'delta': delta, 'gamma': gamma, 'channels': image.shape[1],
-                'lower_planes': lower_planes, 'upper_planes': upper_planes,
+                'delta': config.delta, 'gamma': config.gamma, 
+                'channels': image.shape[1], 'lower_planes': lower_planes, 
+                'upper_planes': upper_planes,
                 'add_norm_constraints': transformer.add_norm_constraints,
                 'neighboring_indices': transformer.flow_constraint_pairs
             }
@@ -1115,8 +1126,8 @@ elif config.spatial:
             num_pixels = image.flatten().shape[0]
             num_flows = 2 * num_pixels
 
-            flows_LB = torch.full((num_flows,), -delta).to(device)
-            flows_UB = torch.full((num_flows,), delta).to(device)
+            flows_LB = torch.full((num_flows,), -config.delta).to(device)
+            flows_UB = torch.full((num_flows,), config.delta).to(device)
 
             specLB = torch.cat((specLB, flows_LB))
             specUB = torch.cat((specUB, flows_UB))
@@ -1149,16 +1160,19 @@ elif config.spatial:
             uexpr_cst=uexpr_cst, uexpr_dim=uexpr_dim, expr_size=expr_size,
             spatial_constraints=deeppoly_spatial_constraints
         )
+        end = time.time()
 
         print(f'nlb {nlb[-1]} nub {nub[-1]} adv labels {failed_labels}')
 
         if perturbed_label == label:
-            print(f'img {idx} verified {label.item()}')
+            print(f'img {idx} verified {label}')
             verified_images += 1
+            print(end - start, "seconds")
             continue
 
         if (not complete) or (domain not in ['deeppoly', 'deepzono']):
             print(f'img {idx} Failed')
+            print(end - start, "seconds")
             continue
 
         verified_flag, adv_image = verify_network_with_milp(
@@ -1169,7 +1183,7 @@ elif config.spatial:
         )
 
         if verified_flag:
-            print(f'img {idx} Verified as Safe {label.item()}')
+            print(f'img {idx} Verified as Safe {label}')
             verified_images += 1
         else:
             print(f'img {idx} Failed')

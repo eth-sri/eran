@@ -52,8 +52,8 @@ class config:
     device = Device.CPU # Which device Deeppoly should run on
 
     # spatial options
-    spatial = True
+    spatial = False
     t_norm = 'inf'
-    delta = 0.1
+    delta = 0.3
     gamma = float('inf')
 
