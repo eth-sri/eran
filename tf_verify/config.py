@@ -18,6 +18,7 @@ class config:
     complete = False # flag specifying where to use complete verification or not
     timeout_lp = 1 # timeout for the LP solver
     timeout_milp = 1 # timeout for the MILP solver
+    timeout_complete = 300 # timeout for the complete verifier
     use_default_heuristic = True # whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation
     mean = None # the mean used to normalize the data with
     std = None # the standard deviation used to normalize the data with

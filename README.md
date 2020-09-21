@@ -164,7 +164,7 @@ Usage
 ```
 cd tf_verify
 
-python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono/refinepoly> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False> --mean <float(s)> --std <float(s)> --use_milp <True/False> --use_2relu --use_3relu --dyn_krelu --numproc <int>
+python3 . --netname <path to the network file> --epsilon <float between 0 and 1> --domain <deepzono/deeppoly/refinezono/refinepoly> --dataset <mnist/cifar10/acasxu> --zonotope <path to the zonotope specfile>  [optional] --complete <True/False> --timeout_complete <float> --timeout_lp <float> --timeout_milp <float> --use_area_heuristic <True/False> --mean <float(s)> --std <float(s)> --use_milp <True/False> --use_2relu --use_3relu --dyn_krelu --numproc <int>
 ```
 
 * ```<epsilon>```: specifies bound for the L∞-norm based perturbation (default is 0). This parameter is not required for testing ACAS Xu networks.
