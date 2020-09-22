@@ -272,9 +272,21 @@ Recommended Configuration for Faster but relatively imprecise Incomplete Verific
 -----------------------------------------------------------------------------------------------
 Use the "deeppoly" domain
 
+Certification of Vector Field Deformations
+------------------------------------------
+
+![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/spatial.png)
+
 
 Publications
 -------------
+*  [Efficient Certification of Spatial Robustness](https://arxiv.org/abs/2009.09318)
+
+   Anian Ruoss, Maximilian Baader, Mislav Balunovic, Martin Vechev
+   
+   arXiv 2020.
+
+
 *  [Certifying Geometric Robustness of Neural Networks](https://www.sri.inf.ethz.ch/publications/balunovic2019geometric)
 
    Mislav Balunovic,  Maximilian Baader, Gagandeep Singh, Timon Gehr,  Martin Vechev
