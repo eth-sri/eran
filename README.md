@@ -3,7 +3,7 @@ ERAN <img width="100" alt="portfolio_view" align="right" src="http://safeai.ethz
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/overview.png)
 
-ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, scalable, and extensible analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification and can be tuned to provide best precision and scalability (see recommended configuration settings at the bottom). ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, etc). 
+ETH Robustness Analyzer for Neural Networks (ERAN) is a state-of-the-art sound, precise, scalable, and extensible analyzer based on [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation) for the complete and incomplete verification of MNIST, CIFAR10, and ACAS Xu based networks. ERAN produces state-of-the-art precision and performance for both complete and incomplete verification and can be tuned to provide best precision and scalability (see recommended configuration settings at the bottom). ERAN is developed at the [SRI Lab, Department of Computer Science, ETH Zurich](https://www.sri.inf.ethz.ch/) as part of the [Safe AI project](http://safeai.ethz.ch/). The goal of ERAN is to automatically verify safety properties of neural networks with feedforward, convolutional, and residual layers against input perturbations (e.g.,  L∞-norm attacks, geometric transformations, vector field deformations, etc). 
 
 ERAN supports fully-connected, convolutional, and residual networks with ReLU, Sigmoid, Tanh, and Maxpool activations and is sound under floating point arithmetic. It employs custom abstract domains which are specifically designed for the setting of neural networks and which aim to balance scalability and precision. Specifically, ERAN supports the following four analysis:
 
@@ -276,6 +276,17 @@ Certification of Vector Field Deformations
 ------------------------------------------
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/spatial/spatial.png)
+
+Vector field deformations, which displace pixels instead of directly manipulating the pixel values, can be intuitively parametrized by their displacement magnitude delta, i.e., how far every pixel can move, and their smoothness gamma, i.e., how much neighboring displacement vectors can differ from each other (more details can be found in Section 3 of [our paper](https://arxiv.org/abs/2009.09318)).
+ERAN can certify both non-smooth vector fields:
+```
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3
+```
+and smooth vector fields:
+```
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3 --gamma 0.1
+```
+Certification of vector field deformations is compatible with the "deeppoly" and "refinepoly" domains, and can be made more precise with kReLU (e.g., "--use_milp True", "--sparse_n 15", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10") or complete certification ("--complete True").
 
 
 Publications
