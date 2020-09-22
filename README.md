@@ -275,7 +275,7 @@ Use the "deeppoly" domain
 Certification of Vector Field Deformations
 ------------------------------------------
 
-![High Level](https://raw.githubusercontent.com/eth-sri/eran/spatial/spatial.png)
+![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/spatial.png)
 
 Vector field deformations, which displace pixels instead of directly manipulating pixel values, can be intuitively parametrized by their displacement magnitude delta, i.e., how far every pixel can move, and their smoothness gamma, i.e., how much neighboring displacement vectors can differ from each other (more details can be found in Section 3 of [our paper](https://arxiv.org/abs/2009.09318)).
 ERAN can certify both non-smooth vector fields:
