@@ -275,7 +275,7 @@ Use the "deeppoly" domain
 Certification of Vector Field Deformations
 ------------------------------------------
 
-![High Level](https://raw.githubusercontent.com/eth-sri/eran/master/spatial.png)
+![High Level](https://raw.githubusercontent.com/eth-sri/eran/spatial/spatial.png)
 
 
 Publications
