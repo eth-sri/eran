@@ -277,7 +277,7 @@ Certification of Vector Field Deformations
 
 ![High Level](https://raw.githubusercontent.com/eth-sri/eran/spatial/spatial.png)
 
-Vector field deformations, which displace pixels instead of directly manipulating the pixel values, can be intuitively parametrized by their displacement magnitude delta, i.e., how far every pixel can move, and their smoothness gamma, i.e., how much neighboring displacement vectors can differ from each other (more details can be found in Section 3 of [our paper](https://arxiv.org/abs/2009.09318)).
+Vector field deformations, which displace pixels instead of directly manipulating pixel values, can be intuitively parametrized by their displacement magnitude delta, i.e., how far every pixel can move, and their smoothness gamma, i.e., how much neighboring displacement vectors can differ from each other (more details can be found in Section 3 of [our paper](https://arxiv.org/abs/2009.09318)).
 ERAN can certify both non-smooth vector fields:
 ```
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3
@@ -286,7 +286,7 @@ and smooth vector fields:
 ```
 python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3 --gamma 0.1
 ```
-Certification of vector field deformations is compatible with the "deeppoly" and "refinepoly" domains, and can be made more precise with kReLU (e.g., "--use_milp True", "--sparse_n 15", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10") or complete certification ("--complete True").
+Certification of vector field deformations is compatible with the "deeppoly" and "refinepoly" domains, and can be made more precise with the kReLU framework (e.g., "--use_milp True", "--sparse_n 15", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10") or complete certification ("--complete True").
 
 
 Publications
