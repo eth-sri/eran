@@ -599,21 +599,21 @@ Contributors
 
 * [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
 
-* Jonathan Maurer - maurerjo@student.ethz.ch
+* [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
+
+* Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
 * Christoph Müller (contact for GPU version of DeepPoly) - christoph.mueller@inf.ethz.ch
+
+* Jonathan Maurer - maurerjo@student.ethz.ch
+
+* Adrian Hoffmann - adriahof@student.ethz.ch
+
+* [Maximilian Baader](https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
 
 * [Matthew Mirman](https://www.mirman.com) - matt@mirman.com
 
 * [Timon Gehr](https://www.sri.inf.ethz.ch/tg.php) - timon.gehr@inf.ethz.ch
- 
-* Adrian Hoffmann - adriahof@student.ethz.ch
-
-* [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) - mislav.balunovic@inf.ethz.ch
-
-* [Maximilian Baader](https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
-
-* Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
 * [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
 
