@@ -1277,7 +1277,7 @@ else:
                         print("cex label ", cex_label, "label ", label)
                         if(cex_label!=label):
                             denormalize(x,means, stds, dataset)
-                            print("Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
+                            print("img", i, "Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
                         else:
                             print("img", i, "Failed")
                     else:
