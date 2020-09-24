@@ -180,7 +180,7 @@ def prepare_model(model):
 				output_shape.append(filter_shape[0])
 
 			shape_map[node.output[0]] = output_shape
-		elif node.op_type in ["Relu", "Sigmoid", "Tanh", "Softmax"]:
+		elif node.op_type in ["Relu", "Sigmoid", "Tanh", "Softmax", "BatchNormalization"]:
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 
 		# Gather is for the moment solely for shapes
@@ -328,7 +328,7 @@ class ONNXTranslator:
 		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
-		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax", "Flatten"]
+		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax", "Flatten", "BatchNormalization"]
 		#print("nodes ", self.nodes, "placeholder ", self.model.graph.input[0])
 		for node in self.nodes:
 			if node.op_type == "Constant":
