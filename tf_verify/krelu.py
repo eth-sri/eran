@@ -3,6 +3,7 @@ from elina_dimension import *
 from elina_linexpr0 import *
 from elina_abstract0 import *
 from fppoly import *
+from fconv import *
 
 import numpy as np
 import cdd
@@ -52,102 +53,21 @@ class Krelu:
         # krelu on variables in varsid
         #self.varsid = varsid
         self.k = len(cdd_hrepr[0])-1
-        self.cdd_hrepr = cdd_hrepr
-        #print("LENGTH ", len(cdd_hrepr[0]))
-        #cdd_hrepr = self.get_ineqs(varsid)
-        check_pt1 = time.time()
-
-        # We get orthant points using exact precision, because it allows to guarantee soundness of the algorithm.
-        cdd_hrepr = cdd.Matrix(cdd_hrepr, number_type='fraction')
-        cdd_hrepr.rep_type = cdd.RepType.INEQUALITY
-        pts = self.get_orthant_points(cdd_hrepr)
-
-        # Generate extremal points in the space of variables before and
-        # after relu
-        pts = [([1] + row + [x if x>0 else 0 for x in row]) for row in pts]
-
-        adjust_constraints_to_make_sound = False
-        # Floating point CDD is much faster then the precise CDD, however for some inputs it fails
-        # due to numerical errors. If that is the case we fall back to using precise CDD.
-        try:
-            cdd_vrepr = cdd.Matrix(pts, number_type='float')
-            cdd_vrepr.rep_type = cdd.RepType.GENERATOR
-            # Convert back to H-repr.
-            cons = cdd.Polyhedron(cdd_vrepr).get_inequalities()
-            adjust_constraints_to_make_sound = True
-            # I don't adjust linearities, so just setting lin_set to an empty set.
-            self.lin_set = frozenset([])
-        except:
-            cdd_vrepr = cdd.Matrix(pts, number_type='fraction')
-            cdd_vrepr.rep_type = cdd.RepType.GENERATOR
-            # Convert back to H-repr.
-            cons = cdd.Polyhedron(cdd_vrepr).get_inequalities()
-            self.lin_set = cons.lin_set
-
-        cons = np.asarray(cons, dtype=np.float64)
-
-        # If floating point CDD was run, then we have to adjust constraints to make sure taht
-        if adjust_constraints_to_make_sound:
-            pts = np.asarray(pts, dtype=np.float64)
-            cons_abs = np.abs(cons)
-            pts_abs = np.abs(pts)
-            cons_x_pts = np.matmul(cons, np.transpose(pts))
-            cons_x_pts_err = np.matmul(cons_abs, np.transpose(pts_abs))
-            # Since we use double precision number of bits to represent fraction is 52.
-            # I'll use generous over-approximation by using 2^-40 as a relative error coefficient.
-            rel_err = pow(2, -40)
-            cons_x_pts_err *= rel_err
-            cons_x_pts -= cons_x_pts_err
-            for ci in range(len(cons)):
-                min_val = np.min(cons_x_pts[ci, :])
-                if min_val < 0:
-                    cons[ci, 0] -= min_val
-
-        # normalize constraints for numerical stability
-        # more info: http://files.gurobi.com/Numerics.pdf
-        absmax = np.absolute(cons).max(axis=1)
-        self.cons = cons/absmax[:, None]
-
-        end = time.time()
+        self.cdd_hrepr = np.array(cdd_hrepr)
+        self.cons = fkrelu(self.cdd_hrepr)
 
         return
 
 
-
-
-    def get_orthant_points(self, cdd_hrepr):
-        # Get points of polytope restricted to all possible orthtants
-        pts = []
-        for polarity in itertools.product([-1, 1], repeat=self.k):
-            hrepr = cdd_hrepr.copy()
-
-            # add constraints to restrict to +ve/-ve half of variables
-            for i in range(self.k):
-                row = [0]*(self.k+1)
-                row[1+i] = polarity[i]
-                # row corresponds to the half-space x_i>=0 if polarity[i]==+1
-                hrepr.extend([row])
-
-            # remove reduntant constraints
-            hrepr.canonicalize()
-            # Convert to V-repr.
-            pts_new = cdd.Polyhedron(hrepr).get_generators()
-            assert all(row[0]==1 for row in pts_new)
-
-            for row in pts_new:
-                pts.append(list(row[1:]))
-
-        return pts
-
 def make_krelu_obj(varsid):
     return Krelu(varsid)
+
 
 class Krelu_expr:
     def __init__(self, expr, varsid, bound):
         self.expr = expr
         self.varsid = varsid
         self.bound = bound
-
 
 
 def get_ineqs_zono(varsid):
@@ -279,24 +199,6 @@ def compute_expr_bounds(krelu_inst, varsid, lower_bound_expr, upper_bound_expr, 
                 candidate_lower_bounds[j].append(i)
     #compute_expr_bounds_from_candidates(krelu_inst, varsid, lower_bound_expr, lbi, ubi, candidate_lower_bounds, True)
     compute_expr_bounds_from_candidates(krelu_inst, varsid, upper_bound_expr, lbi, ubi, candidate_upper_bounds, False)
-    
-def get_sparse_cover_for_group_of_vars(vars):
-    """Function is fast for len(vars) = 50 and becomes slow for len(vars) ~ 100."""
-    K = 3
-    assert len(vars) > K
-
-    sparsed_combs = []
-
-    for comb in itertools.combinations(vars, K):
-        add = True
-        for selected_comb in sparsed_combs:
-            if len(set(comb).intersection(set(selected_comb))) >= K - 1:
-                add = False
-                break
-        if add:
-            sparsed_combs.append(comb)
-
-    return sparsed_combs
 
 
 def sparse_heuristic_with_cutoff(all_vars, areas):
@@ -318,10 +220,9 @@ def sparse_heuristic_with_cutoff(all_vars, areas):
         if grouplen <= K:
             krelu_args.append(group)
         else:
-            group_args = get_sparse_cover_for_group_of_vars(group)
-
-            for arg in group_args:
-                krelu_args.append(arg)
+            sparsed_combs = generate_sparse_cover(grouplen, K)
+            for comb in sparsed_combs:
+                krelu_args.append(tuple([group[i] for i in comb]))
 
     # Also just apply 1-relu for every var.
     for var in all_vars:
