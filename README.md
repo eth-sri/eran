@@ -121,7 +121,7 @@ Install ELINA:
 ```
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure -use-deeppoly -use-gurobi
+./configure -use-deeppoly -use-gurobi -use-fconv
 make
 make install
 cd ..
