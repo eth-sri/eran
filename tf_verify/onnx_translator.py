@@ -648,8 +648,10 @@ class ONNXTranslator:
 		inputs  = node.input
 		image   = inputs[0]
 		filters = self.constants_map[node.input[1]].transpose(1, 2, 3, 0)
-		bias = self.constants_map[node.input[2]]
-
+		if len(node.input) == 3:
+			bias = self.constants_map[node.input[2]]
+		else:
+			bias = np.zeros(filters.shape[3])
 		image_shape = self.get_shape(image)[1:]
 		pads = [0, 0, 0, 0]
 		for attribute in node.attribute:
