@@ -121,7 +121,7 @@ Install ELINA:
 ```
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure -use-deeppoly -use-gurobi
+./configure -use-deeppoly -use-gurobi -use-fconv
 make
 make install
 cd ..
@@ -604,6 +604,8 @@ Contributors
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
 * Christoph Müller (contact for GPU version of DeepPoly) - christoph.mueller@inf.ethz.ch
+
+* Gleb Makarchuk (contact for FConv library for relaxation computation) -  hlebm@ethz.ch gleb.makarchuk@gmail.com 
 
 * Jonathan Maurer - maurerjo@student.ethz.ch
 

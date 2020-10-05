@@ -80,9 +80,9 @@ git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 if test "$has_cuda" -eq 1
 then
-    ./configure -use-cuda -use-deepoly -use-gurobi
+    ./configure -use-cuda -use-deepoly -use-gurobi -use-fconv
 else
-    ./configure -use-deeppoly -use-gurobi
+    ./configure -use-deeppoly -use-gurobi -use-fconv
 fi
 
 make
