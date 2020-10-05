@@ -15,10 +15,6 @@
 """
 
 
-'''
-@author: Adrian Hoffmann
-'''
-
 from elina_abstract0 import *
 from elina_manager import *
 from deeppoly_nodes import *
