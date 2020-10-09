@@ -31,25 +31,6 @@ else:
     from fppoly_gpu import *
 
 
-
-def update_activation_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound_expr, lbi, ubi):
-    for var in upper_bound_expr.keys():
-        uexpr = upper_bound_expr[var].expr
-        varsid = upper_bound_expr[var].varsid
-        bound = upper_bound_expr[var].bound
-        k = len(varsid)
-        varsid = np.ascontiguousarray(varsid, dtype=np.uintp)
-        nnz_u = 0
-        for l in range(k):
-            if uexpr[l+1] != 0:
-                nnz_u+=1
-            #if nnz_l > 1:
-                #lexpr = np.ascontiguousarray(lexpr, dtype=np.double)
-                #update_relu_lower_bound_for_neuron(man, element, layerno, varsid[j], lexpr, varsid, k)
-        if nnz_u > 1 and bound < 2*ubi[var]:
-            uexpr = np.ascontiguousarray(uexpr, dtype=np.double)
-            #update_activation_upper_bound_for_neuron(man, element, layerno, var, uexpr, varsid, k)
-
 def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain):
     """
     refines the relu transformer
@@ -87,11 +68,12 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
         if nn.layertypes[i] == 'FC':
             first_FC = i
             break
-            
+
     if nn.activation_counter==0:
         if domain=='deepzono':
-            encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinezono', nn.layertypes[layerno])
-            if nn.layertypes[layerno]=='ReLU':
+            encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno])
+            if nn.layertypes[layerno] == 'ReLU':
                 element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
                 element = sigmoid_zono_layerwise(man, True, element, offset, length)
@@ -99,18 +81,16 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 element = tanh_zono_layerwise(man, True, element, offset, length)
             return element
         else:
-            lower_bound_expr, upper_bound_expr = encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly', nn.layertypes[layerno])
-            if nn.layertypes[layerno]=='ReLU':
+            encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno])
+            if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
                 handle_sigmoid_layer(*self.get_arguments(man, element))
             else:
                 handle_tanh_layer(*self.get_arguments(man, element))
-            #if config.refine_neurons == True:
-            update_activation_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound_expr, lbi, ubi)
-                   
-    else:
 
+    else:
         if predecessor_index==first_FC:
             use_milp = 1
         else:
@@ -129,14 +109,13 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
 
         lbi = nlb[predecessor_index]
         ubi = nub[predecessor_index]
-            
+
         if domain == 'deepzono':
             encode_activation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinezono', nn.layertypes[layerno])
             if config.refine_neurons==True:
                 j = 0
                 for i in range(length):
                     if((j < len(indices)) and (i==indices[j])):
-             
                         element = relu_zono_refined(man,True, element,i+offset, resl[i],resu[i])
                         j=j+1
                     else:
@@ -148,17 +127,14 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
                 return element
         else:
-            if config.refine_neurons==True:
+            if config.refine_neurons:
                 for j in indices:
                     update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
-            lower_bound_expr, upper_bound_expr = encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinepoly', nn.layertypes[layerno])
+            encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno])
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
                 handle_sigmoid_layer(*self.get_arguments(man, element))
             else:
                 handle_tanh_layer(*self.get_arguments(man, element))
-            update_activation_expr_bounds(man, element, layerno, lower_bound_expr, upper_bound_expr, lbi, ubi)
-      
-     
-    

@@ -19,7 +19,7 @@ from gurobipy import *
 import numpy as np
 from config import config
 import multiprocessing
-
+import math
 import sys
 
 
@@ -29,7 +29,6 @@ def milp_callback(model, where):
         obj_bound = model.cbGet(GRB.Callback.MIP_OBJBND)
         if obj_bound > 0:
             model.terminate()
-
 
 
 def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
@@ -250,6 +249,18 @@ def handle_residual(model, var_list, branch1_counter, branch2_counter, lbi, ubi)
     return start
 
 
+def _add_kactivation_constraints(model, var_list, constraint_groups, x_counter, y_counter):
+    for inst in constraint_groups:
+        for row in inst.cons:
+            k = len(inst.varsid)
+            expr = LinExpr()
+            expr.addConstant(row[0])
+            for i, x in enumerate(inst.varsid):
+                expr.addTerms(row[1 + i], var_list[x_counter + x])
+                expr.addTerms(row[1 + k + i], var_list[y_counter + x])
+            model.addConstr(expr >= 0)
+
+
 def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_groupsi, use_milp):
     use_milp = use_milp and config.use_milp
 
@@ -306,73 +317,70 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
     if len(relu_groupsi)>0:
         if use_milp==0:
             for j in range(num_neurons):
-                if(ubi[j]<=0):
-                    #print("POSITIVE")
+                if ubi[j] <= 0:
                     expr = var_list[relu_counter+j]
                     model.addConstr(expr, GRB.EQUAL, 0)
-                elif(lbi[j]>=0):
-                    #print("NEGATIVE")
+                elif lbi[j] >= 0:
                     expr = var_list[relu_counter+j] - var_list[affine_counter+j]
                     model.addConstr(expr, GRB.EQUAL, 0)
-        for krelu_inst in relu_groupsi:
-            for row in krelu_inst.cons:
-                k = len(krelu_inst.varsid)
-                expr = LinExpr()
-                expr.addConstant(row[0])
-                #print("TRIANGLE")
-                for i, x in enumerate(krelu_inst.varsid):
-                    expr.addTerms(row[1+i], var_list[affine_counter+x])
-                    expr.addTerms(row[1+k+i], var_list[relu_counter+x])
-                model.addConstr(expr >= 0)
+        _add_kactivation_constraints(model, var_list, relu_groupsi, affine_counter, relu_counter)
 
     return relu_counter
 
-def handle_sigmoid(model,var_list, affine_counter, num_neurons, lbi, ubi):
 
-    start= len(var_list)
-    binary_counter = start
-    sigmoid_counter = start
+def compute_tanh_derivative_line(x):
+    y = math.tanh(x)
+    dy = 1 - y * y
+    b = y - dy * x
+    return y, dy, b
 
-    # sigmoid variables
+
+def compute_sigm_derivative_line(x):
+    y = 1 / (1 + math.exp(-x))
+    dy = y * (1 - y)
+    b = y - dy * x
+    return y, dy, b
+
+
+def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
+                        constraint_groups, activation_type):
+    assert activation_type in ["Tanh", "Sigmoid"]
+    y_counter = len(var_list)
+
     for j in range(num_neurons):
-        var_name = "x" + str(sigmoid_counter+j)
-        upper_bound = max(0,ubi[j])
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
+        var_name = "x" + str(y_counter + j)
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb=math.tanh(lbi[j]), ub=math.tanh(ubi[j]), name=var_name)
         var_list.append(var)
 
     for j in range(num_neurons):
-        if(ubi[j]<=0):
-            expr = var_list[relu_counter+j]
-            model.addConstr(expr, GRB.EQUAL, 0)
-        elif(lbi[j]>=0):
-            expr = var_list[relu_counter+j] - var_list[affine_counter+j]
-            model.addConstr(expr, GRB.EQUAL, 0)
+        # if neuron doesn't break zero.
+        x_lb = lbi[j]
+        x_ub = ubi[j]
+        if x_lb < 0 < x_ub:
+            # Neuron breaks zero and thus it's constraints will be provided with constraint_groups.
+            continue
 
-    return sigmoid_counter
+        if activation_type == "Tanh":
+            y_lb, dy_lb, b_lb = compute_tanh_derivative_line(x_lb)
+            y_ub, dy_ub, b_ub = compute_tanh_derivative_line(x_ub)
+        else:
+            y_lb, dy_lb, b_lb = compute_sigm_derivative_line(x_lb)
+            y_ub, dy_ub, b_ub = compute_sigm_derivative_line(x_ub)
 
-def handle_tanh(model,var_list, affine_counter, num_neurons, lbi, ubi):
+        k = (y_ub - y_lb) / (x_ub - x_lb)
+        kb = y_ub - k * x_ub
 
-    start= len(var_list)
-    binary_counter = start
-    tanh_counter = start
+        x = var_list[affine_counter + j]
+        y = var_list[y_counter + j]
 
-    # tanh variables
-    for j in range(num_neurons):
-        var_name = "x" + str(tanh_counter+j)
-        upper_bound = max(0,ubi[j])
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
-        var_list.append(var)
+        sign = GRB.GREATER_EQUAL if 0 < x_lb else GRB.LESS_EQUAL
+        model.addConstr(dy_lb * x - y, sign, -b_lb)
+        model.addConstr(dy_ub * x - y, sign, -b_ub)
+        model.addConstr(-k * x + y, sign, kb)
 
-    for j in range(num_neurons):
-        if(ubi[j]<=0):
-            expr = var_list[relu_counter+j]
-            model.addConstr(expr, GRB.EQUAL, 0)
-        elif(lbi[j]>=0):
-            expr = var_list[relu_counter+j] - var_list[affine_counter+j]
-            model.addConstr(expr, GRB.EQUAL, 0)
+    _add_kactivation_constraints(model, var_list, constraint_groups, affine_counter, y_counter)
 
-    return tanh_counter
-
+    return y_counter
 
 
 def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
@@ -463,33 +471,20 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
 
         elif(nn.layertypes[i]=='ReLU'):
             index = nn.predecessors[i+1][0]
-            #print("i ", i,numlayer)
-            #print("curr ", i, "Pred", index,  "nlb ", len(nlb), "relu groups ", len(relu_groups), "activation counter ", nn.activation_counter)
-            #if i <= 1:
-            #    use_milp = True
-            #else:
-            #    use_milp = False
             if relu_groups is None:
                 counter = handle_relu(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1], [], use_milp)
-            #elif(use_milp):
-            #    counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp)
             else:
                 counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp)
             nn.activation_counter += 1
             start_counter.append(counter)
 
-        elif(nn.layertypes[i]=='Sigmoid'):
+        elif nn.layertypes[i] == 'Sigmoid' or nn.layertypes[i] == 'Tanh':
             index = nn.predecessors[i+1][0]
-            counter = handle_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1])
+            counter = handle_tanh_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1],
+                                          relu_groups[nn.activation_counter], nn.layertypes[i])
             nn.activation_counter += 1
             start_counter.append(counter)
 
-        elif(nn.layertypes[i]=='Tanh'):
-            index = nn.predecessors[i+1][0]
-            counter = handle_tanh(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1])
-            nn.activation_counter += 1
-            start_counter.append(counter)
-            
         elif nn.layertypes[i] in ['Conv']:
             filters = nn.filters[nn.conv_counter]
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
