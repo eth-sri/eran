@@ -328,6 +328,9 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
     return relu_counter
 
 
+def sigmoid(x):
+    return 1 / (1 + math.exp(-x))
+
 def compute_tanh_derivative_line(x):
     y = math.tanh(x)
     dy = 1 - y * y
@@ -336,7 +339,7 @@ def compute_tanh_derivative_line(x):
 
 
 def compute_sigm_derivative_line(x):
-    y = 1 / (1 + math.exp(-x))
+    y = sigmoid(x)
     dy = y * (1 - y)
     b = y - dy * x
     return y, dy, b
@@ -349,7 +352,12 @@ def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
 
     for j in range(num_neurons):
         var_name = "x" + str(y_counter + j)
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb=math.tanh(lbi[j]), ub=math.tanh(ubi[j]), name=var_name)
+        x_lb = lbi[j]
+        x_ub = ubi[j]
+        if activation_type == "Tanh":
+            var = model.addVar(vtype=GRB.CONTINUOUS, lb=math.tanh(x_lb), ub=math.tanh(x_ub), name=var_name)
+        else:
+            var = model.addVar(vtype=GRB.CONTINUOUS, lb=sigmoid(x_lb), ub=sigmoid(x_ub), name=var_name)
         var_list.append(var)
 
     for j in range(num_neurons):
