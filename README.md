@@ -70,14 +70,14 @@ rm gmp-6.1.2.tar.xz
 
 Install mpfr:
 ```
-wget https://www.mpfr.org/mpfr-current/mpfr-4.0.2.tar.xz
-tar -xvf mpfr-4.0.2.tar.xz
-cd mpfr-4.0.2
+wget https://files.sri.inf.ethz.ch/eran/mpfr/mpfr-4.1.0.tar.xz
+tar -xvf mpfr-4.1.0.tar.xz
+cd mpfr-4.1.0
 ./configure
 make
 make install
 cd ..
-rm mpfr-4.0.2.tar.xz
+rm mpfr-4.1.0.tar.xz
 ```
 
 Install cddlib:
