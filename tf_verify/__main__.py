@@ -1273,7 +1273,7 @@ else:
                 print("img", i, "Verified", label)
                 verified_images += 1
             else:
-                if complete==True and (domain == 'deeppoly' or domain == 'deepzono'):
+                if complete==True:
                     constraints = get_constraints_for_dominant_label(label, failed_labels)
                     verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                     if(verified_flag==True):
