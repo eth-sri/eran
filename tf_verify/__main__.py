@@ -741,13 +741,13 @@ elif config.geometric:
                         print('Running the analysis...')
 
                     t_begin = time.time()
-                    perturbed_label_poly, _, _, _,_ = eran.analyze_box(
+                    perturbed_label_poly, _, _, _, _, _ = eran.analyze_box(
                         spec_lb, spec_ub, 'deeppoly',
                         config.timeout_lp, config.timeout_milp, config.use_default_heuristic, None,
                         lexpr_weights, lexpr_cst, lexpr_dim,
                         uexpr_weights, uexpr_cst, uexpr_dim,
                         expr_size)
-                    perturbed_label_box, _, _, _,_ = eran.analyze_box(
+                    perturbed_label_box, _, _, _, _, _ = eran.analyze_box(
                         spec_lb[:dim], spec_ub[:dim], 'deeppoly',
                         config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                     t_end = time.time()
