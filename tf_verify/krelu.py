@@ -98,7 +98,6 @@ def sparse_heuristic_with_cutoff(all_vars, areas):
     K = 3
     sparse_n = config.sparse_n
     cutoff = 0.05
-    print("sparse n", sparse_n)
     # Sort vars by descending area
     all_vars = sorted(all_vars, key=lambda var: -areas[var])
 
@@ -138,6 +137,10 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
 
     # Use sparse heuristic to select args
     kact_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
+
+    print("krelu: n", config.sparse_n,
+          "splitting zero", len(candidate_vars),
+          "number of args", len(kact_args))
 
     kact_cons = []
     tdim = ElinaDim(offset+length)

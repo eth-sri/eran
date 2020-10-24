@@ -246,6 +246,7 @@ class Analyzer:
                                 else:
                                     model.optimize()
                                     if model.Status!=2:
+                                        print("model was not successful status is", model.Status)
                                         model.write("final.mps")
                                         flag = False
                                         break
