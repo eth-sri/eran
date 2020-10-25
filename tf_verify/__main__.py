@@ -809,8 +809,8 @@ elif config.geometric:
 
             normalize(spec_lb, means, stds, config.dataset)
             normalize(spec_ub, means, stds, config.dataset)
-
-            label, nn, nlb, nub,_ = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
+            
+            label, nn, nlb, nub, _, _ = eran.analyze_box(spec_lb, spec_ub, 'deeppoly', config.timeout_lp, config.timeout_milp,
                                                    config.use_default_heuristic)
             print('Label: ', label)
 
@@ -846,9 +846,9 @@ elif config.geometric:
                         attack_imgs.append((params, attack_lb, attack_ub))
                         checked.append(False)
 
-                        predict_label, _, _, _,_ = eran.analyze_box(
+                        predict_label, _, _, _, _, _ = eran.analyze_box(
                             attack_lb[:dim], attack_ub[:dim], 'deeppoly',
-                            config.timeout_lp, config.timeout_milp, config.use_default_heuristic, 0)
+                            config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                         if predict_label != int(test[0]):
                             print('counter-example, params: ', params, ', predicted label: ', predict_label)
                             cex_found = True
@@ -941,15 +941,15 @@ elif config.geometric:
                             print('Running the analysis...')
 
                         t_begin = time.time()
-                        perturbed_label_poly, _, _, _ ,_= eran.analyze_box(
+                        perturbed_label_poly, _, _, _ , _, _ = eran.analyze_box(
                             spec_lb, spec_ub, 'deeppoly',
-                            config.timeout_lp, config.timeout_milp, config.use_default_heuristic, 0,
+                            config.timeout_lp, config.timeout_milp, config.use_default_heuristic, None,
                             lexpr_weights, lexpr_cst, lexpr_dim,
                             uexpr_weights, uexpr_cst, uexpr_dim,
                             expr_size)
-                        perturbed_label_box, _, _, _,_ = eran.analyze_box(
+                        perturbed_label_box, _, _, _, _, _ = eran.analyze_box(
                             spec_lb[:dim], spec_ub[:dim], 'deeppoly',
-                            config.timeout_lp, config.timeout_milp, config.use_default_heuristic, 0)
+                            config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                         t_end = time.time()
 
                         print('DeepG: ', perturbed_label_poly, '\tInterval: ', perturbed_label_box, '\tlabel: ', label,

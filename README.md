@@ -254,7 +254,7 @@ will on the fly generate geometric perturbed images and evaluate the network aga
 
 
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/examples/example1/ --num_params 1 --dataset mnist --attack
+python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/code/examples/example1/ --num_params 1 --dataset mnist --attack
 ```
 will evaluate the generated geometric perturbed images in the given data_dir and also evaluate generated attack images.
 
