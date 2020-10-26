@@ -649,7 +649,7 @@ elif config.geometric:
                     attack_imgs.append((params, attack_lb, attack_ub))
                     checked.append(False)
 
-                    predict_label, _, _, _,_ = eran.analyze_box(
+                    predict_label, _, _, _, _, _ = eran.analyze_box(
                         attack_lb[:dim], attack_ub[:dim], 'deeppoly',
                         config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                     if predict_label != int(test[0]):
