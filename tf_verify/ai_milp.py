@@ -16,6 +16,7 @@
 
 
 from gurobipy import *
+from fconv import *
 import numpy as np
 from config import config
 import multiprocessing
@@ -331,19 +332,6 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
-def compute_tanh_derivative_line(x):
-    y = math.tanh(x)
-    dy = 1 - y * y
-    b = y - dy * x
-    return y, dy, b
-
-
-def compute_sigm_derivative_line(x):
-    y = sigmoid(x)
-    dy = y * (1 - y)
-    b = y - dy * x
-    return y, dy, b
-
 
 def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
                         constraint_groups, activation_type):
@@ -367,23 +355,20 @@ def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
         if x_lb < 0 < x_ub:
             # Neuron breaks zero and thus it's constraints will be provided with constraint_groups.
             continue
-
-        if activation_type == "Tanh":
-            y_lb, dy_lb, b_lb = compute_tanh_derivative_line(x_lb)
-            y_ub, dy_ub, b_ub = compute_tanh_derivative_line(x_ub)
+        if x_ub - x_lb <= 0.0001:
+            continue
+        is_sigm = activation_type == "Sigmoid"
+        k, kb = S_curve_chord_bound(x_lb, x_ub, is_sigm)
+        if x_lb >= 0:
+            dy, dy_b = S_curve_tang_bound(x_ub, is_sigm)
         else:
-            y_lb, dy_lb, b_lb = compute_sigm_derivative_line(x_lb)
-            y_ub, dy_ub, b_ub = compute_sigm_derivative_line(x_ub)
-
-        k = (y_ub - y_lb) / (x_ub - x_lb)
-        kb = y_ub - k * x_ub
+            dy, dy_b = S_curve_tang_bound(x_lb, is_sigm)
 
         x = var_list[affine_counter + j]
         y = var_list[y_counter + j]
 
-        sign = GRB.GREATER_EQUAL if 0 < x_lb else GRB.LESS_EQUAL
-        model.addConstr(dy_lb * x - y, sign, -b_lb)
-        model.addConstr(dy_ub * x - y, sign, -b_ub)
+        sign = GRB.GREATER_EQUAL if 0 <= x_lb else GRB.LESS_EQUAL
+        model.addConstr(dy * x - y, sign, -dy_b)
         model.addConstr(-k * x + y, sign, kb)
 
     _add_kactivation_constraints(model, var_list, constraint_groups, affine_counter, y_counter)

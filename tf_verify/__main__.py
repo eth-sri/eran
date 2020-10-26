@@ -1232,8 +1232,6 @@ else:
 
         if config.num_tests is not None and i >= config.from_test + config.num_tests:
             break
-        #if i < 7:
-        #    continue
         image= np.float64(test[1:len(test)])/np.float64(255)
         specLB = np.copy(image)
         specUB = np.copy(image)
