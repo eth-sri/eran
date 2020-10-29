@@ -348,29 +348,6 @@ def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
             var = model.addVar(vtype=GRB.CONTINUOUS, lb=sigmoid(x_lb), ub=sigmoid(x_ub), name=var_name)
         var_list.append(var)
 
-    for j in range(num_neurons):
-        # if neuron doesn't break zero.
-        x_lb = lbi[j]
-        x_ub = ubi[j]
-        if x_lb < 0 < x_ub:
-            # Neuron breaks zero and thus it's constraints will be provided with constraint_groups.
-            continue
-        if x_ub - x_lb <= 0.0001:
-            continue
-        is_sigm = activation_type == "Sigmoid"
-        k, kb = S_curve_chord_bound(x_lb, x_ub, is_sigm)
-        if x_lb >= 0:
-            dy, dy_b = S_curve_tang_bound(x_ub, is_sigm)
-        else:
-            dy, dy_b = S_curve_tang_bound(x_lb, is_sigm)
-
-        x = var_list[affine_counter + j]
-        y = var_list[y_counter + j]
-
-        sign = GRB.GREATER_EQUAL if 0 <= x_lb else GRB.LESS_EQUAL
-        model.addConstr(dy * x - y, sign, -dy_b)
-        model.addConstr(-k * x + y, sign, kb)
-
     _add_kactivation_constraints(model, var_list, constraint_groups, affine_counter, y_counter)
 
     return y_counter

@@ -65,9 +65,9 @@ class KAct:
         if KAct.type == "ReLU":
             self.cons = fkrelu(self.input_hrep)
         elif KAct.type == "Tanh":
-            self.cons = fktanh(self.input_hrep)
+            self.cons = ftanh_orthant(self.input_hrep)
         else:
-            self.cons = fksigm(self.input_hrep)
+            self.cons = fsigm_orthant(self.input_hrep)
 
 
 def make_kactivation_obj(input_hrep):
@@ -93,7 +93,14 @@ def get_ineqs_zono(varsid):
     return input_hrep
 
 
-def sparse_heuristic_with_cutoff(all_vars, areas):
+def sparse_heuristic_with_cutoff(length, lb, ub):
+    assert length == len(lb) == len(ub)
+
+    all_vars = [i for i in range(length) if lb[i] < 0 < ub[i]]
+    areas = {var: -lb[var] * ub[var] for var in all_vars}
+    # Sort vars by descending area
+    all_vars = sorted(candidate_vars, key=lambda var: -areas[var])
+
     assert len(all_vars) == len(areas)
     K = 3
     sparse_n = config.sparse_n
@@ -102,6 +109,7 @@ def sparse_heuristic_with_cutoff(all_vars, areas):
     all_vars = sorted(all_vars, key=lambda var: -areas[var])
 
     vars_above_cutoff = [i for i in all_vars if areas[i] >= cutoff]
+    n_vars_above_cutoff = len(vars_above_cutoff)
 
     kact_args = []
     while len(vars_above_cutoff) > 0 and config.sparse_n >= K:
@@ -119,6 +127,50 @@ def sparse_heuristic_with_cutoff(all_vars, areas):
     for var in all_vars:
         kact_args.append([var])
 
+    print("krelu: n", config.sparse_n,
+          "split_zero", len(all_vars),
+          "after cutoff", n_vars_above_cutoff,
+          "number of args", len(kact_args))
+
+    return kact_args
+
+
+def sparse_heuristic_curve(length, lb, ub, is_sigm):
+    assert length == len(lb) == len(ub)
+    all_vars = [i for i in range(length)]
+    K = 3
+    sparse_n = config.sparse_n
+    # Sort vars by descending area
+
+    vars_above_cutoff = all_vars[:]
+    vars_above_cutoff = [i for i in vars_above_cutoff if ub[i] - lb[i] >= 0.1]
+    limit = 4 if is_sigm else 3
+    vars_above_cutoff = [i for i in vars_above_cutoff if lb[i] <= limit and ub[i] >= -limit]
+    n_vars_after_cutoff = len(vars_above_cutoff)
+
+    kact_args = []
+    while len(vars_above_cutoff) > 0 and config.sparse_n >= K:
+        grouplen = min(sparse_n, len(vars_above_cutoff))
+        group = vars_above_cutoff[:grouplen]
+        vars_above_cutoff = vars_above_cutoff[grouplen:]
+        if grouplen <= K:
+            kact_args.append(group)
+        else:
+            sparsed_combs = generate_sparse_cover(grouplen, K)
+            for comb in sparsed_combs:
+                kact_args.append(tuple([group[i] for i in comb]))
+
+    # # Also just apply 1-relu for every var.
+    for var in all_vars:
+        kact_args.append([var])
+
+    # kact_args = [arg for arg in kact_args if len(arg) == 3]
+
+    print("krelu: n", config.sparse_n,
+          "after cutoff", n_vars_after_cutoff,
+          "number of args", len(kact_args),
+          "Sigm" if is_sigm else "Tanh")
+
     return kact_args
 
 
@@ -130,17 +182,10 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     lbi = np.asarray(lbi, dtype=np.double)
     ubi = np.asarray(ubi, dtype=np.double)
 
-    candidate_vars = [i for i in range(length) if lbi[i] < 0 < ubi[i]]
-    candidate_vars_areas = {var: -lbi[var] * ubi[var] for var in candidate_vars}
-    # Sort vars by descending area
-    candidate_vars = sorted(candidate_vars, key=lambda var: -candidate_vars_areas[var])
-
-    # Use sparse heuristic to select args
-    kact_args = sparse_heuristic_with_cutoff(candidate_vars, candidate_vars_areas)
-
-    print("krelu: n", config.sparse_n,
-          "splitting zero", len(candidate_vars),
-          "number of args", len(kact_args))
+    if activation_type == "ReLU":
+        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi)
+    else:
+        kact_args = sparse_heuristic_curve(length, lbi, ubi, activation_type == "Sigmoid")
 
     kact_cons = []
     tdim = ElinaDim(offset+length)
