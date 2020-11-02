@@ -99,7 +99,7 @@ def sparse_heuristic_with_cutoff(length, lb, ub):
     all_vars = [i for i in range(length) if lb[i] < 0 < ub[i]]
     areas = {var: -lb[var] * ub[var] for var in all_vars}
     # Sort vars by descending area
-    all_vars = sorted(candidate_vars, key=lambda var: -areas[var])
+    all_vars = sorted(all_vars, key=lambda var: -areas[var])
 
     assert len(all_vars) == len(areas)
     K = 3
