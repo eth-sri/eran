@@ -17,6 +17,7 @@
 
 from deepzono_nodes import *
 from deeppoly_nodes import *
+from gpupoly import Network
 from functools import reduce
 import numpy as np
 
@@ -79,6 +80,7 @@ class Optimizer:
                 nn.biases.append(bias)
                 nn.layertypes.append('FC')
                 nn.numlayer+= 1
+                #print("Gemm Matrix ", matrix)
                 if domain == 'deepzono':
                     execute_list.append(DeepzonoAffine(matrix, bias, m_input_names, b_output_name, b_output_shape))
                 else:
@@ -395,6 +397,108 @@ class Optimizer:
         self.get_abstract_element(nn, 1, execute_list, output_info, 'deeppoly')
         self.set_predecessors(nn, execute_list)
         return execute_list, output_info
+
+    def get_gpupoly(self, nn):
+        domain = 'deeppoly'
+        input_names, output_name, output_shape = self.resources[0][domain]
+        print("output ", np.prod(output_shape))
+        network = Network(np.prod(output_shape))
+        nbr_op = len(self.operations)
+        i=1
+        while i < nbr_op:
+            
+            if self.operations[i] == "MatMul":
+                
+                nn.layertypes.append('FC')
+                if i < nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
+                    matrix,  m_input_names, _, _           = self.resources[i][domain]
+                    bias, _, output_name, b_output_shape = self.resources[i+1][domain]
+                    i += 2
+                else:
+                    #self.resources[i][domain].append(refine)
+                    matrix, m_input_names , output_name , b_output_shape  = self.resources[i][domain]
+                    
+                    bias_length = reduce((lambda x, y: x*y), b_output_shape)
+                    bias = nn.zeros(bias_length)
+
+                    i += 1
+                print("type ", type(matrix), type(bias), matrix.dtype, bias.dtype)
+                network.add_linear(matrix)
+                network.add_bias(bias)
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.numlayer+= 1
+            elif self.operations[i] == "Gemm":
+                
+                matrix, bias, m_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                print("type ", type(matrix), type(bias), matrix.dtype, bias.dtype)
+                network.add_linear(matrix.astype("float64"))
+                network.add_bias(bias.astype("float64"))
+                nn.weights.append(matrix)
+                nn.biases.append(bias)
+                nn.layertypes.append('FC')
+                nn.numlayer+= 1
+                #matrix = np.ascontiguousarray(matrix, dtype=np.double)
+                #bias = np.ascontiguousarray(bias, dtype=np.double)
+                #print("Gemm Matrix ", matrix)
+                
+                #print("Gemm bias ", bias)
+                
+                i += 1
+            
+            elif self.operations[i] == "Conv2D":
+                if i < nbr_op-1 and self.operations[i+1] == "BiasAdd":
+                    filters, image_shape, strides, pad_top, pad_left, c_input_names, _, _ = self.resources[i][domain]
+                    bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
+                    i += 2
+                else:
+                    filters, image_shape, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                    bias_length = reduce((lambda x, y: x*y), output_shape)
+                    bias = nn.zeros(bias_length)
+                    i += 1
+                nn.numfilters.append(filters.shape[3])
+                nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.padding.append([pad_top, pad_left])
+                nn.out_shapes.append(b_output_shape)
+                nn.filters.append(filters)
+                nn.biases.append(bias)
+                nn.layertypes.append('Conv')
+                network.add_conv_2d(image_shape[0], image_shape[1], filters, True, 1, strides[0], pad_top)
+                bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
+                network.add_bias(bias)
+                nn.numlayer+=1
+            elif self.operations[i] == "Conv":
+                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
+                nn.numfilters.append(filters.shape[3])
+                nn.filter_size.append([filters.shape[0], filters.shape[1]])
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.strides.append([strides[0],strides[1]])
+                nn.out_shapes.append(b_output_shape)
+                nn.padding.append([pad_top, pad_left])
+                nn.filters.append(filters)
+
+                nn.biases.append(bias)
+                nn.layertypes.append('Conv')
+                nn.numlayer+=1
+                #print("Filter Matrix ", filters)
+                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), True, 1, strides[0], pad_top)
+                bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
+                #print("Filter Bias ", bias)
+                network.add_bias(bias.astype("float64"))
+                i += 1    
+           
+            elif self.operations[i] == "Relu":
+                #self.resources[i][domain].append(refine)
+                nn.layertypes.append('ReLU')
+                network.add_relu()
+                nn.numlayer += 1
+                i += 1
+            else:
+                assert 0, "the optimizer for" + "gpupoly" + " doesn't know of the operation type " + self.operations[i]
+        return network
+        
 
     def set_predecessors(self, nn, output):
         output_index_store = {}

@@ -269,8 +269,9 @@ def prepare_model(model):
 					all_constant = False
 					break
 			if all_constant:
+				for input in node.input:
+					print("input ", constants_map[input], type(input))
 				constants_map[node.output[0]] = np.concatenate([constants_map[input] for input in node.input], axis=axis)
-
 			all_shape_known = True
 			for input in node.input:
 				if not input in shape_map:
@@ -305,7 +306,7 @@ class ONNXTranslator:
 	"""
 	This class is used to turn a ONNX model into two lists that then can be processed by an Optimizer object
 	"""	
-	def __init__(self, model):
+	def __init__(self, model, is_gpupoly):
 		"""
 		This constructor takes a reference to a ONNX Model and checks model, infers intermediate shapes and sets up maps from name to type and node or constant value
 		graph_util.convert_variables_to_constants and graph_util.remove_training_nodes to cleanse the graph of any nodes that are linked to training. This leaves us with 
@@ -321,7 +322,7 @@ class ONNXTranslator:
 			onnx.checker.check_model(model)
 			self.model = model
 			self.nodes = self.model.graph.node
-
+			self.is_gpupoly = is_gpupoly
 			self.shape_map, self.constants_map, self.output_node_map, self.input_node_map, self.placeholdernames = prepare_model(model)
 		else:
 			assert 0, 'not onnx model'
@@ -346,7 +347,7 @@ class ONNXTranslator:
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
 		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax", "Flatten", "BatchNormalization"]
-		#print("nodes ", self.nodes, "placeholder ", self.model.graph.input[0])
+		#print("nodes ", self.nodes)
 		for node in self.nodes:
 			if node.op_type == "Constant":
 				continue
@@ -443,6 +444,7 @@ class ONNXTranslator:
 			# Gather is for the moment solely for shapes
 			elif node.op_type == "Gather":
 				only_shape, image_shape, indexes, axis = self.gather_resources(node)
+				
 				if only_shape:
 					self.ignore_node(node, operation_types, reshape_map)
 				else:
@@ -460,7 +462,9 @@ class ONNXTranslator:
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
 			elif node.op_type == "Reshape":
+				      
 				if node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["MatMul", "Gemm"]:
+					
 					self.ignore_node(node, operation_types, reshape_map)
 
 				elif node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["Relu", "Sigmoid", "Tanh"] and self.input_node_map[self.input_node_map[node.output[0]].output[0]].op_type == "Reshape":
@@ -537,11 +541,12 @@ class ONNXTranslator:
 		return matrix,
 
 	def reshape_adjust(self, element, matrix, is_right=False):
-		if self.get_kind(element) == 'Reshape':
+		if self.get_kind(element) == 'Reshape' and not self.is_gpupoly:
 			shape_in = self.get_shape(self.output_node_map[element].input[0])
 			shape_out = self.get_shape(self.output_node_map[element].output[0])
 			if config.debug:
 				print('reshape adjust ', str(shape_in), 'to', str(shape_out))
+			
 			indexes = reshape_nhwc(shape_in, shape_out)
 			#indexes = indexes[0]
 			inverse_perm = np.arange(len(indexes))[np.argsort(indexes)]
