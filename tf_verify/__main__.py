@@ -44,6 +44,7 @@ from tensorflow_translator import *
 from onnx_translator import *
 from optimizer import *
 from analyzer import *
+from refine_gpupoly import *
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -451,7 +452,7 @@ else:
         operations, resources = translator.translate()
         optimizer  = Optimizer(operations, resources)
         nn = layers()
-        network = optimizer.get_gpupoly(nn) 
+        network, relu_layers, num_gpu_layers = optimizer.get_gpupoly(nn) 
     else:    
         eran = ERAN(model, is_onnx=is_onnx)
 
@@ -1260,12 +1261,7 @@ else:
             #specLB = np.reshape(specLB, (32,32,3))#np.ascontiguousarray(specLB, dtype=np.double)
             #specUB = np.reshape(specUB, (32,32,3))
             #print("specLB ", specLB)
-            is_correctly_classified = network.test(specLB, specUB, int(test[0]), True)
-            #A = np.zeros((10,10), dtype=np.double)
-            #for i in range(10):
-            #    A[i][i] = 1
-            #nlb = network.evalAffineExpr(A, layer=nn.numlayer, back_substitute=network.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO, dtype=np.double)
-            #print("nlb ", nlb, nn.numlayer, network._lib.getOutputSize(network._nn, nn.numlayer))        
+            is_correctly_classified = network.test(specLB, specUB, int(test[0]), True)    
         else:
             label,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             print("concrete ", nlb[-1])
@@ -1300,7 +1296,8 @@ else:
             if domain == 'gpupoly' or domain =='refinegpupoly':
                 if(network.test(specLB, specUB, int(test[0]))):
                     verified_images+=1
-                   
+                elif domain == 'refinegpupoly':
+                    refine_gpupoly_results(nn, specLB, specUB, network, num_gpu_layers, relu_layers)   
             else:    
                 perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)

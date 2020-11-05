@@ -405,6 +405,8 @@ class Optimizer:
         network = Network(np.prod(output_shape))
         nbr_op = len(self.operations)
         i=1
+        num_gpu_layers = 1
+        relu_layers = []
         while i < nbr_op:
             
             if self.operations[i] == "MatMul":
@@ -428,6 +430,7 @@ class Optimizer:
                 nn.weights.append(matrix)
                 nn.biases.append(bias)
                 nn.numlayer+= 1
+                num_gpu_layers +=2
             elif self.operations[i] == "Gemm":
                 
                 matrix, bias, m_input_names, b_output_name, b_output_shape = self.resources[i][domain]
@@ -443,7 +446,7 @@ class Optimizer:
                 #print("Gemm Matrix ", matrix)
                 
                 #print("Gemm bias ", bias)
-                
+                num_gpu_layers +=2
                 i += 1
             
             elif self.operations[i] == "Conv2D":
@@ -468,6 +471,7 @@ class Optimizer:
                 network.add_conv_2d(image_shape[0], image_shape[1], filters, True, 1, strides[0], pad_top)
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 network.add_bias(bias)
+                num_gpu_layers +=2
                 nn.numlayer+=1
             elif self.operations[i] == "Conv":
                 filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
@@ -487,6 +491,7 @@ class Optimizer:
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 #print("Filter Bias ", bias)
                 network.add_bias(bias.astype("float64"))
+                num_gpu_layers +=2
                 i += 1    
            
             elif self.operations[i] == "Relu":
@@ -494,10 +499,12 @@ class Optimizer:
                 nn.layertypes.append('ReLU')
                 network.add_relu()
                 nn.numlayer += 1
+                relu_layers.append(num_gpu_layers)
+                num_gpu_layers +=1
                 i += 1
             else:
                 assert 0, "the optimizer for" + "gpupoly" + " doesn't know of the operation type " + self.operations[i]
-        return network
+        return network, relu_layers, num_gpu_layers
         
 
     def set_predecessors(self, nn, output):
