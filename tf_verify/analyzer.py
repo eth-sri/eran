@@ -245,6 +245,7 @@ class Analyzer:
                                         break    
                                 else:
                                     model.optimize()
+                                    print("objval ", j, model.objval)
                                     if model.Status!=2:
                                         print("model was not successful status is", model.Status)
                                         model.write("final.mps")

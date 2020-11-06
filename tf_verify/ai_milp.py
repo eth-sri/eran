@@ -434,6 +434,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
             weights = nn.weights[nn.ffn_counter]
             biases = nn.biases[nn.ffn_counter+nn.conv_counter]
             index = nn.predecessors[i+1][0]
+            #print("index ", index, start_counter,i, len(relu_groups))
             counter = start_counter[index]
             counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
             nn.ffn_counter+=1

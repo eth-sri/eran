@@ -71,6 +71,7 @@ class Optimizer:
                 elif domain == 'deeppoly':
                     execute_list.append(DeeppolyFCNode(matrix, bias, m_input_names, output_name, b_output_shape))
                 nn.weights.append(matrix)
+                print("type ", matrix)
                 nn.biases.append(bias)
                 nn.numlayer+= 1
             elif self.operations[i] == "Gemm":
@@ -424,7 +425,7 @@ class Optimizer:
                     bias = nn.zeros(bias_length)
 
                     i += 1
-                print("type ", type(matrix), type(bias), matrix.dtype, bias.dtype)
+                print("type ", matrix)
                 network.add_linear(matrix)
                 network.add_bias(bias)
                 nn.weights.append(matrix)
@@ -434,7 +435,7 @@ class Optimizer:
             elif self.operations[i] == "Gemm":
                 
                 matrix, bias, m_input_names, b_output_name, b_output_shape = self.resources[i][domain]
-                print("type ", type(matrix), type(bias), matrix.dtype, bias.dtype)
+                #print("type ", type(matrix), type(bias), matrix.dtype, bias.dtype)
                 network.add_linear(matrix.astype("float64"))
                 network.add_bias(bias.astype("float64"))
                 nn.weights.append(matrix)
@@ -468,7 +469,7 @@ class Optimizer:
                 nn.filters.append(filters)
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
-                network.add_conv_2d(image_shape[0], image_shape[1], filters, True, 1, strides[0], pad_top)
+                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), True, 1, strides[0], pad_top)
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 network.add_bias(bias)
                 num_gpu_layers +=2

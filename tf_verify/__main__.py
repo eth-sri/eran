@@ -125,7 +125,7 @@ def normalize(image, means, stds, dataset):
             count = count + 1
 
         
-        is_gpupoly = (domain=='gpupoly' or domain=='gpurefinepoly')
+        is_gpupoly = (domain=='gpupoly' or domain=='refinegpupoly')
         if is_conv and not is_gpupoly:
             for i in range(3072):
                 image[i] = tmp[i]
@@ -1261,7 +1261,8 @@ else:
             #specLB = np.reshape(specLB, (32,32,3))#np.ascontiguousarray(specLB, dtype=np.double)
             #specUB = np.reshape(specUB, (32,32,3))
             #print("specLB ", specLB)
-            is_correctly_classified = network.test(specLB, specUB, int(test[0]), True)    
+            res = network.test(specLB, specUB, int(test[0]), True)    
+            is_correctly_classified = (res > 0).all()
         else:
             label,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             print("concrete ", nlb[-1])
@@ -1294,10 +1295,34 @@ else:
             else:
                 prop = int(target[i])
             if domain == 'gpupoly' or domain =='refinegpupoly':
-                if(network.test(specLB, specUB, int(test[0]))):
+                res = network.test(specLB, specUB, int(test[0]))
+                is_verified = (res > 0).all()
+                #print("res ", res)
+                if is_verified:
                     verified_images+=1
                 elif domain == 'refinegpupoly':
-                    refine_gpupoly_results(nn, specLB, specUB, network, num_gpu_layers, relu_layers)   
+                    
+                    labels_to_be_verified = []
+                    num_outputs = len(nn.weights[-1])
+                    var = 0
+                    nn.specLB = specLB
+                    nn.specUB = specUB
+                    nn.predecessors = []
+                    
+                    for i in range(0,nn.numlayer+1):
+                        predecessor = np.zeros(1, dtype=np.int)
+                        predecessor[0] = int(i-1)
+                        nn.predecessors.append(predecessor)
+                    #print("predecessors ", nn.predecessors[0][0])
+                    for labels in range(num_outputs):
+                        #print("num_outputs ", num_outputs, nn.numlayer, len(nn.weights[-1]))
+                        if labels != int(test[0]):
+                            if res[var][0] < 0:
+                                labels_to_be_verified.append(labels)
+                            var = var+1
+                    print("relu layers", relu_layers)
+                    if refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]), labels_to_be_verified):
+                        verified_images+=1   
             else:    
                 perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
