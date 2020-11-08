@@ -23,13 +23,13 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             new_relu_layers.append(len(nlb))
             #print("RELU ")
         else:
-            print("COMING HERE")
+            #print("COMING HERE")
             A = np.zeros((num_neurons,num_neurons), dtype=np.double)
             #print("FINISHED ", num_neurons)
             for j in range(num_neurons):
                 A[j][j] = 1
             bounds = network.evalAffineExpr(A, layer=layerno, back_substitute=network.FULL_BACKSUBSTITUTION, dtype=np.double)
-            print("num neurons", num_neurons)
+            #print("num neurons", num_neurons)
             lbi = bounds[:,0]
             ubi = bounds[:,1]
             layerno = layerno+1
@@ -113,5 +113,5 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             if model.objval != math.inf:
                   x = model.x[0:len(nn.specLB)]
             break
-    return flag
+    return flag, x
                 

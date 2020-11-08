@@ -43,7 +43,7 @@ def handle_conv(model, var_list,start_counter, filters,biases,filter_size,input_
         var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub =ubi[j], name=var_name)
         var_list.append(var)
 
-    print("OUT SHAPE ", out_shape, input_shape, filter_size, filters.shape, biases.shape)
+    #print("OUT SHAPE ", out_shape, input_shape, filter_size, filters.shape, biases.shape)
     if is_nchw:
         for out_z in range(out_shape[1]):
             for out_x in range(out_shape[2]):

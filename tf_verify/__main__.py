@@ -1322,11 +1322,29 @@ else:
                                 labels_to_be_verified.append(labels)
                             var = var+1
                     #print("relu layers", relu_layers)
-                    if refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]), labels_to_be_verified):
+                    is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]), labels_to_be_verified)
+                    if is_verified:
                         print("img", i, "Verified", int(test[0]))
                         verified_images+=1 
-                    else: 
-                        print("img", i, "Failed") 
+                    else:
+                        if x != None:
+                            adv_image = np.array(x)
+                            res = network.test(adv_image,adv_image,int(test[0]))
+                            is_verified = (res > 0).all()
+                            var = 0
+                            cex_label = None
+                            for labels in range(num_outputs):
+                                if labels != int(test[0]):
+                                    if res[var][0] < 0:
+                                        cex_label = labels
+                                        break
+                                    var = var+1
+                                        
+                            if is_verified==False:
+                                denormalize(x,means, stds, dataset)
+                                print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
+                            else:
+                                print("img", i, "Failed") 
                 else:
                     print("img", i, "Failed")
             else:    
