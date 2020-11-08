@@ -23,8 +23,9 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             new_relu_layers.append(len(nlb))
             #print("RELU ")
         else:
+            print("COMING HERE")
             A = np.zeros((num_neurons,num_neurons), dtype=np.double)
-            print("num neurons", num_neurons)
+            #print("FINISHED ", num_neurons)
             for j in range(num_neurons):
                 A[j][j] = 1
             bounds = network.evalAffineExpr(A, layer=layerno, back_substitute=network.FULL_BACKSUBSTITUTION, dtype=np.double)
@@ -53,7 +54,7 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         #print("total size ", total_size, kact_args)
         A = np.zeros((total_size, num_neurons), dtype=np.double)
         i = 0
-        print("total_size ", total_size)
+        #print("total_size ", total_size)
         for varsid in kact_args:
             for coeffs in itertools.product([-1, 0, 1], repeat=len(varsid)):
                 if all(c == 0 for c in coeffs):
@@ -84,20 +85,23 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             kact_cons.append(inst)
             gid = gid+1
         relu_groups.append(kact_cons)
-    counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer, config.complete==True)
+    counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer, config.complete==True, is_nchw=True)
     model.setParam(GRB.Param.TimeLimit, config.timeout_lp)
     num_var = len(var_list)
     #output_size = num_var - counter
-    print("TIMEOUT ", config.timeout_lp)
+    #print("TIMEOUT ", config.timeout_lp)
     flag = True
     x = None
     for label in labels_to_be_verified:
         obj = LinExpr()
+        #obj += 1*var_list[785]
         obj += 1*var_list[counter + true_label]
         obj += -1*var_list[counter + label]
         model.setObjective(obj,GRB.MINIMIZE)
         model.optimize()
-        print("objval ", label, model.Status)
+        #model.computeIIS()
+        #model.write("model_refinegpupo.ilp")
+        print("objval ", label, model.Status, model.objval)
         if model.Status!=2:
             print("model was not successful status is", model.Status)
             model.write("final.mps")

@@ -1299,6 +1299,7 @@ else:
                 is_verified = (res > 0).all()
                 #print("res ", res)
                 if is_verified:
+                    print("img", i, "Verified", int(test[0]))
                     verified_images+=1
                 elif domain == 'refinegpupoly':
                     
@@ -1309,9 +1310,9 @@ else:
                     nn.specUB = specUB
                     nn.predecessors = []
                     
-                    for i in range(0,nn.numlayer+1):
+                    for pred in range(0,nn.numlayer+1):
                         predecessor = np.zeros(1, dtype=np.int)
-                        predecessor[0] = int(i-1)
+                        predecessor[0] = int(pred-1)
                         nn.predecessors.append(predecessor)
                     #print("predecessors ", nn.predecessors[0][0])
                     for labels in range(num_outputs):
@@ -1320,9 +1321,14 @@ else:
                             if res[var][0] < 0:
                                 labels_to_be_verified.append(labels)
                             var = var+1
-                    print("relu layers", relu_layers)
+                    #print("relu layers", relu_layers)
                     if refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]), labels_to_be_verified):
-                        verified_images+=1   
+                        print("img", i, "Verified", int(test[0]))
+                        verified_images+=1 
+                    else: 
+                        print("img", i, "Failed") 
+                else:
+                    print("img", i, "Failed")
             else:    
                 perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
@@ -1343,6 +1349,7 @@ else:
                                 if(cex_label!=label):
                                     denormalize(adv_image[0], means, stds, dataset)
                                     print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+                                    #verified_images+=1 
                             print("img", i, "Failed")
                     else:
                     
@@ -1352,6 +1359,7 @@ else:
                             if(cex_label!=label):
                                 denormalize(x,means, stds, dataset)
                                 print("img", i, "Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
+                                #verified_images+=1 
                             else:
                                 print("img", i, "Failed")
                         else:

@@ -125,10 +125,10 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch, is_gpupoly):
         elif curr_line in ["ReLU", "Sigmoid", "Tanh", "Affine"]:
             print(curr_line)
             W = None
+            
             if (last_layer in ["Conv2D", "ParSumComplete", "ParSumReLU"]) and is_trained_with_pytorch and not is_gpupoly:
                 W = myConst(permutation(parseVec(net), h, w, c).transpose())
             else:
-                
                 W = myConst(parseVec(net).transpose())
             b = parseVec(net)
             #b = myConst(b.reshape([1, numel(b)]))

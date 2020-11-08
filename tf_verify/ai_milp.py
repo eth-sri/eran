@@ -32,45 +32,78 @@ def milp_callback(model, where):
             model.terminate()
 
 
-def handle_conv(model,var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp):
+def handle_conv(model, var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp, is_nchw=False):
 
     num_out_neurons = np.prod(out_shape)
     num_in_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
-
+    #print("filters", filters.shape, filter_size, input_shape, strides, out_shape, pad_top, pad_left)
     start = len(var_list)
     for j in range(num_out_neurons):
         var_name = "x" + str(start+j)
         var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub =ubi[j], name=var_name)
         var_list.append(var)
 
-    for out_x in range(out_shape[1]):
-        for out_y in range(out_shape[2]):
-            for out_z in range(out_shape[3]):
-                dst_ind = out_x*out_shape[2]*out_shape[3] + out_y*out_shape[3] + out_z
-                expr = LinExpr()
-                expr += -1*var_list[start+dst_ind]
-                for inp_z in range(input_shape[2]):
-                     for x_shift in range(filter_size[0]):
-                         for y_shift in range(filter_size[1]):
-                             x_val = out_x*strides[0]+x_shift-pad_top
-                             y_val = out_y*strides[1]+y_shift-pad_left
+    print("OUT SHAPE ", out_shape, input_shape, filter_size, filters.shape, biases.shape)
+    if is_nchw:
+        for out_z in range(out_shape[1]):
+            for out_x in range(out_shape[2]):
+                for out_y in range(out_shape[3]):
+                
+                    dst_ind = out_z*out_shape[2]*out_shape[3] + out_x*out_shape[3] + out_y
+                    expr = LinExpr()
+                    #print("dst ind ", dst_ind)
+                    expr += -1*var_list[start+dst_ind]
+                    
+                    for inp_z in range(input_shape[0]):
+                        for x_shift in range(filter_size[0]):
+                            for y_shift in range(filter_size[1]):
+                                x_val = out_x*strides[0]+x_shift-pad_top
+                                y_val = out_y*strides[1]+y_shift-pad_left
+                                if(y_val<0 or y_val >= input_shape[2]):
+                                    continue
+                                if(x_val<0 or x_val >= input_shape[1]):
+                                    continue
+                                mat_offset = x_val*input_shape[2] + y_val + inp_z*input_shape[1]*input_shape[2]
+                                if(mat_offset>=num_in_neurons):
+                                    continue 
+                                src_ind = start_counter + mat_offset
+                                #print("src ind ", mat_offset)
+                                #filter_index = x_shift*filter_size[1]*input_shape[0]*out_shape[1] + y_shift*input_shape[0]*out_shape[1] + inp_z*out_shape[1] + out_z
+                                expr.addTerms(filters[out_z][inp_z][x_shift][y_shift],var_list[src_ind])
+                                                           
+                    expr.addConstant(biases[out_z])
+                    
+                    model.addConstr(expr, GRB.EQUAL, 0)  
+                      
+    else:
+        for out_x in range(out_shape[1]):
+            for out_y in range(out_shape[2]):
+                for out_z in range(out_shape[3]):
+                    dst_ind = out_x*out_shape[2]*out_shape[3] + out_y*out_shape[3] + out_z
+                    expr = LinExpr()
+                    expr += -1*var_list[start+dst_ind]
+                    for inp_z in range(input_shape[2]):
+                        for x_shift in range(filter_size[0]):
+                            for y_shift in range(filter_size[1]):
+                                x_val = out_x*strides[0]+x_shift-pad_top
+                                y_val = out_y*strides[1]+y_shift-pad_left
 
-                             if(y_val<0 or y_val >= input_shape[1]):
-                                 continue
+                                if(y_val<0 or y_val >= input_shape[1]):
+                                    continue
 
-                             if(x_val<0 or x_val >= input_shape[0]):
-                                 continue
+                                if(x_val<0 or x_val >= input_shape[0]):
+                                    continue
 
-                             mat_offset = x_val*input_shape[1]*input_shape[2] + y_val*input_shape[2] + inp_z
-                             if(mat_offset>=num_in_neurons):
-                                 continue
-                             src_ind = start_counter + mat_offset
-                             filter_index = x_shift*filter_size[1]*input_shape[2]*out_shape[3] + y_shift*input_shape[2]*out_shape[3] + inp_z*out_shape[3] + out_z
+                                mat_offset = x_val*input_shape[1]*input_shape[2] + y_val*input_shape[2] + inp_z
+                                if(mat_offset>=num_in_neurons):
+                                    continue
+                                src_ind = start_counter + mat_offset
+                                #filter_index = x_shift*filter_size[1]*input_shape[2]*out_shape[3] + y_shift*input_shape[2]*out_shape[3] + inp_z*out_shape[3] + out_z
                              #expr.addTerms(filters[filter_index],var_list[src_ind])
-                             expr.addTerms(filters[x_shift][y_shift][inp_z][out_z],var_list[src_ind])
+                                expr.addTerms(filters[x_shift][y_shift][inp_z][out_z],var_list[src_ind])
 
-                expr.addConstant(biases[out_z])
-                model.addConstr(expr, GRB.EQUAL, 0)
+                    expr.addConstant(biases[out_z])
+                    model.addConstr(expr, GRB.EQUAL, 0)
     return start
 
 
@@ -251,6 +284,7 @@ def handle_residual(model, var_list, branch1_counter, branch2_counter, lbi, ubi)
 
 
 def _add_kactivation_constraints(model, var_list, constraint_groups, x_counter, y_counter):
+    #print("start here ")
     for inst in constraint_groups:
         for row in inst.cons:
             k = len(inst.varsid)
@@ -259,12 +293,13 @@ def _add_kactivation_constraints(model, var_list, constraint_groups, x_counter, 
             for i, x in enumerate(inst.varsid):
                 expr.addTerms(row[1 + i], var_list[x_counter + x])
                 expr.addTerms(row[1 + k + i], var_list[y_counter + x])
+            #print("row ", row)
             model.addConstr(expr >= 0)
 
 
 def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_groupsi, use_milp):
     use_milp = use_milp and config.use_milp
-
+    #print("relu groups ")
     start= len(var_list)
     binary_counter = start
     relu_counter = start
@@ -353,7 +388,7 @@ def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
     return y_counter
 
 
-def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
+def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is_nchw=False):
     use_milp = use_milp and config.use_milp
 
     model = Model("milp")
@@ -469,7 +504,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
 
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
-            counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp)
+            counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp, is_nchw=is_nchw)
 
             start_counter.append(counter)
 
@@ -505,6 +540,9 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp):
     nn.residual_counter = residual_counter
     nn.pool_counter = pool_counter
     nn.activation_counter = activation_counter
+    #model.write("model_refinepoly.lp")
+    np.set_printoptions(threshold=sys.maxsize)
+    #print("NLB ", nlb[-4], len(nlb[-4]))
     return counter, var_list, model
 
 
