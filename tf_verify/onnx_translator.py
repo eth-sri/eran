@@ -269,8 +269,8 @@ def prepare_model(model):
 					all_constant = False
 					break
 			if all_constant:
-				for input in node.input:
-					print("input ", constants_map[input], type(input))
+				#for input in node.input:
+					#print("input ", constants_map[input], type(input))
 				constants_map[node.output[0]] = np.concatenate([constants_map[input] for input in node.input], axis=axis)
 			all_shape_known = True
 			for input in node.input:

@@ -503,11 +503,11 @@ class Optimizer:
                 filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
-                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.input_shape.append([image_shape[2],image_shape[0],image_shape[1]])
                 nn.strides.append([strides[0],strides[1]])
-                nn.out_shapes.append(b_output_shape)
+                nn.out_shapes.append([b_output_shape[0], b_output_shape[3], b_output_shape[1], b_output_shape[2]])
                 nn.padding.append([pad_top, pad_left])
-                nn.filters.append(filters)
+                nn.filters.append(np.transpose(filters,[3,2,0, 1]))
 
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
