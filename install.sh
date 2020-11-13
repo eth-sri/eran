@@ -50,14 +50,12 @@ make install
 cd ..
 rm mpfr-4.1.0.tar.xz
 
-wget https://github.com/cddlib/cddlib/releases/download/0.94j/cddlib-0.94j.tar.gz
-tar -xvf cddlib-0.94j.tar.gz
-cd cddlib-0.94j
+git clone https://github.com/cddlib/cddlib.git
+cd cddlib
 ./configure
 make
 make install
 cd ..
-rm cddlib-0.94j.tar.gz
 
 wget https://packages.gurobi.com/9.0/gurobi9.0.3_linux64.tar.gz
 tar -xvf gurobi9.0.3_linux64.tar.gz
