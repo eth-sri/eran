@@ -192,7 +192,7 @@ def prepare_model(model):
 				output_shape.append(1 + strided_kernel_positions)
 
 			if require_kernel_shape:
-				output_shape.append(input_shape[1])
+				output_shape.append(input_shape[3])
 			else:
 				output_shape.append(filter_shape[0])
 
