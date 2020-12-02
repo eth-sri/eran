@@ -117,7 +117,7 @@ def prepare_model(model):
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 		elif node.op_type == "Constant":
 			const = node.attribute
-			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t))
+			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t)).copy()
 			constants_map[node.output[0]] = const
 			shape_map[node.output[0]] = const.shape
 
