@@ -225,6 +225,20 @@ class Optimizer:
                 nn.layertypes.append('Gather')
                 nn.numlayer += 1
                 i += 1
+            elif self.operations[i] == "Concat":
+                assert domain == "deeppoly", "Only DeepPoly currently supports concatenation"
+                width, height, channels, input_names, output_name, output_shape = self.resources[i][domain]
+                execute_list.append(DeeppolyConcat(width, height, channels, input_names, output_name, output_shape))
+                nn.layertypes.append('Concat')
+                nn.numlayer += 1
+                i += 1
+            elif self.operations[i] == "Tile":
+                assert domain == "deeppoly", "Only DeepPoly currently supports tiling"
+                repeats, input_names, output_name, output_shape = self.resources[i][domain]
+                execute_list.append(DeeppolyTile(repeats, input_names, output_name, output_shape))
+                nn.layertypes.append('Tile')
+                nn.numlayer += 1
+                i += 1
             else:
                 assert 0, "the optimizer for" + domain + " doesn't know of the operation type " + self.operations[i]
             output_info.append(self.resources[i-1][domain][-2:])

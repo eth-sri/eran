@@ -41,6 +41,8 @@ class layers:
         self.conv_counter = 0
         self.residual_counter = 0
         self.pool_counter = 0
+        self.concat_counter = 0
+        self.tile_counter = 0
         self.activation_counter = 0
         self.specLB = []
         self.specUB = []
@@ -53,7 +55,7 @@ class layers:
         self.prop = -1
 
     def calc_layerno(self):
-        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter
+        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter + self.concat_counter + self.tile_counter
 
     def is_ffn(self):
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
@@ -193,6 +195,8 @@ class Analyzer:
             self.nn.ffn_counter = 0
             self.nn.conv_counter = 0
             self.nn.pool_counter = 0
+            self.nn.concat_counter = 0
+            self.nn.tile_counter = 0
             self.nn.residual_counter = 0
             self.nn.activation_counter = 0
             counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, config.complete==True)
