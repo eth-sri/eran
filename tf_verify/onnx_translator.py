@@ -131,17 +131,17 @@ def prepare_model(model):
 
 	placeholdernames = []
 	#print("graph ", model.graph.input)
-	for input in model.graph.input:
-		placeholdernames.append(input.name)
-		if input.name not in shape_map:
-			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
-			input_node_map[input.name] = input
+	for node_input in model.graph.input:
+		placeholdernames.append(node_input.name)
+		if node_input.name not in shape_map:
+			shape_map[node_input.name] = onnxshape_to_intlist(node_input.type.tensor_type.shape)
+			input_node_map[node_input.name] = node_input
 			
 	for node in model.graph.node:
 		#print(node.op_type)
 		output_node_map[node.output[0]] = node
-		for input in node.input:
-			input_node_map[input] = node
+		for node_input in node.input:
+			input_node_map[node_input] = node
 		if node.op_type == "Flatten":
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 		elif node.op_type == "Constant":
@@ -293,21 +293,21 @@ def prepare_model(model):
 		elif node.op_type == "Concat":
 			all_constant = True
 			axis = nchw_to_nhwc_index(node.attribute[0].i)
-			for input in node.input:
-				if not input in constants_map:
+			for node_input in node.input:
+				if not node_input in constants_map:
 					all_constant = False
 					break
 			if all_constant:
 				constants_map[node.output[0]] = np.concatenate([constants_map[input] for input in node.input], axis=axis)
 			all_shape_known = True
-			for input in node.input:
-				if not input in shape_map:
+			for node_input in node.input:
+				if not node_input in shape_map:
 					all_shape_known = False
 					break
 			assert all_shape_known, "Unknown shape for at least one node input!"
 			new_axis_size = 0
-			for input in node.input:
-				new_axis_size += shape_map[input][axis]
+			for node_input in node.input:
+				new_axis_size += shape_map[node_input][axis]
 			shape_map[node.output[0]] = [shape_map[node.input[0]][i] if i != axis else new_axis_size for i in range(len(shape_map[node.input[0]]))]
 			if not all_constant:
 				assert axis == 3, "ELINA currently only supports concatenation on the channel dimension"

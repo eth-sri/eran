@@ -548,8 +548,8 @@ class DeeppolyConcat:
         self.width = width
         self.height = height
         self.channels = (c_size_t * len(channels))()
-        for i in range(len(channels)):
-            self.channels[i] = channels[i]
+        for i, channel in enumerate(channels):
+            self.channels[i] = channel
 
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
