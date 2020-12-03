@@ -542,6 +542,39 @@ class DeeppolyGather:
         return element
 
 
+class DeeppolyConcat:
+    def __init__(self, width, height, channels, input_names, output_name, output_shape):
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+        self.width = width
+        self.height = height
+        self.channels = (c_size_t * len(channels))()
+        for i in range(len(channels)):
+            self.channels[i] = channels[i]
+
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        handle_concatenation_layer(man, element, self.predecessors, len(self.predecessors), self.channels)
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
+        nn.concat_counter += 1
+        if testing:
+            return element, nlb[-1], nub[-1]
+        return element
+
+
+class DeeppolyTile:
+    def __init__(self, repeats, input_names, output_name, output_shape):
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+        self.repeats = repeats
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        handle_tiling_layer(man, element, self.predecessors, len(self.predecessors), self.repeats)
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
+        nn.tile_counter += 1
+        if testing:
+            return element, nlb[-1], nub[-1]
+        return element
+
+
 class DeeppolySubNode:
     def __init__(self, bias, is_minuend, input_names, output_name, output_shape):
         """
