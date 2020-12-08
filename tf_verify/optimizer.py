@@ -17,7 +17,8 @@
 
 from deepzono_nodes import *
 from deeppoly_nodes import *
-from gpupoly import Network
+if config.domain=='gpupoly' or config.domain=='refinegpupoly':
+    from gpupoly import Network
 from functools import reduce
 import numpy as np
 from read_net_file import *

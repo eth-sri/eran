@@ -44,7 +44,8 @@ from tensorflow_translator import *
 from onnx_translator import *
 from optimizer import *
 from analyzer import *
-from refine_gpupoly import *
+if config.domain=='gpupoly' or config.domain=='refinegpupoly':
+    from refine_gpupoly import *
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
