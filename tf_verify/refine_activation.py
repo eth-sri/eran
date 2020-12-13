@@ -62,12 +62,15 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
         length = get_num_neurons_in_layer(man, element, predecessor_index)
     lbi = nlb[predecessor_index]
     ubi = nub[predecessor_index]
-    first_FC = -1
+    second_FC = -2
     timeout = timeout_milp
     for i in range(nn.numlayer):
         if nn.layertypes[i] == 'FC':
-            first_FC = i
-            break
+            if second_FC == -2:
+                second_FC = -1
+            else:
+                second_FC = i
+                break
 
     if nn.activation_counter==0:
         if domain=='deepzono':
@@ -91,7 +94,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 handle_tanh_layer(*self.get_arguments(man, element))
 
     else:
-        if predecessor_index==first_FC:
+        if predecessor_index==second_FC:
             use_milp = 1
         else:
             use_milp = 0
