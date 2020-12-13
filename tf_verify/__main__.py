@@ -44,6 +44,7 @@ from tensorflow_translator import *
 from onnx_translator import *
 from optimizer import *
 from analyzer import *
+from pprint import pprint
 if config.domain=='gpupoly' or config.domain=='refinegpupoly':
     from refine_gpupoly import *
 
@@ -287,7 +288,7 @@ def get_tests(dataset, geometric):
         csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
     else:
         if config.subset == None:
-            csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+            csvfile = open('../data/{}_test_full.csv'.format(dataset), 'r')
         else:
             filename = '../data/'+ dataset+ '_test_' + config.subset + '.csv'
             csvfile = open(filename, 'r')
@@ -350,6 +351,7 @@ args = parser.parse_args()
 for k, v in vars(args).items():
     setattr(config, k, v)
 config.json = vars(args)
+pprint(config.json)
 
 if config.specnumber and not config.input_box and not config.output_constraints:
     config.input_box = '../data/acasxu/specs/acasxu_prop_' + str(config.specnumber) + '_input_prenormalized.txt'
