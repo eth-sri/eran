@@ -63,7 +63,11 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
                     A[i][varsid[j]] = coeffs[j] 
                
                 i = i + 1
-        bounds = network.evalAffineExpr(A, layer=gpu_layer, back_substitute=network.FULL_BACKSUBSTITUTION, dtype=np.double)
+        bounds=np.zeros(shape=(0, 2))
+        for i_a in range((int)(np.ceil(A.shape[0] / 1000))):
+            A_temp = A[i_a*1000:(i_a+1)*1000]
+            bounds_temp = network.evalAffineExpr(A_temp, layer=gpu_layer, back_substitute=network.FULL_BACKSUBSTITUTION, dtype=np.double)
+            bounds = np.concatenate([bounds, bounds_temp], axis=0)
         upper_bound = bounds[:,1]
         i=0
         input_hrep_array = []
@@ -99,7 +103,8 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         obj += -1*var_list[counter + label]
         model.setObjective(obj,GRB.MINIMIZE)
         model.optimize()
-        #model.computeIIS()
+        # model.optimize(lp_callback)
+        # model.computeIIS()
         #model.write("model_refinegpupo.ilp")
         print("objval ", label, model.Status, model.objval)
         if model.Status!=2:

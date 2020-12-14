@@ -248,6 +248,7 @@ class Analyzer:
                                             x = model.x[0:len(self.nn.specLB)]
                                         break    
                                 else:
+                                    # model.optimize(lp_callback)
                                     model.optimize()
                                     print("objval ", j, model.objval)
                                     if model.Status!=2:
