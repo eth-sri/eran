@@ -204,6 +204,7 @@ class Analyzer:
                 model.setParam(GRB.Param.TimeLimit,self.timeout_milp)
             else:
                 model.setParam(GRB.Param.TimeLimit,self.timeout_lp)
+            model.setParam(GRB.Param.Cutoff, 0.01)
             num_var = len(var_list)
             output_size = num_var - counter
 
@@ -250,8 +251,10 @@ class Analyzer:
                                 else:
                                     # model.optimize(lp_callback)
                                     model.optimize()
-                                    print("objval ", j, model.objval)
-                                    if model.Status!=2:
+                                    print(f"objval against label {j}: {model.objval}, Time was: {model.Runtime} ")
+                                    if model.Status == 6:
+                                        print("Cutoff reduced eval time. Objval ", label, model.Status, model.objval)
+                                    elif model.Status != 2:
                                         print("model was not successful status is", model.Status)
                                         model.write("final.mps")
                                         flag = False

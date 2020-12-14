@@ -91,6 +91,8 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         relu_groups.append(kact_cons)
     counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer, config.complete==True, is_nchw=True)
     model.setParam(GRB.Param.TimeLimit, config.timeout_lp)
+    model.setParam(GRB.Param.Cutoff, 0.01)
+
     num_var = len(var_list)
     #output_size = num_var - counter
     #print("TIMEOUT ", config.timeout_lp)
@@ -107,7 +109,9 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         # model.computeIIS()
         #model.write("model_refinegpupo.ilp")
         print("objval ", label, model.Status, model.objval)
-        if model.Status!=2:
+        if model.Status == 6:
+            print("Cutoff reduced eval time. Objval ", label, model.Status, model.objval)
+        elif model.Status!=2:
             print("model was not successful status is", model.Status)
             model.write("final.mps")
             flag = False
