@@ -45,8 +45,8 @@ from onnx_translator import *
 from optimizer import *
 from analyzer import *
 from pprint import pprint
-if config.domain=='gpupoly' or config.domain=='refinegpupoly':
-    from refine_gpupoly import *
+# if config.domain=='gpupoly' or config.domain=='refinegpupoly':
+from refine_gpupoly import *
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -480,7 +480,8 @@ os.sched_setaffinity(0,cpu_affinity)
 
 correctly_classified_images = 0
 verified_images = 0
-
+unsafe_images = 0
+cum_time = 0
 
 if dataset:
     if config.input_box is None:
@@ -1345,7 +1346,9 @@ else:
                                         
                             if is_verified==False:
                                 denormalize(x,means, stds, dataset)
-                                print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
+                                # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
+                                print("img", i, "Verified unsafe against label ", cex_label, "correct label ", int(test[0]))
+                                unsafe_images += 1
                             else:
                                 print("img", i, "Failed") 
                 else:
@@ -1359,18 +1362,18 @@ else:
                 else:
                     if complete==True:
                         constraints = get_constraints_for_dominant_label(label, failed_labels)
-                        verified_flag,adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+                        verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                         if(verified_flag==True):
                             print("img", i, "Verified as Safe", label)
                             verified_images += 1
                         else:
-                        
                             if adv_image != None:
                                 cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
                                 if(cex_label!=label):
                                     denormalize(adv_image[0], means, stds, dataset)
-                                    print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
-                                    #verified_images+=1 
+                                    # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
+                                    print("img", i, "Verified unsafe against label ", cex_label, "correct label ", label)
+                                    unsafe_images+=1
                             print("img", i, "Failed")
                     else:
                     
@@ -1379,18 +1382,25 @@ else:
                             print("cex label ", cex_label, "label ", label)
                             if(cex_label!=label):
                                 denormalize(x,means, stds, dataset)
-                                print("img", i, "Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
-                                #verified_images+=1 
+                                # print("img", i, "Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
+                                print("img", i, "Verified unsafe against label ", cex_label, "correct label ", label)
+                                unsafe_images+=1
                             else:
                                 print("img", i, "Failed")
                         else:
                             print("img", i, "Failed")
 
-                
-                end = time.time()
-                print(end - start, "seconds")
+            end = time.time()
+            # print(end - start, "seconds")
+            cum_time += end - start
         else:
             if domain != "gpupoly" and domain!= "refinegpupoly":
                 print("img",i,"not considered, correct_label", int(test[0]), "classified label ", label)
+
+        print(f"progress: {1+i - config.from_test}/{config.num_tests}, "
+              f"correct:  {correctly_classified_images}/{1+i - config.from_test}, "
+              f"verified: {verified_images}/{correctly_classified_images}, "
+              f"unsafe: {unsafe_images}/{correctly_classified_images}, ",
+              f"time: {end - start:.3f}; {cum_time / correctly_classified_images:.3f}; {cum_time:.3f}")
 
     print('analysis precision ',verified_images,'/ ', correctly_classified_images)
