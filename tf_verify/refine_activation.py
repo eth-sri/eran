@@ -108,7 +108,9 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
         #TODO handle residual layers here
         if config.refine_neurons==True:
             start = time.time()
-            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index, predecessor_index, length, nlb, nub, relu_groups, use_milp_temp,  candidate_vars, timeout)
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index,
+                                                                 predecessor_index, length, nlb, nub, relu_groups,
+                                                                 use_milp_temp,  candidate_vars, timeout)
             end = time.time()
             if config.debug:
                 print(f"Refinement of bounds time: {end-start:.3f}. MILP used: {use_milp_temp}")

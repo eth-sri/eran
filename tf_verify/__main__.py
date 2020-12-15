@@ -1333,7 +1333,10 @@ else:
 
                     is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]),
                                                             labels_to_be_verified, K=config.k,
-                                                            timeout_final_lp=config.timeout_final_lp)
+                                                            timeout_final_lp=config.timeout_final_lp,
+                                                            timeout_lp=config.timeout_lp,
+                                                            timeout_milp=config.timeout_milp,
+                                                            use_milp=config.use_milp)
                     if is_verified:
                         print("img", i, "Verified", int(test[0]))
                         verified_images+=1 

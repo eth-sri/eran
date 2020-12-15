@@ -1,7 +1,8 @@
 from optimizer import *
 from krelu import *
+import time
 
-def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, K=3, timeout_final_lp=100):
+def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, K=3, timeout_lp=10, timeout_milp=10, timeout_final_lp=100, use_milp=False):
     relu_groups = []
     nlb = []
     nub = []
@@ -35,12 +36,49 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             layerno = layerno+1
         nlb.append(lbi)
         nub.append(ubi)
-       
+
+    second_FC = -2
+    for i in range(nn.numlayer):
+        if nn.layertypes[i] == 'FC':
+            if second_FC == -2:
+                second_FC = -1
+            else:
+                second_FC = i
+                break
+
     index = 0 
     for l in relu_layers:
         gpu_layer = l - 1
         layerno = new_relu_layers[index]
         index = index+1
+
+
+
+        if config.refine_neurons==True:
+            predecessor_index = nn.predecessors[layerno + 1][0] - 1
+            if predecessor_index == second_FC:
+                use_milp_temp = use_milp
+                timeout = timeout_milp
+            else:
+                use_milp_temp = False
+                timeout = timeout_lp
+            length = len(nlb[predecessor_index])
+
+            candidate_vars = []
+            for i in range(length):
+                if ((nlb[predecessor_index][i] < 0 and nub[predecessor_index][i] > 0) or (nlb[predecessor_index][i] > 0)):
+                    candidate_vars.append(i)
+
+            start = time.time()
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index,
+                                                                 predecessor_index, length, nlb, nub, relu_groups,
+                                                                 use_milp_temp,  candidate_vars, timeout)
+            end = time.time()
+            if config.debug:
+                print(f"Refinement of bounds time: {end-start:.3f}. MILP used: {use_milp_temp}")
+            nlb[predecessor_index] = resl
+            nub[predecessor_index] = resu
+
         lbi = nlb[layerno-1]
         ubi = nub[layerno-1]
         #print("LBI ", lbi, "UBI ", ubi, "specLB")
@@ -65,8 +103,9 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
                
                 i = i + 1
         bounds=np.zeros(shape=(0, 2))
-        for i_a in range((int)(np.ceil(A.shape[0] / 1000))):
-            A_temp = A[i_a*1000:(i_a+1)*1000]
+        max_eqn_per_call = 500
+        for i_a in range((int)(np.ceil(A.shape[0] / max_eqn_per_call))):
+            A_temp = A[i_a*max_eqn_per_call:(i_a+1)*max_eqn_per_call]
             bounds_temp = network.evalAffineExpr(A_temp, layer=gpu_layer, back_substitute=network.FULL_BACKSUBSTITUTION, dtype=np.double)
             bounds = np.concatenate([bounds, bounds_temp], axis=0)
         upper_bound = bounds[:,1]
@@ -81,8 +120,10 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
                 i = i + 1
             input_hrep_array.append(input_hrep)
         KAct.type = "ReLU"
-        with multiprocessing.Pool(config.numproc) as pool:
-            kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+        # with multiprocessing.Pool(config.numproc) as pool:
+        #     kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+        kact_results = list(map(make_kactivation_obj, input_hrep_array))
+
         gid = 0
         for inst in kact_results:
             varsid = kact_args[gid]
