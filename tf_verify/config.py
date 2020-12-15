@@ -35,6 +35,8 @@ class config:
     complete = False # flag specifying where to use complete verification or not
     timeout_lp = 1 # timeout for the LP solver
     timeout_milp = 1 # timeout for the MILP solver
+    timeout_final_lp = 100
+    timeout_final_milp = 100
     timeout_complete = 60 # timeout for the complete verifier
     use_default_heuristic = True # whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation
     mean = None # the mean used to normalize the data with
@@ -52,6 +54,7 @@ class config:
     sparse_n = 70
     numproc = multiprocessing.cpu_count() # number of processes for milp/lp/krelu
     normalized_region = True
+    k = 3
     # Geometric options
     geometric = False # Whether to do geometric analysis
     attack = False # Whether to attack in geometric analysis

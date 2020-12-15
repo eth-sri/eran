@@ -1,7 +1,7 @@
 from optimizer import *
 from krelu import *
 
-def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified):
+def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, K=3, timeout_final_lp=100):
     relu_groups = []
     nlb = []
     nub = []
@@ -45,7 +45,7 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         ubi = nub[layerno-1]
         #print("LBI ", lbi, "UBI ", ubi, "specLB")
         num_neurons = len(lbi)
-        kact_args = sparse_heuristic_with_cutoff(num_neurons, lbi, ubi)
+        kact_args = sparse_heuristic_with_cutoff(num_neurons, lbi, ubi, K=K)
         kact_cons = []
         total_size = 0
         for varsid in kact_args:
@@ -90,7 +90,7 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             gid = gid+1
         relu_groups.append(kact_cons)
     counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer, config.complete==True, is_nchw=True)
-    model.setParam(GRB.Param.TimeLimit, config.timeout_lp)
+    model.setParam(GRB.Param.TimeLimit, timeout_final_lp)
     model.setParam(GRB.Param.Cutoff, 0.01)
 
     num_var = len(var_list)

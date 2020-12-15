@@ -317,7 +317,9 @@ parser.add_argument('--domain', type=str, default=config.domain, help='the domai
 parser.add_argument('--dataset', type=str, default=config.dataset, help='the dataset, can be either mnist, cifar10, acasxu, or fashion')
 parser.add_argument('--complete', type=str2bool, default=config.complete,  help='flag specifying where to use complete verification or not')
 parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help='timeout for the LP solver')
+parser.add_argument('--timeout_final_lp', type=float, default=config.timeout_final_lp,  help='timeout for the final LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
+parser.add_argument('--timeout_final_milp', type=float, default=config.timeout_final_lp,  help='timeout for the final MILP solver')
 parser.add_argument('--timeout_complete', type=float, default=config.timeout_milp,  help='timeout for the complete verifier')
 parser.add_argument('--numproc', type=int, default=config.numproc,  help='number of processes for MILP / LP / k-ReLU')
 parser.add_argument('--sparse_n', type=int, default=config.sparse_n,  help='Number of variables to group by k-ReLU')
@@ -341,6 +343,8 @@ parser.add_argument('--spatial', action='store_true', default=config.spatial, he
 parser.add_argument('--t-norm', type=str, default=config.t_norm, help='vector field norm (1, 2, or inf)')
 parser.add_argument('--delta', type=float, default=config.delta, help='vector field displacement magnitude')
 parser.add_argument('--gamma', type=float, default=config.gamma, help='vector field smoothness constraint')
+parser.add_argument('--k', type=int, default=config.k, help='refine group size')
+
 
 # Logging options
 parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
@@ -1326,7 +1330,10 @@ else:
                                 labels_to_be_verified.append(labels)
                             var = var+1
                     #print("relu layers", relu_layers)
-                    is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]), labels_to_be_verified)
+
+                    is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]),
+                                                            labels_to_be_verified, K=config.k,
+                                                            timeout_final_lp=config.timeout_final_lp)
                     if is_verified:
                         print("img", i, "Verified", int(test[0]))
                         verified_images+=1 
@@ -1353,8 +1360,15 @@ else:
                                 print("img", i, "Failed") 
                 else:
                     print("img", i, "Failed")
-            else:    
-                perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
+            else:
+                perturbed_label, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
+                                                                                  config.timeout_lp,
+                                                                                  config.timeout_milp,
+                                                                                  config.use_default_heuristic,
+                                                                                  label=label, prop=prop, K=config.k,
+                                                                                  timeout_final_lp=config.timeout_final_lp,
+                                                                                  timeout_final_milp=config.timeout_final_milp,
+                                                                                  use_milp=config.use_milp)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
                 if(perturbed_label==label):
                     print("img", i, "Verified", label)

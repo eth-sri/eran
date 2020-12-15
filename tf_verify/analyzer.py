@@ -112,7 +112,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, K=3, timeout_final_lp=100, timeout_final_milp=100, use_milp=False):
         """
         Arguments
         ---------
@@ -136,12 +136,16 @@ class Analyzer:
         self.nn = nn
         self.timeout_lp = timeout_lp
         self.timeout_milp = timeout_milp
+        self.timeout_final_lp = timeout_final_lp
+        self.timeout_final_milp = timeout_final_milp
+        self.use_milp = use_milp
         self.output_constraints = output_constraints
         self.use_default_heuristic = use_default_heuristic
         self.testing = testing
         self.relu_groups = []
         self.label = label
         self.prop = prop
+        self.K=K
     
     def __del__(self):
         elina_manager_free(self.man)
@@ -157,7 +161,17 @@ class Analyzer:
         testing_nlb = []
         testing_nub = []
         for i in range(1, len(self.ir_list)):
-            element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, 'refine' in self.domain, self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
+            if type(self.ir_list[i]) in [DeeppolyReluNode,DeeppolySigmoidNode,DeeppolyTanhNode]:
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub,
+                                                                  self.relu_groups, 'refine' in self.domain,
+                                                                  self.timeout_lp, self.timeout_milp,
+                                                                  self.use_default_heuristic, self.testing,
+                                                                  K=self.K, use_milp=self.use_milp)
+            else:
+                element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub,
+                                                                  self.relu_groups, 'refine' in self.domain,
+                                                                  self.timeout_lp, self.timeout_milp,
+                                                                  self.use_default_heuristic, self.testing)
 
             if self.testing and isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds
@@ -201,9 +215,9 @@ class Analyzer:
             self.nn.activation_counter = 0
             counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, config.complete==True)
             if config.complete==True:
-                model.setParam(GRB.Param.TimeLimit,self.timeout_milp)
+                model.setParam(GRB.Param.TimeLimit,self.timeout_final_milp)
             else:
-                model.setParam(GRB.Param.TimeLimit,self.timeout_lp)
+                model.setParam(GRB.Param.TimeLimit,self.timeout_final_lp)
             model.setParam(GRB.Param.Cutoff, 0.01)
             num_var = len(var_list)
             output_size = num_var - counter

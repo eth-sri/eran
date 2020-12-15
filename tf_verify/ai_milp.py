@@ -397,8 +397,6 @@ def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
 
 
 def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is_nchw=False):
-    use_milp = use_milp and config.use_milp
-
     model = Model("milp")
 
     model.setParam("OutputFlag",0)
@@ -663,30 +661,30 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 
     avg_solvetime = (solvetime+1)/(2*num_candidates+1)
 
-    model.setParam('TimeLimit', avg_solvetime/2)
-    model.update()
-    model.reset()
-
-    var_idxs = candidate_vars[num_candidates:]
-    if nn.layertypes[layerno] == 'Conv2D':
-        if len(var_idxs) >= num_candidates//3:
-            var_idxs = var_idxs[:(num_candidates//3)]
-    else:
-        if len(var_idxs) >= 50:
-            var_idxs = var_idxs[:50]
-    for v in var_idxs:
-        refined[v] = True
-        #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
-
-    with multiprocessing.Pool(NUMPROCESSES) as pool:
-       solver_result = pool.map(solver_call, var_idxs)
-    solvetime = 0
-    for (l, u, addtoindices, runtime), ind in zip(solver_result, var_idxs):
-        resl[ind] = l
-        resu[ind] = u
-        if addtoindices:
-            indices.append(ind)
-        solvetime += runtime
+    # model.setParam('TimeLimit', avg_solvetime/2)
+    # model.update()
+    # model.reset()
+    #
+    # var_idxs = candidate_vars[num_candidates:]
+    # if nn.layertypes[layerno] == 'Conv2D':
+    #     if len(var_idxs) >= num_candidates//3:
+    #         var_idxs = var_idxs[:(num_candidates//3)]
+    # else:
+    #     if len(var_idxs) >= 50:
+    #         var_idxs = var_idxs[:50]
+    # for v in var_idxs:
+    #     refined[v] = True
+    #     #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
+    #
+    # with multiprocessing.Pool(NUMPROCESSES) as pool:
+    #    solver_result = pool.map(solver_call, var_idxs)
+    # solvetime = 0
+    # for (l, u, addtoindices, runtime), ind in zip(solver_result, var_idxs):
+    #     resl[ind] = l
+    #     resu[ind] = u
+    #     if addtoindices:
+    #         indices.append(ind)
+    #     solvetime += runtime
 
     for i, flag in enumerate(refined):
         if not flag:

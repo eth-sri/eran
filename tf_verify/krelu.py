@@ -93,7 +93,7 @@ def get_ineqs_zono(varsid):
     return input_hrep
 
 
-def sparse_heuristic_with_cutoff(length, lb, ub):
+def sparse_heuristic_with_cutoff(length, lb, ub, K=3):
     assert length == len(lb) == len(ub)
 
     all_vars = [i for i in range(length) if lb[i] < 0 < ub[i]]
@@ -102,7 +102,6 @@ def sparse_heuristic_with_cutoff(length, lb, ub):
     all_vars = sorted(all_vars, key=lambda var: -areas[var])
 
     assert len(all_vars) == len(areas)
-    K = 3
     sparse_n = config.sparse_n
     cutoff = 0.05
     # Sort vars by descending area
@@ -174,7 +173,7 @@ def sparse_heuristic_curve(length, lb, ub, is_sigm):
     return kact_args
 
 
-def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type):
+def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type, K=3):
     import deepzono_nodes as dn
     if need_pop:
         constraint_groups.pop()
@@ -183,7 +182,7 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     ubi = np.asarray(ubi, dtype=np.double)
 
     if activation_type == "ReLU":
-        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi)
+        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi, K=K)
     else:
         kact_args = sparse_heuristic_curve(length, lbi, ubi, activation_type == "Sigmoid")
 
