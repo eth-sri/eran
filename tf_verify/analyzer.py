@@ -265,9 +265,10 @@ class Analyzer:
                                 else:
                                     # model.optimize(lp_callback)
                                     model.optimize()
-                                    print(f"objval against label {j}: {model.objval}, Time was: {model.Runtime} ")
+                                    print(f"Model status: {model.Status}, Objval against label {j}: {model.objval}, Final solve time: {model.Runtime}")
                                     if model.Status == 6:
-                                        print("Cutoff reduced eval time. Objval ", label, model.Status, model.objval)
+                                        # print("Cutoff reduced eval time. Objval ", label, model.Status, model.objval)
+                                        pass
                                     elif model.Status != 2:
                                         print("model was not successful status is", model.Status)
                                         model.write("final.mps")

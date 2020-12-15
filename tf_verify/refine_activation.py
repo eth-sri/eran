@@ -29,6 +29,7 @@ if config.device == Device.CPU:
     from fppoly import *
 else:
     from fppoly_gpu import *
+import time
 
 
 def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain, K=3, use_milp=False):

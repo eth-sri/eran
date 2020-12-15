@@ -45,6 +45,7 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         ubi = nub[layerno-1]
         #print("LBI ", lbi, "UBI ", ubi, "specLB")
         num_neurons = len(lbi)
+
         kact_args = sparse_heuristic_with_cutoff(num_neurons, lbi, ubi, K=K)
         kact_cons = []
         total_size = 0

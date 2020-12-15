@@ -231,9 +231,12 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
                 input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
                 i = i + 1
             input_hrep_array.append(input_hrep)
+    end_input = time.time()
 
-    with multiprocessing.Pool(config.numproc) as pool:
-        kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+
+    # with multiprocessing.Pool(config.numproc) as pool:
+    #     kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+    kact_results = list(map(make_kactivation_obj, input_hrep_array))
 
     gid = 0
     for inst in kact_results:
@@ -244,7 +247,7 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     end = time.time()
 
     if config.debug:
-        print('kactivation time spent: ' + str(end-start))
+        print(f'total k-activation time: {end-start:.3f}. Time for input: {end_input-start:.3f}. Time for k-activation constraints {end-end_input:.3f}.')
     if domain == 'refinezono':
         element = dn.remove_dimensions(man, element, offset+length, 1)
 
