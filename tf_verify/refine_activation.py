@@ -32,7 +32,7 @@ else:
 import time
 
 
-def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain, K=3, use_milp=False):
+def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain, K=3, s=-2, use_milp=False):
     """
     refines the relu transformer
 
@@ -76,7 +76,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
     if nn.activation_counter==0:
         if domain=='deepzono':
             encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
-                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno],K=K)
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno],K=K,s=s)
             if nn.layertypes[layerno] == 'ReLU':
                 element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
@@ -86,7 +86,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
             return element
         else:
             encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
-                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno],K=K)
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno],K=K,s=s)
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
@@ -141,7 +141,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 for j in indices:
                     update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
             encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
-                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], K=K)
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], K=K, s=s)
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':

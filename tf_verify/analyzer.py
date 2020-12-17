@@ -145,6 +145,7 @@ class Analyzer:
         self.relu_groups = []
         self.label = label
         self.prop = prop
+        self.complete = complete
         self.K=K
         self.s=s
     
@@ -187,7 +188,7 @@ class Analyzer:
         return element, nlb, nub
     
     
-    def analyze(self):
+    def analyze(self,terminate_on_failure=True):
         """
         analyses the network with the given input
         
@@ -214,12 +215,15 @@ class Analyzer:
             self.nn.tile_counter = 0
             self.nn.residual_counter = 0
             self.nn.activation_counter = 0
-            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, config.complete==True)
-            if config.complete==True:
-                model.setParam(GRB.Param.TimeLimit,self.timeout_final_milp)
+            counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub, self.relu_groups, self.nn.numlayer, self.complete)
+
+            if self.complete:
+                model.setParam(GRB.Param.TimeLimit, self.timeout_final_milp)
             else:
-                model.setParam(GRB.Param.TimeLimit,self.timeout_final_lp)
-            model.setParam(GRB.Param.Cutoff, 0.01)
+                model.setParam(GRB.Param.TimeLimit, self.timeout_final_lp)
+
+            # model.setParam(GRB.Param.Cutoff, 0.01)
+
             num_var = len(var_list)
             output_size = num_var - counter
 
@@ -232,37 +236,48 @@ class Analyzer:
                     candidate_labels.append(i)
             else:
                 candidate_labels.append(self.label)
+
             adv_labels = []
             if self.prop == -1:
                 for i in range(output_size):
                     adv_labels.append(i)
             else:
                 adv_labels.append(self.prop)   
-            for i in candidate_labels:
-                flag = True
-                label = i
-                for j in adv_labels:
-                    if self.domain == 'deepzono' or self.domain == 'refinezono':
-                        if i!=j and not self.is_greater(self.man, element, i, j):
-                            flag = False
-                            break
-                    else:
-                        if label!=j and not self.is_greater(self.man, element, label, j, self.use_default_heuristic):
 
+            for label in candidate_labels:
+                flag = True
+                for adv_label in adv_labels:
+                    if self.domain == 'deepzono' or self.domain == 'refinezono':
+                        if label == adv_label:
+                            continue
+                        elif self.is_greater(self.man, element, label, adv_label):
+                            continue
+                        else:
+                            flag = False
+                            label_failed.append(adv_label)
+                            if terminate_on_failure:
+                                break
+                    else:
+                        if label == adv_label:
+                            continue
+                        elif self.is_greater(self.man, element, label, adv_label, self.use_default_heuristic):
+                            continue
+                        else:
                             if(self.domain=='refinepoly'):
                                 obj = LinExpr()
-                                obj += 1*var_list[counter+label]
-                                obj += -1*var_list[counter + j]
-                                model.setObjective(obj,GRB.MINIMIZE)
-                                if config.complete == True:
+                                obj += 1 * var_list[counter + label]
+                                obj += -1 * var_list[counter + adv_label]
+                                model.setObjective(obj, GRB.MINIMIZE)
+                                if self.complete:
                                     model.optimize(milp_callback)
                                     if model.objbound <= 0:
                                         flag = False
-                                        if self.label!=-1:
-                                            label_failed.append(j)
+                                        if self.label != -1:
+                                            label_failed.append(adv_label)
                                         if model.solcount > 0:
                                             x = model.x[0:len(self.nn.specLB)]
-                                        break    
+                                        if terminate_on_failure:
+                                            break
                                 else:
                                     model.optimize(lp_callback)
                                     # model.optimize()
@@ -273,7 +288,7 @@ class Analyzer:
                                         print(
                                             f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime}")
                                     if model.Status == 6:
-                                        # print("Cutoff reduced eval time. Objval ", label, model.Status, model.objval)
+                                        # Cutoff active sound against adv_label
                                         pass
                                     elif model.Status != 2:
                                         print("model was not successful status is", model.Status)
@@ -289,14 +304,12 @@ class Analyzer:
 
                             else:
                                 flag = False
-                                if self.label!=-1:
-                                    label_failed.append(j)
-                                if config.complete == False:
+                                if self.label != -1:
+                                    label_failed.append(adv_label)
+                                if terminate_on_failure:
                                     break
-
-
                 if flag:
-                    dominant_class = i
+                    dominant_class = label
                     break
         else:
             # AND

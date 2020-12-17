@@ -1298,10 +1298,12 @@ else:
                 specLB = specLB - epsilon
                 specUB = specUB + epsilon
             start = time.time()
+
             if config.target == None:
                 prop = -1
             else:
                 prop = int(target[i])
+
             if domain == 'gpupoly' or domain =='refinegpupoly':
                 res = network.test(specLB, specUB, int(test[0]))
                 is_verified = (res > 0).all()
@@ -1368,10 +1370,12 @@ else:
                                                                                   config.timeout_lp,
                                                                                   config.timeout_milp,
                                                                                   config.use_default_heuristic,
-                                                                                  label=label, prop=prop, K=config.k,
+                                                                                  label=label, prop=prop, K=config.k, s=config.s,
                                                                                   timeout_final_lp=config.timeout_final_lp,
                                                                                   timeout_final_milp=config.timeout_final_milp,
-                                                                                  use_milp=config.use_milp)
+                                                                                  use_milp=config.use_milp,
+                                                                                  complete=config.complete,
+                                                                                  terminate_on_failure=config.partial_milp>0)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
                 if(perturbed_label==label):
                     print("img", i, "Verified", label)
@@ -1401,9 +1405,9 @@ else:
                                 denormalize(x,means, stds, dataset)
                                 # print("img", i, "Verified unsafe with adversarial image ", x, "cex label ", cex_label, "correct label ", label)
                                 print("img", i, "Verified unsafe against label ", cex_label, "correct label ", label)
-                                unsafe_images+=1
+                                unsafe_images += 1
                             else:
-                                print("img", i, "Failed")
+                                print("img", i, "Failed, x returned")
                         else:
                             print("img", i, "Failed")
 

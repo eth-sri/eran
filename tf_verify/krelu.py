@@ -231,10 +231,17 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
             input_hrep_array.append(input_hrep)
     end_input = time.time()
 
+    # kact_results = list(map(make_kactivation_obj, input_hrep_array))
 
-    # with multiprocessing.Pool(config.numproc) as pool:
-    #     kact_results = pool.map(make_kactivation_obj, input_hrep_array)
-    kact_results = list(map(make_kactivation_obj, input_hrep_array))
+    # end1 = time.time()
+
+    with multiprocessing.Pool(config.numproc) as pool:
+        kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+
+    # end2 = time.time()
+
+    # if end2-end_input>10:
+    #     print(f"list(map()) time: {end1-end_input:.3f}, multiprocessing time: {end2-end1:.3f}")
 
     gid = 0
     for inst in kact_results:
