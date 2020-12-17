@@ -264,9 +264,14 @@ class Analyzer:
                                             x = model.x[0:len(self.nn.specLB)]
                                         break    
                                 else:
-                                    # model.optimize(lp_callback)
-                                    model.optimize()
-                                    print(f"Model status: {model.Status}, Objval against label {j}: {model.objval}, Final solve time: {model.Runtime}")
+                                    model.optimize(lp_callback)
+                                    # model.optimize()
+                                    try:
+                                        print(
+                                            f"Model status: {model.Status}, Objval against label {adv_label}: {model.objval}, Final solve time: {model.Runtime}")
+                                    except:
+                                        print(
+                                            f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime}")
                                     if model.Status == 6:
                                         # print("Cutoff reduced eval time. Objval ", label, model.Status, model.objval)
                                         pass

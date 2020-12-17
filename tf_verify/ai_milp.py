@@ -37,7 +37,13 @@ def lp_callback(model, where):
     if where == GRB.Callback.SIMPLEX:
         obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
         if model.cbGet(GRB.Callback.SPX_DUALINF) == 0 and model.cbGet(GRB.Callback.SPX_PRIMINF) == 0 and obj_best < 0:
+            print("Used simplex terminate")
             model.terminate()
+    if where == GRB.Callback.BARRIER:
+        obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
+        if model.cbGet(GRB.Callback.BARRIER_PRIMINF) == 0 and model.cbGet(GRB.Callback.BARRIER_DUALINF) == 0 and obj_best < 0:
+            model.terminate()
+            print("Used barrier terminate")
 
 
 def handle_conv(model, var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp, is_nchw=False):
