@@ -37,7 +37,13 @@ def lp_callback(model, where):
     if where == GRB.Callback.SIMPLEX:
         obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
         if model.cbGet(GRB.Callback.SPX_DUALINF) == 0 and model.cbGet(GRB.Callback.SPX_PRIMINF) == 0 and obj_best < 0:
+            print("Used simplex terminate")
             model.terminate()
+    if where == GRB.Callback.BARRIER:
+        obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
+        if model.cbGet(GRB.Callback.BARRIER_PRIMINF) == 0 and model.cbGet(GRB.Callback.BARRIER_DUALINF) == 0 and obj_best < 0:
+            model.terminate()
+            print("Used barrier terminate")
 
 
 def handle_conv(model, var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp, is_nchw=False):
@@ -594,41 +600,14 @@ def solver_call(ind):
 def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, output_size, nlb, nub, relu_groups, use_milp, candidate_vars, timeout):
     lbi = nlb[abs_layer_count]
     ubi = nub[abs_layer_count]
-    #numlayer = nn.numlayer
 
-    candidate_length = len(candidate_vars)
-    widths = np.zeros(candidate_length)
-    #avg_weight = np.zeros(candidate_length)
-    #next_layer = nn.calc_layerno() + 1
-
-    # HEURISTIC 2
-    # in case of relu, the gradients are wrt to neurons after relu
-    #logits_diff = np.asarray([nn.logits[config.label]-l for l in nn.logits])
-    # subtract c-th column from each column, where c is correct class label
-    #grad_diff = nn.grads[layerno][:,config.label][:, np.newaxis] - nn.grads[layerno]
-    #deltas = np.nanmin(np.abs(logits_diff[np.newaxis, :] / grad_diff), axis=1)
-    widths = [ubi[j]-lbi[j] for j in range(len(lbi))]
+    widths = [u-l for u, l in zip(ubi,lbi)]
 
     candidate_vars = sorted(candidate_vars, key=lambda k: widths[k])
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, layerno+1, use_milp)
     resl = [0]*len(lbi)
     resu = [0]*len(ubi)
     indices = []
-
-    num_candidates = len(candidate_vars)
-    if nn.layertypes[layerno] == 'Conv2D':
-        num_candidates = num_candidates
-    else:
-        if(abs_layer_count<=3):
-            #num_candidates = int(len(candidate_vars)/math.pow(5,abs_layer_count-1))
-            num_candidates = len(candidate_vars)
-        else:
-            #int(len(candidate_vars)/math.pow(2,abs_layer_count-4))
-            num_candidates = len(candidate_vars)
-            #num_candidates = num_candidates
-
-    #print("Refine layer ", abs_layer_count, nn.layertypes[abs_layer_count])
-    neuron_map = [0]*len(lbi)
 
     model.setParam(GRB.Param.TimeLimit, timeout)
     model.setParam(GRB.Param.Threads, 2)
@@ -645,62 +624,31 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 
     refined = [False]*len(lbi)
 
-    var_idxs = candidate_vars[:num_candidates]
-    for v in var_idxs:
+    for v in candidate_vars:
         refined[v] = True
         #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
     with multiprocessing.Pool(NUMPROCESSES) as pool:
-       solver_result = pool.map(solver_call, var_idxs)
-    solvetime = 0
-    for (l, u, addtoindices, runtime), ind in zip(solver_result, var_idxs):
+        solver_result = pool.map(solver_call, candidate_vars)
+
+    for (l, u, addtoindices, runtime), ind in zip(solver_result, candidate_vars):
         resl[ind] = l
         resu[ind] = u
+
+        if (l > u):
+            print(f"unsound {ind}")
+
         if addtoindices:
             indices.append(ind)
-        solvetime += runtime
-
-    avg_solvetime = (solvetime+1)/(2*num_candidates+1)
-
-    # model.setParam('TimeLimit', avg_solvetime/2)
-    # model.update()
-    # model.reset()
-    #
-    # var_idxs = candidate_vars[num_candidates:]
-    # if nn.layertypes[layerno] == 'Conv2D':
-    #     if len(var_idxs) >= num_candidates//3:
-    #         var_idxs = var_idxs[:(num_candidates//3)]
-    # else:
-    #     if len(var_idxs) >= 50:
-    #         var_idxs = var_idxs[:50]
-    # for v in var_idxs:
-    #     refined[v] = True
-    #     #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
-    #
-    # with multiprocessing.Pool(NUMPROCESSES) as pool:
-    #    solver_result = pool.map(solver_call, var_idxs)
-    # solvetime = 0
-    # for (l, u, addtoindices, runtime), ind in zip(solver_result, var_idxs):
-    #     resl[ind] = l
-    #     resu[ind] = u
-    #     if addtoindices:
-    #         indices.append(ind)
-    #     solvetime += runtime
 
     for i, flag in enumerate(refined):
         if not flag:
             resl[i] = lbi[i]
             resu[i] = ubi[i]
 
-    avg_solvetime = solvetime/(2*len(var_idxs)) if len(var_idxs) else 0.0
-
     for i in range(abs_layer_count):
         for j in range(len(nlb[i])):
             if(nlb[i][j]>nub[i][j]):
                 print("fp unsoundness detected ", nlb[i][j],nub[i][j],i,j)
-    for j in range(len(resl)):
-        if (resl[j]>resu[j]):
-            print (f"unsound {j}")
-            resl[j], resu[j] = lbi[j], ubi[j]
 
     return resl, resu, sorted(indices)
 
@@ -760,6 +708,7 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
             model.addConstr(
                 vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
             )
+
 
 def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
     nn.ffn_counter = 0
