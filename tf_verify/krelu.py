@@ -93,13 +93,11 @@ def get_ineqs_zono(varsid):
     return input_hrep
 
 
-def sparse_heuristic_with_cutoff(length, lb, ub, K=3):
+def sparse_heuristic_with_cutoff(length, lb, ub, K=3, s=-2):
     assert length == len(lb) == len(ub)
 
     all_vars = [i for i in range(length) if lb[i] < 0 < ub[i]]
     areas = {var: -lb[var] * ub[var] for var in all_vars}
-    # Sort vars by descending area
-    all_vars = sorted(all_vars, key=lambda var: -areas[var])
 
     assert len(all_vars) == len(areas)
     sparse_n = config.sparse_n
@@ -118,7 +116,7 @@ def sparse_heuristic_with_cutoff(length, lb, ub, K=3):
         if grouplen <= K:
             kact_args.append(group)
         else:
-            sparsed_combs = generate_sparse_cover(grouplen, K)
+            sparsed_combs = generate_sparse_cover(grouplen, K, s=s)
             for comb in sparsed_combs:
                 kact_args.append(tuple([group[i] for i in comb]))
 
@@ -134,7 +132,7 @@ def sparse_heuristic_with_cutoff(length, lb, ub, K=3):
     return kact_args
 
 
-def sparse_heuristic_curve(length, lb, ub, is_sigm):
+def sparse_heuristic_curve(length, lb, ub, is_sigm, s=-2):
     assert length == len(lb) == len(ub)
     all_vars = [i for i in range(length)]
     K = 3
@@ -155,7 +153,7 @@ def sparse_heuristic_curve(length, lb, ub, is_sigm):
         if grouplen <= K:
             kact_args.append(group)
         else:
-            sparsed_combs = generate_sparse_cover(grouplen, K)
+            sparsed_combs = generate_sparse_cover(grouplen, K, s=s)
             for comb in sparsed_combs:
                 kact_args.append(tuple([group[i] for i in comb]))
 
@@ -173,7 +171,7 @@ def sparse_heuristic_curve(length, lb, ub, is_sigm):
     return kact_args
 
 
-def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type, K=3):
+def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type, K=3, s=-2):
     import deepzono_nodes as dn
     if need_pop:
         constraint_groups.pop()
@@ -182,9 +180,9 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     ubi = np.asarray(ubi, dtype=np.double)
 
     if activation_type == "ReLU":
-        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi, K=K)
+        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi, K=K, s=s)
     else:
-        kact_args = sparse_heuristic_curve(length, lbi, ubi, activation_type == "Sigmoid")
+        kact_args = sparse_heuristic_curve(length, lbi, ubi, activation_type == "Sigmoid", s=s)
 
     kact_cons = []
     tdim = ElinaDim(offset+length)

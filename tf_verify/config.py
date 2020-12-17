@@ -54,7 +54,8 @@ class config:
     sparse_n = 70
     numproc = multiprocessing.cpu_count() # number of processes for milp/lp/krelu
     normalized_region = True
-    k = 3
+    k = 3 # group size for k-activation relaxations
+    s = -2 # sparsity parameter for k-activation relaxatin. Maximum overlap. Negative numbers compute s<-K+s. -2 is the default
     # Geometric options
     geometric = False # Whether to do geometric analysis
     attack = False # Whether to attack in geometric analysis
