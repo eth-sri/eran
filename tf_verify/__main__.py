@@ -321,6 +321,9 @@ parser.add_argument('--timeout_final_lp', type=float, default=config.timeout_fin
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
 parser.add_argument('--timeout_final_milp', type=float, default=config.timeout_final_lp,  help='timeout for the final MILP solver')
 parser.add_argument('--timeout_complete', type=float, default=config.timeout_milp,  help='timeout for the complete verifier')
+parser.add_argument('--max_milp_neurons', type=int, default=config.max_milp_neurons,  help='number of layers to encode using MILP.')
+parser.add_argument('--partial_milp', type=int, default=config.partial_milp,  help='Maximum number of neurons to use for partial MILP encoding')
+
 parser.add_argument('--numproc', type=int, default=config.numproc,  help='number of processes for MILP / LP / k-ReLU')
 parser.add_argument('--sparse_n', type=int, default=config.sparse_n,  help='Number of variables to group by k-ReLU')
 parser.add_argument('--use_default_heuristic', type=str2bool, default=config.use_default_heuristic,  help='whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation')
@@ -1375,13 +1378,15 @@ else:
                                                                                   timeout_final_milp=config.timeout_final_milp,
                                                                                   use_milp=config.use_milp,
                                                                                   complete=config.complete,
-                                                                                  terminate_on_failure=config.partial_milp>0)
+                                                                                  terminate_on_failure = not config.complete and domain == "refinepoly",
+                                                                                  partial_milp=config.partial_milp,
+                                                                                  max_milp_neurons=config.max_milp_neurons)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
                 if(perturbed_label==label):
                     print("img", i, "Verified", label)
                     verified_images += 1
                 else:
-                    if complete==True:
+                    if complete==True and failed_labels is not None:
                         constraints = get_constraints_for_dominant_label(label, failed_labels)
                         verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                         if(verified_flag==True):

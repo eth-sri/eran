@@ -112,7 +112,7 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, K=3, s=-2, timeout_final_lp=100, timeout_final_milp=100, use_milp=False, complete=False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, K=3, s=-2, timeout_final_lp=100, timeout_final_milp=100, use_milp=False, complete=False, partial_milp=False, max_milp_neurons=30):
         """
         Arguments
         ---------
@@ -148,6 +148,8 @@ class Analyzer:
         self.complete = complete
         self.K=K
         self.s=s
+        self.partial_milp=partial_milp
+        self.max_milp_neurons=max_milp_neurons
     
     def __del__(self):
         elina_manager_free(self.man)
@@ -216,13 +218,29 @@ class Analyzer:
             self.nn.residual_counter = 0
             self.nn.activation_counter = 0
             counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub, self.relu_groups, self.nn.numlayer, self.complete)
+            if self.partial_milp != 0:
+                self.nn.ffn_counter = 0
+                self.nn.conv_counter = 0
+                self.nn.pool_counter = 0
+                self.nn.concat_counter = 0
+                self.nn.tile_counter = 0
+                self.nn.residual_counter = 0
+                self.nn.activation_counter = 0
+                counter_partial_milp, var_list_partial_milp, model_partial_milp = create_model(self.nn, self.nn.specLB,
+                                                                                               self.nn.specUB, nlb, nub,
+                                                                                               self.relu_groups,
+                                                                                               self.nn.numlayer,
+                                                                                               self.complete,
+                                                                                               partial_milp=self.partial_milp,
+                                                                                               max_milp_neurons=self.max_milp_neurons)
+                model_partial_milp.setParam(GRB.Param.TimeLimit, self.timeout_final_milp)
 
             if self.complete:
                 model.setParam(GRB.Param.TimeLimit, self.timeout_final_milp)
             else:
                 model.setParam(GRB.Param.TimeLimit, self.timeout_final_lp)
 
-            # model.setParam(GRB.Param.Cutoff, 0.01)
+            model.setParam(GRB.Param.Cutoff, 0.01)
 
             num_var = len(var_list)
             output_size = num_var - counter
@@ -283,31 +301,52 @@ class Analyzer:
                                     # model.optimize()
                                     try:
                                         print(
-                                            f"Model status: {model.Status}, Objval against label {adv_label}: {model.objval}, Final solve time: {model.Runtime}")
+                                            f"Model status: {model.Status}, Objval against label {adv_label}: {model.objval:.4f}, Final solve time: {model.Runtime:.3f}")
                                     except:
                                         print(
-                                            f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime}")
-                                    if model.Status == 6:
-                                        # Cutoff active sound against adv_label
+                                            f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+                                    if model.Status == 6 or (model.Status == 2 and model.objval > 0):
+                                        # Cutoff active, or optimal with positive objective => sound against adv_label
                                         pass
+                                    elif self.partial_milp != 0:
+                                        obj = LinExpr()
+                                        obj += 1 * var_list_partial_milp[counter_partial_milp + label]
+                                        obj += -1 * var_list_partial_milp[counter_partial_milp + adv_label]
+                                        model_partial_milp.setObjective(obj, GRB.MINIMIZE)
+                                        model_partial_milp.optimize(milp_callback)
+                                        try:
+                                            print(
+                                                f"Partial MILP model status: {model_partial_milp.Status}, Objbound against label {adv_label}: {model_partial_milp.ObjBound:.4f}, Final solve time: {model_partial_milp.Runtime:.3f}")
+                                        except:
+                                            print(
+                                                f"Partial MILP model status: {model_partial_milp.Status}, Objbound retrival failed, Final solve time: {model_partial_milp.Runtime:.3f}")
+
+                                        if model_partial_milp.Status in [2,9,11] and model_partial_milp.ObjBound > 0:
+                                            pass
+                                        elif model_partial_milp.Status not in [2,9,11]:
+                                            print("Partial milp model was not successful status is", model_partial_milp.Status)
+                                            model_partial_milp.write("final.mps")
+                                            flag = False
+                                        else:
+                                            flag = False
                                     elif model.Status != 2:
-                                        print("model was not successful status is", model.Status)
+                                        print("Model was not successful status is",
+                                              model.Status)
                                         model.write("final.mps")
                                         flag = False
-                                        break
-                                    elif model.objval < 0:
-                               
+                                    else:
                                         flag = False
+                                    if flag and model.Status==2 and model.objval < 0:
                                         if model.objval != math.inf:
                                             x = model.x[0:len(self.nn.specLB)]
-                                        break
 
                             else:
                                 flag = False
-                                if self.label != -1:
-                                    label_failed.append(adv_label)
-                                if terminate_on_failure:
-                                    break
+                    if not flag:
+                        if terminate_on_failure:
+                            break
+                        elif self.label != -1:
+                            label_failed.append(adv_label)
                 if flag:
                     dominant_class = label
                     break
