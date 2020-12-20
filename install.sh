@@ -52,6 +52,7 @@ rm mpfr-4.1.0.tar.xz
 
 git clone https://github.com/cddlib/cddlib.git
 cd cddlib
+./bootstrap
 ./configure
 make
 make install
