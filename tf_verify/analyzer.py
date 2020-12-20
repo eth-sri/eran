@@ -210,6 +210,8 @@ class Analyzer:
         label_failed = []
         x = None
         if self.output_constraints is None:
+            #linexpr = get_output_uexpr_defined_over_previous_layers(self.man, element, 7, 5)
+            #elina_linexpr0_print(linexpr,None)
             candidate_labels = []
             if self.label == -1:
                 for i in range(output_size):
