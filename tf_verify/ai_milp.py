@@ -34,14 +34,15 @@ def milp_callback(model, where):
             model.terminate()
 
 def lp_callback(model, where):
+    # pass
     if where == GRB.Callback.SIMPLEX:
         obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
-        if model.cbGet(GRB.Callback.SPX_DUALINF) == 0 and model.cbGet(GRB.Callback.SPX_PRIMINF) == 0 and obj_best < -0.01:
+        if model.cbGet(GRB.Callback.SPX_PRIMINF) == 0 and obj_best < -0.01: # and model.cbGet(GRB.Callback.SPX_DUALINF) == 0:
             print("Used simplex terminate")
             model.terminate()
     if where == GRB.Callback.BARRIER:
         obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
-        if model.cbGet(GRB.Callback.BARRIER_PRIMINF) == 0 and model.cbGet(GRB.Callback.BARRIER_DUALINF) == 0 and obj_best < -0.01:
+        if model.cbGet(GRB.Callback.BARRIER_PRIMINF) == 0  and obj_best < -0.01: # and model.cbGet(GRB.Callback.BARRIER_DUALINF) == 0
             model.terminate()
             print("Used barrier terminate")
 
@@ -336,10 +337,10 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
             var_list.append(var_bin)
             relu_counter += 1
 
-    # relu variables
+    # relu output variables
     for j in range(num_neurons):
         var_name = "x" + str(relu_counter+j)
-        upper_bound = max(0, ubi[j])
+        upper_bound = max(0.0, ubi[j])
         var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
         var_list.append(var)
 
@@ -477,7 +478,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
     start_counter.append(counter)
     for i in range(numlayer):
         #count = nn.ffn_counter + nn.conv_counter
-        if(nn.layertypes[i] in ['SkipCat']):
+        if nn.layertypes[i] in ['SkipCat']:
             continue
         elif nn.layertypes[i] in ['FC']:
             weights = nn.weights[nn.ffn_counter]

@@ -347,6 +347,7 @@ parser.add_argument('--t-norm', type=str, default=config.t_norm, help='vector fi
 parser.add_argument('--delta', type=float, default=config.delta, help='vector field displacement magnitude')
 parser.add_argument('--gamma', type=float, default=config.gamma, help='vector field smoothness constraint')
 parser.add_argument('--k', type=int, default=config.k, help='refine group size')
+parser.add_argument('--s', type=int, default=config.s, help='refine group sparsity parameter')
 
 
 # Logging options
@@ -1268,6 +1269,7 @@ else:
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
         is_correctly_classified = False
+        start = time.time()
         if domain == 'gpupoly' or domain == 'refinegpupoly':
             #specLB = np.reshape(specLB, (32,32,3))#np.ascontiguousarray(specLB, dtype=np.double)
             #specUB = np.reshape(specUB, (32,32,3))
@@ -1300,7 +1302,6 @@ else:
             else:
                 specLB = specLB - epsilon
                 specUB = specUB + epsilon
-            start = time.time()
 
             if config.target == None:
                 prop = -1
@@ -1323,7 +1324,7 @@ else:
                     nn.specUB = specUB
                     nn.predecessors = []
                     
-                    for pred in range(0,nn.numlayer+1):
+                    for pred in range(0, nn.numlayer+1):
                         predecessor = np.zeros(1, dtype=np.int)
                         predecessor[0] = int(pred-1)
                         nn.predecessors.append(predecessor)
@@ -1337,14 +1338,18 @@ else:
                     #print("relu layers", relu_layers)
 
                     is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]),
-                                                            labels_to_be_verified, K=config.k,
+                                                            labels_to_be_verified, K=config.k, s=config.s,
+                                                            complete=config.complete,
                                                             timeout_final_lp=config.timeout_final_lp,
+                                                            timeout_final_milp=config.timeout_final_milp,
                                                             timeout_lp=config.timeout_lp,
                                                             timeout_milp=config.timeout_milp,
-                                                            use_milp=config.use_milp)
+                                                            use_milp=config.use_milp,
+                                                            partial_milp=config.partial_milp,
+                                                            max_milp_neurons=config.max_milp_neurons)
                     if is_verified:
                         print("img", i, "Verified", int(test[0]))
-                        verified_images+=1 
+                        verified_images += 1
                     else:
                         if x != None:
                             adv_image = np.array(x)
@@ -1365,7 +1370,9 @@ else:
                                 print("img", i, "Verified unsafe against label ", cex_label, "correct label ", int(test[0]))
                                 unsafe_images += 1
                             else:
-                                print("img", i, "Failed") 
+                                print("img", i, "Failed")
+                        else:
+                            print("img", i, "Failed")
                 else:
                     print("img", i, "Failed")
             else:
@@ -1417,16 +1424,17 @@ else:
                             print("img", i, "Failed")
 
             end = time.time()
-            # print(end - start, "seconds")
-            cum_time += end - start
+            cum_time += end - start # only count samples where we did try to certify
         else:
-            if domain != "gpupoly" and domain!= "refinegpupoly":
-                print("img",i,"not considered, correct_label", int(test[0]), "classified label ", label)
+            print("img",i,"not considered, incorrectly classified")
+            end = time.time()
 
-        print(f"progress: {1+i - config.from_test}/{config.num_tests}, "
-              f"correct:  {correctly_classified_images}/{1+i - config.from_test}, "
+        print(f"progress: {1 + i - config.from_test}/{config.num_tests}, "
+              f"correct:  {correctly_classified_images}/{1 + i - config.from_test}, "
               f"verified: {verified_images}/{correctly_classified_images}, "
               f"unsafe: {unsafe_images}/{correctly_classified_images}, ",
-              f"time: {end - start:.3f}; {cum_time / correctly_classified_images:.3f}; {cum_time:.3f}")
+              f"time: {end - start:.3f}; {0 if cum_time==0 else cum_time / correctly_classified_images:.3f}; {cum_time:.3f}")
+
+
 
     print('analysis precision ',verified_images,'/ ', correctly_classified_images)

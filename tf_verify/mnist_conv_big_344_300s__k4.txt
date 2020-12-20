@@ -1,0 +1,1402 @@
+/home/mark/miniconda3/envs/eran/bin/python /home/mark/Projects/ERAN/eran/tf_verify/__main__.py --netname ../nets/convBigRELU__DiffAI.pyt --epsilon 0.3 --domain refinegpupoly --dataset mnist --complete False --use_milp False --timeout_lp 10 --timeout_final_lp 300 --from_test 0 --num_test 1000 --sparse_n 40 --k 4
+GPUPoly 0.9.0S (built Dec 13 2020 19:38:47) - Copyright (C) 2020 Department of Computer Science, ETH Zurich.
+This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3.
+
+2020-12-15 22:53:40.727393: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2020-12-15 22:53:40.747012: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 3600000000 Hz
+2020-12-15 22:53:40.747371: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5637679a9140 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-12-15 22:53:40.747379: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-12-15 22:53:40.747432: I tensorflow/core/common_runtime/process_util.cc:147] Creating new thread pool with default inter op setting: 2. Tune using inter_op_parallelism_threads for best performance.
+{'attack': False,
+ 'complete': False,
+ 'data_dir': None,
+ 'dataset': 'mnist',
+ 'debug': True,
+ 'delta': 0.3,
+ 'domain': 'refinegpupoly',
+ 'epsfile': None,
+ 'epsilon': 0.3,
+ 'from_test': 0,
+ 'gamma': inf,
+ 'geometric': False,
+ 'geometric_config': None,
+ 'input_box': None,
+ 'k': 4,
+ 'logdir': None,
+ 'logname': None,
+ 'mean': None,
+ 'netname': '../nets/convBigRELU__DiffAI.pyt',
+ 'normalized_region': True,
+ 'num_params': 0,
+ 'num_tests': 1000,
+ 'numproc': 16,
+ 'output_constraints': None,
+ 'refine_neurons': False,
+ 'sparse_n': 40,
+ 'spatial': False,
+ 'specnumber': None,
+ 'std': None,
+ 'subset': None,
+ 't_norm': 'inf',
+ 'target': None,
+ 'timeout_complete': 1,
+ 'timeout_final_lp': 300.0,
+ 'timeout_final_milp': 100,
+ 'timeout_lp': 10.0,
+ 'timeout_milp': 1,
+ 'use_default_heuristic': True,
+ 'use_milp': False,
+ 'zonotope': None}
+netname  ../nets/convBigRELU__DiffAI.pyt  epsilon  0.3  domain  refinegpupoly  dataset  mnist args complete  False  complete  False  timeout_lp  10.0
+W shape (3, 3, 1, 32)
+Conv2D {'filters': 32, 'kernel_size': [3, 3], 'input_shape': [28, 28, 1], 'stride': [1, 1], 'padding': 1} W.shape: (3, 3, 1, 32) b.shape: (32,)
+	OutShape:  (1, 28, 28, 32)
+W shape (4, 4, 32, 32)
+Conv2D {'filters': 32, 'kernel_size': [4, 4], 'input_shape': [28, 28, 32], 'stride': [2, 2], 'padding': 1} W.shape: (4, 4, 32, 32) b.shape: (32,)
+	OutShape:  (1, 14, 14, 32)
+W shape (3, 3, 32, 64)
+Conv2D {'filters': 64, 'kernel_size': [3, 3], 'input_shape': [14, 14, 32], 'stride': [1, 1], 'padding': 1} W.shape: (3, 3, 32, 64) b.shape: (64,)
+	OutShape:  (1, 14, 14, 64)
+W shape (4, 4, 64, 64)
+Conv2D {'filters': 64, 'kernel_size': [4, 4], 'input_shape': [14, 14, 64], 'stride': [2, 2], 'padding': 1} W.shape: (4, 4, 64, 64) b.shape: (64,)
+	OutShape:  (1, 7, 7, 64)
+ReLU
+	OutShape:  (1, 512)
+	WShape:  (3136, 512)
+	BShape:  (512,)
+ReLU
+	OutShape:  (1, 512)
+	WShape:  (512, 512)
+	BShape:  (512,)
+Affine
+	OutShape:  (1, 10)
+	WShape:  (512, 10)
+	BShape:  (10,)
+WARNING:tensorflow:From /home/mark/Projects/ERAN/eran/tf_verify/tensorflow_translator.py:123: convert_variables_to_constants (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.compat.v1.graph_util.convert_variables_to_constants`
+WARNING:tensorflow:From /home/mark/miniconda3/envs/eran/lib/python3.8/site-packages/tensorflow/python/framework/graph_util_impl.py:359: extract_sub_graph (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.compat.v1.graph_util.extract_sub_graph`
+WARNING:tensorflow:From /home/mark/Projects/ERAN/eran/tf_verify/tensorflow_translator.py:124: remove_training_nodes (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.compat.v1.graph_util.remove_training_nodes`
+img 0 Verified 7
+progress: 1/1000, correct:  1/1, verified: 1/1, unsafe: 0/1,  time: 0.002; 0.002; 0.002
+img 1 Verified 2
+progress: 2/1000, correct:  2/2, verified: 2/2, unsafe: 0/2,  time: 0.002; 0.002; 0.004
+img 2 Verified 1
+progress: 3/1000, correct:  3/3, verified: 3/3, unsafe: 0/3,  time: 0.002; 0.002; 0.006
+img 3 Verified 0
+progress: 4/1000, correct:  4/4, verified: 4/4, unsafe: 0/4,  time: 0.002; 0.002; 0.007
+img 4 Verified 4
+progress: 5/1000, correct:  5/5, verified: 5/5, unsafe: 0/5,  time: 0.002; 0.002; 0.009
+img 5 Verified 1
+progress: 6/1000, correct:  6/6, verified: 6/6, unsafe: 0/6,  time: 0.002; 0.002; 0.011
+img 6 Verified 4
+progress: 7/1000, correct:  7/7, verified: 7/7, unsafe: 0/7,  time: 0.046; 0.008; 0.057
+img 7 Verified 9
+progress: 8/1000, correct:  8/8, verified: 8/8, unsafe: 0/8,  time: 0.050; 0.013; 0.107
+krelu: n 40 split_zero 594 after cutoff 118 number of args 5481
+krelu: n 40 split_zero 77 after cutoff 3 number of args 78
+krelu: n 40 split_zero 44 after cutoff 20 number of args 233
+krelu: n 40 split_zero 21 after cutoff 15 number of args 126
+krelu: n 40 split_zero 5 after cutoff 2 number of args 6
+krelu: n 40 split_zero 9 after cutoff 6 number of args 12
+Using license file /home/mark/gurobi.lic
+Academic license - for non-commercial use only
+Model status: 3, Objval retrival failed, Final solve time: 0.6014590263366699
+model was not successful status is 3
+progress: 9/1000, correct:  9/9, verified: 8/9, unsafe: 0/9,  time: 118.017; 13.125; 118.124
+krelu: n 40 split_zero 590 after cutoff 110 number of args 4939
+krelu: n 40 split_zero 66 after cutoff 7 number of args 73
+krelu: n 40 split_zero 38 after cutoff 18 number of args 186
+krelu: n 40 split_zero 23 after cutoff 15 number of args 128
+krelu: n 40 split_zero 8 after cutoff 5 number of args 9
+krelu: n 40 split_zero 12 after cutoff 5 number of args 13
+Model status: 2, Objval against label 0: -1.589442044177463, Final solve time: 1.8368840217590332
+img 9 Verified unsafe against label  7 correct label  9
+progress: 10/1000, correct:  10/10, verified: 8/10, unsafe: 1/10,  time: 101.831; 21.996; 219.955
+img 10 Verified 0
+progress: 11/1000, correct:  11/11, verified: 9/11, unsafe: 1/11,  time: 0.002; 19.996; 219.957
+krelu: n 40 split_zero 611 after cutoff 146 number of args 6235
+krelu: n 40 split_zero 83 after cutoff 4 number of args 84
+krelu: n 40 split_zero 42 after cutoff 21 number of args 263
+krelu: n 40 split_zero 20 after cutoff 15 number of args 125
+krelu: n 40 split_zero 5 after cutoff 4 number of args 6
+krelu: n 40 split_zero 11 after cutoff 8 number of args 25
+Model status: 3, Objval retrival failed, Final solve time: 0.625950813293457
+model was not successful status is 3
+progress: 12/1000, correct:  12/12, verified: 9/12, unsafe: 1/12,  time: 133.470; 29.452; 353.428
+img 12 Verified 9
+progress: 13/1000, correct:  13/13, verified: 10/13, unsafe: 1/13,  time: 0.049; 27.191; 353.477
+img 13 Verified 0
+progress: 14/1000, correct:  14/14, verified: 11/14, unsafe: 1/14,  time: 0.002; 25.248; 353.479
+img 14 Verified 1
+progress: 15/1000, correct:  15/15, verified: 12/15, unsafe: 1/15,  time: 0.002; 23.565; 353.480
+img 15 Verified 5
+progress: 16/1000, correct:  16/16, verified: 13/16, unsafe: 1/16,  time: 0.002; 22.093; 353.482
+img 16 Verified 9
+progress: 17/1000, correct:  17/17, verified: 14/17, unsafe: 1/17,  time: 0.002; 20.793; 353.484
+img 17 Verified 7
+progress: 18/1000, correct:  18/18, verified: 15/18, unsafe: 1/18,  time: 0.002; 19.638; 353.486
+progress: 19/1000, correct:  18/19, verified: 15/18, unsafe: 1/18,  time: 0.002; 19.638; 353.486
+img 19 Verified 4
+progress: 20/1000, correct:  19/20, verified: 16/19, unsafe: 1/19,  time: 0.002; 18.605; 353.488
+krelu: n 40 split_zero 594 after cutoff 99 number of args 4162
+krelu: n 40 split_zero 64 after cutoff 1 number of args 65
+krelu: n 40 split_zero 33 after cutoff 18 number of args 181
+krelu: n 40 split_zero 23 after cutoff 17 number of args 163
+krelu: n 40 split_zero 9 after cutoff 6 number of args 12
+krelu: n 40 split_zero 13 after cutoff 8 number of args 27
+Model status: 2, Objval against label 0: -0.5469534161651985, Final solve time: 2.2871360778808594
+img 20 Verified unsafe against label  7 correct label  9
+progress: 21/1000, correct:  20/21, verified: 16/20, unsafe: 2/20,  time: 98.820; 22.615; 452.307
+img 21 Verified 6
+progress: 22/1000, correct:  21/22, verified: 17/21, unsafe: 2/21,  time: 0.039; 21.540; 452.347
+krelu: n 40 split_zero 625 after cutoff 114 number of args 5285
+krelu: n 40 split_zero 85 after cutoff 4 number of args 86
+krelu: n 40 split_zero 39 after cutoff 20 number of args 228
+krelu: n 40 split_zero 32 after cutoff 27 number of args 638
+krelu: n 40 split_zero 8 after cutoff 5 number of args 9
+krelu: n 40 split_zero 12 after cutoff 9 number of args 26
+Model status: 3, Objval retrival failed, Final solve time: 0.5921459197998047
+model was not successful status is 3
+progress: 23/1000, correct:  22/23, verified: 17/22, unsafe: 2/22,  time: 179.050; 28.700; 631.397
+img 23 Verified 5
+progress: 24/1000, correct:  23/24, verified: 18/23, unsafe: 2/23,  time: 0.002; 27.452; 631.399
+krelu: n 40 split_zero 674 after cutoff 113 number of args 5318
+krelu: n 40 split_zero 107 after cutoff 2 number of args 108
+krelu: n 40 split_zero 57 after cutoff 30 number of args 1002
+krelu: n 40 split_zero 52 after cutoff 48 number of args 1768
+krelu: n 40 split_zero 13 after cutoff 8 number of args 27
+krelu: n 40 split_zero 22 after cutoff 15 number of args 127
+Model status: 3, Objval retrival failed, Final solve time: 0.6393411159515381
+model was not successful status is 3
+progress: 25/1000, correct:  24/25, verified: 18/24, unsafe: 2/24,  time: 387.658; 42.461; 1019.056
+img 25 Verified 0
+progress: 26/1000, correct:  25/26, verified: 19/25, unsafe: 2/25,  time: 0.002; 40.762; 1019.059
+img 26 Verified 7
+progress: 27/1000, correct:  26/27, verified: 20/26, unsafe: 2/26,  time: 0.002; 39.195; 1019.061
+img 27 Verified 4
+progress: 28/1000, correct:  27/28, verified: 21/27, unsafe: 2/27,  time: 0.002; 37.743; 1019.063
+img 28 Verified 0
+progress: 29/1000, correct:  28/29, verified: 22/28, unsafe: 2/28,  time: 0.002; 36.395; 1019.065
+img 29 Verified 1
+progress: 30/1000, correct:  29/30, verified: 23/29, unsafe: 2/29,  time: 0.002; 35.140; 1019.066
+img 30 Verified 3
+progress: 31/1000, correct:  30/31, verified: 24/30, unsafe: 2/30,  time: 0.185; 33.975; 1019.251
+img 31 Verified 1
+progress: 32/1000, correct:  31/32, verified: 25/31, unsafe: 2/31,  time: 0.002; 32.879; 1019.253
+img 32 Verified 3
+progress: 33/1000, correct:  32/33, verified: 26/32, unsafe: 2/32,  time: 0.002; 31.852; 1019.255
+progress: 34/1000, correct:  32/34, verified: 26/32, unsafe: 2/32,  time: 0.002; 31.852; 1019.255
+img 34 Verified 7
+progress: 35/1000, correct:  33/35, verified: 27/33, unsafe: 2/33,  time: 0.002; 30.887; 1019.257
+img 35 Verified 2
+progress: 36/1000, correct:  34/36, verified: 28/34, unsafe: 2/34,  time: 0.001; 29.978; 1019.258
+img 36 Verified 7
+progress: 37/1000, correct:  35/37, verified: 29/35, unsafe: 2/35,  time: 0.001; 29.122; 1019.260
+img 37 Verified 1
+progress: 38/1000, correct:  36/38, verified: 30/36, unsafe: 2/36,  time: 0.001; 28.313; 1019.261
+krelu: n 40 split_zero 631 after cutoff 122 number of args 5738
+krelu: n 40 split_zero 84 after cutoff 0 number of args 84
+krelu: n 40 split_zero 42 after cutoff 21 number of args 263
+krelu: n 40 split_zero 33 after cutoff 26 number of args 551
+krelu: n 40 split_zero 8 after cutoff 5 number of args 9
+krelu: n 40 split_zero 15 after cutoff 7 number of args 22
+Model status: 3, Objval retrival failed, Final solve time: 0.588651180267334
+model was not successful status is 3
+progress: 39/1000, correct:  37/39, verified: 30/37, unsafe: 2/37,  time: 173.444; 32.235; 1192.705
+img 39 Verified 1
+progress: 40/1000, correct:  38/40, verified: 31/38, unsafe: 2/38,  time: 0.003; 31.387; 1192.707
+img 40 Verified 1
+progress: 41/1000, correct:  39/41, verified: 32/39, unsafe: 2/39,  time: 0.003; 30.582; 1192.710
+img 41 Verified 7
+progress: 42/1000, correct:  40/42, verified: 33/40, unsafe: 2/40,  time: 0.002; 29.818; 1192.712
+img 42 Verified 4
+progress: 43/1000, correct:  41/43, verified: 34/41, unsafe: 2/41,  time: 0.002; 29.091; 1192.714
+krelu: n 40 split_zero 636 after cutoff 90 number of args 4058
+krelu: n 40 split_zero 75 after cutoff 1 number of args 76
+krelu: n 40 split_zero 43 after cutoff 29 number of args 862
+krelu: n 40 split_zero 36 after cutoff 31 number of args 1121
+krelu: n 40 split_zero 8 after cutoff 3 number of args 9
+krelu: n 40 split_zero 9 after cutoff 6 number of args 12
+Model status: 3, Objval retrival failed, Final solve time: 0.5851891040802002
+model was not successful status is 3
+progress: 44/1000, correct:  42/44, verified: 34/42, unsafe: 2/42,  time: 268.021; 34.779; 1460.735
+img 44 Verified 3
+progress: 45/1000, correct:  43/45, verified: 35/43, unsafe: 2/43,  time: 0.002; 33.971; 1460.737
+krelu: n 40 split_zero 644 after cutoff 129 number of args 5764
+krelu: n 40 split_zero 95 after cutoff 2 number of args 96
+krelu: n 40 split_zero 56 after cutoff 28 number of args 763
+krelu: n 40 split_zero 41 after cutoff 34 number of args 1297
+krelu: n 40 split_zero 8 after cutoff 6 number of args 11
+krelu: n 40 split_zero 13 after cutoff 7 number of args 20
+Model status: 3, Objval retrival failed, Final solve time: 0.6139531135559082
+model was not successful status is 3
+progress: 46/1000, correct:  44/46, verified: 35/44, unsafe: 2/44,  time: 303.523; 40.097; 1764.260
+img 46 Verified 1
+progress: 47/1000, correct:  45/47, verified: 36/45, unsafe: 2/45,  time: 0.004; 39.206; 1764.264
+img 47 Verified 2
+progress: 48/1000, correct:  46/48, verified: 37/46, unsafe: 2/46,  time: 0.004; 38.354; 1764.268
+krelu: n 40 split_zero 562 after cutoff 100 number of args 4155
+krelu: n 40 split_zero 50 after cutoff 3 number of args 51
+krelu: n 40 split_zero 21 after cutoff 12 number of args 60
+krelu: n 40 split_zero 20 after cutoff 14 number of args 97
+krelu: n 40 split_zero 4 after cutoff 0 number of args 4
+krelu: n 40 split_zero 5 after cutoff 2 number of args 6
+Model status: 2, Objval against label 0: -1.1671356693049164, Final solve time: 1.4682090282440186
+img 48 Verified unsafe against label  9 correct label  4
+progress: 49/1000, correct:  47/49, verified: 37/47, unsafe: 3/47,  time: 78.394; 39.206; 1842.662
+img 49 Verified 4
+progress: 50/1000, correct:  48/50, verified: 38/48, unsafe: 3/48,  time: 0.003; 38.389; 1842.664
+img 50 Verified 6
+progress: 51/1000, correct:  49/51, verified: 39/49, unsafe: 3/49,  time: 0.002; 37.605; 1842.667
+img 51 Verified 3
+progress: 52/1000, correct:  50/52, verified: 40/50, unsafe: 3/50,  time: 0.034; 36.854; 1842.701
+img 52 Verified 5
+progress: 53/1000, correct:  51/53, verified: 41/51, unsafe: 3/51,  time: 0.034; 36.132; 1842.735
+img 53 Verified 5
+progress: 54/1000, correct:  52/54, verified: 42/52, unsafe: 3/52,  time: 0.027; 35.438; 1842.762
+img 54 Verified 6
+progress: 55/1000, correct:  53/55, verified: 43/53, unsafe: 3/53,  time: 0.002; 34.769; 1842.763
+img 55 Verified 0
+progress: 56/1000, correct:  54/56, verified: 44/54, unsafe: 3/54,  time: 0.002; 34.125; 1842.765
+img 56 Verified 4
+progress: 57/1000, correct:  55/57, verified: 45/55, unsafe: 3/55,  time: 0.002; 33.505; 1842.767
+img 57 Verified 1
+progress: 58/1000, correct:  56/58, verified: 46/56, unsafe: 3/56,  time: 0.002; 32.907; 1842.769
+krelu: n 40 split_zero 598 after cutoff 109 number of args 4821
+krelu: n 40 split_zero 73 after cutoff 3 number of args 74
+krelu: n 40 split_zero 38 after cutoff 17 number of args 178
+krelu: n 40 split_zero 29 after cutoff 24 number of args 407
+krelu: n 40 split_zero 10 after cutoff 6 number of args 13
+krelu: n 40 split_zero 13 after cutoff 6 number of args 16
+Model status: 2, Objval against label 0: -0.2812227892517525, Final solve time: 2.0793569087982178
+img 58 Verified unsafe against label  4 correct label  9
+progress: 59/1000, correct:  57/59, verified: 46/57, unsafe: 4/57,  time: 133.443; 34.670; 1976.212
+krelu: n 40 split_zero 661 after cutoff 102 number of args 4328
+krelu: n 40 split_zero 72 after cutoff 0 number of args 72
+krelu: n 40 split_zero 38 after cutoff 20 number of args 227
+krelu: n 40 split_zero 39 after cutoff 31 number of args 1124
+krelu: n 40 split_zero 16 after cutoff 7 number of args 23
+krelu: n 40 split_zero 18 after cutoff 13 number of args 73
+Model status: 3, Objval retrival failed, Final solve time: 0.619420051574707
+model was not successful status is 3
+progress: 60/1000, correct:  58/60, verified: 46/58, unsafe: 4/58,  time: 228.338; 38.009; 2204.550
+img 60 Verified 7
+progress: 61/1000, correct:  59/61, verified: 47/59, unsafe: 4/59,  time: 0.003; 37.365; 2204.553
+krelu: n 40 split_zero 586 after cutoff 129 number of args 5706
+krelu: n 40 split_zero 69 after cutoff 4 number of args 70
+krelu: n 40 split_zero 34 after cutoff 21 number of args 255
+krelu: n 40 split_zero 29 after cutoff 21 number of args 250
+krelu: n 40 split_zero 5 after cutoff 2 number of args 6
+krelu: n 40 split_zero 10 after cutoff 6 number of args 13
+Model status: 3, Objval retrival failed, Final solve time: 0.5791738033294678
+model was not successful status is 3
+progress: 62/1000, correct:  60/62, verified: 47/60, unsafe: 4/60,  time: 137.647; 39.037; 2342.200
+krelu: n 40 split_zero 676 after cutoff 100 number of args 4269
+krelu: n 40 split_zero 76 after cutoff 1 number of args 77
+krelu: n 40 split_zero 39 after cutoff 22 number of args 302
+krelu: n 40 split_zero 42 after cutoff 39 number of args 1625
+krelu: n 40 split_zero 8 after cutoff 7 number of args 15
+krelu: n 40 split_zero 15 after cutoff 8 number of args 29
+Model status: 3, Objval retrival failed, Final solve time: 0.5976428985595703
+model was not successful status is 3
+progress: 63/1000, correct:  61/63, verified: 47/61, unsafe: 4/61,  time: 288.546; 43.127; 2630.746
+img 63 Verified 3
+progress: 64/1000, correct:  62/64, verified: 48/62, unsafe: 4/62,  time: 0.062; 42.432; 2630.808
+img 64 Verified 7
+progress: 65/1000, correct:  63/65, verified: 49/63, unsafe: 4/63,  time: 0.002; 41.759; 2630.810
+krelu: n 40 split_zero 674 after cutoff 96 number of args 4218
+krelu: n 40 split_zero 80 after cutoff 2 number of args 81
+krelu: n 40 split_zero 38 after cutoff 23 number of args 353
+krelu: n 40 split_zero 36 after cutoff 32 number of args 1276
+krelu: n 40 split_zero 8 after cutoff 7 number of args 15
+krelu: n 40 split_zero 15 after cutoff 10 number of args 33
+Model status: 3, Objval retrival failed, Final solve time: 0.5933370590209961
+model was not successful status is 3
+progress: 66/1000, correct:  64/66, verified: 49/64, unsafe: 4/64,  time: 251.051; 45.029; 2881.861
+krelu: n 40 split_zero 613 after cutoff 114 number of args 5273
+krelu: n 40 split_zero 87 after cutoff 2 number of args 88
+krelu: n 40 split_zero 42 after cutoff 23 number of args 357
+krelu: n 40 split_zero 34 after cutoff 25 number of args 476
+krelu: n 40 split_zero 4 after cutoff 3 number of args 5
+krelu: n 40 split_zero 14 after cutoff 8 number of args 28
+Model status: 3, Objval retrival failed, Final solve time: 0.5754899978637695
+model was not successful status is 3
+progress: 67/1000, correct:  65/67, verified: 49/65, unsafe: 4/65,  time: 168.639; 46.931; 3050.500
+img 67 Verified 4
+progress: 68/1000, correct:  66/68, verified: 50/66, unsafe: 4/66,  time: 0.004; 46.220; 3050.505
+img 68 Verified 3
+progress: 69/1000, correct:  67/69, verified: 51/67, unsafe: 4/67,  time: 0.004; 45.530; 3050.509
+img 69 Verified 0
+progress: 70/1000, correct:  68/70, verified: 52/68, unsafe: 4/68,  time: 0.002; 44.860; 3050.511
+img 70 Verified 7
+progress: 71/1000, correct:  69/71, verified: 53/69, unsafe: 4/69,  time: 0.002; 44.210; 3050.513
+img 71 Verified 0
+progress: 72/1000, correct:  70/72, verified: 54/70, unsafe: 4/70,  time: 0.002; 43.579; 3050.515
+krelu: n 40 split_zero 608 after cutoff 123 number of args 5715
+krelu: n 40 split_zero 75 after cutoff 6 number of args 78
+krelu: n 40 split_zero 41 after cutoff 20 number of args 230
+krelu: n 40 split_zero 36 after cutoff 31 number of args 1121
+krelu: n 40 split_zero 4 after cutoff 1 number of args 5
+krelu: n 40 split_zero 8 after cutoff 4 number of args 9
+Model status: 3, Objval retrival failed, Final solve time: 0.5983219146728516
+model was not successful status is 3
+progress: 73/1000, correct:  71/73, verified: 54/71, unsafe: 4/71,  time: 238.143; 46.319; 3288.658
+progress: 74/1000, correct:  71/74, verified: 54/71, unsafe: 4/71,  time: 238.143; 46.319; 3288.658
+img 74 Verified 1
+progress: 75/1000, correct:  72/75, verified: 55/72, unsafe: 4/72,  time: 0.003; 45.676; 3288.661
+img 75 Verified 7
+progress: 76/1000, correct:  73/76, verified: 56/73, unsafe: 4/73,  time: 0.002; 45.050; 3288.663
+img 76 Verified 3
+progress: 77/1000, correct:  74/77, verified: 57/74, unsafe: 4/74,  time: 0.002; 44.441; 3288.665
+img 77 Verified 2
+progress: 78/1000, correct:  75/78, verified: 58/75, unsafe: 4/75,  time: 0.002; 43.849; 3288.667
+img 78 Verified 9
+progress: 79/1000, correct:  76/79, verified: 59/76, unsafe: 4/76,  time: 0.049; 43.273; 3288.716
+img 79 Verified 7
+progress: 80/1000, correct:  77/80, verified: 60/77, unsafe: 4/77,  time: 0.002; 42.711; 3288.717
+progress: 81/1000, correct:  77/81, verified: 60/77, unsafe: 4/77,  time: 0.002; 42.711; 3288.717
+img 81 Verified 6
+progress: 82/1000, correct:  78/82, verified: 61/78, unsafe: 4/78,  time: 0.002; 42.163; 3288.719
+img 82 Verified 2
+progress: 83/1000, correct:  79/83, verified: 62/79, unsafe: 4/79,  time: 0.002; 41.629; 3288.721
+img 83 Verified 7
+progress: 84/1000, correct:  80/84, verified: 63/80, unsafe: 4/80,  time: 0.002; 41.109; 3288.723
+krelu: n 40 split_zero 623 after cutoff 153 number of args 6969
+krelu: n 40 split_zero 77 after cutoff 3 number of args 78
+krelu: n 40 split_zero 39 after cutoff 17 number of args 179
+krelu: n 40 split_zero 31 after cutoff 25 number of args 473
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+krelu: n 40 split_zero 12 after cutoff 7 number of args 19
+Model status: 3, Objval retrival failed, Final solve time: 0.6162109375
+model was not successful status is 3
+progress: 85/1000, correct:  81/85, verified: 63/81, unsafe: 4/81,  time: 175.716; 42.771; 3464.439
+img 85 Verified 4
+progress: 86/1000, correct:  82/86, verified: 64/82, unsafe: 4/82,  time: 0.002; 42.249; 3464.442
+img 86 Verified 7
+progress: 87/1000, correct:  83/87, verified: 65/83, unsafe: 4/83,  time: 0.002; 41.740; 3464.444
+krelu: n 40 split_zero 605 after cutoff 118 number of args 5492
+krelu: n 40 split_zero 89 after cutoff 2 number of args 90
+krelu: n 40 split_zero 50 after cutoff 23 number of args 365
+krelu: n 40 split_zero 27 after cutoff 20 number of args 216
+krelu: n 40 split_zero 8 after cutoff 5 number of args 9
+krelu: n 40 split_zero 12 after cutoff 4 number of args 13
+Model status: 3, Objval retrival failed, Final solve time: 0.5901970863342285
+model was not successful status is 3
+progress: 88/1000, correct:  84/88, verified: 65/84, unsafe: 4/84,  time: 138.106; 42.887; 3602.549
+img 88 Verified 6
+progress: 89/1000, correct:  85/89, verified: 66/85, unsafe: 4/85,  time: 0.002; 42.383; 3602.552
+img 89 Verified 1
+progress: 90/1000, correct:  86/90, verified: 67/86, unsafe: 4/86,  time: 0.002; 41.890; 3602.554
+img 90 Verified 3
+progress: 91/1000, correct:  87/91, verified: 68/87, unsafe: 4/87,  time: 0.002; 41.409; 3602.556
+img 91 Verified 6
+progress: 92/1000, correct:  88/92, verified: 69/88, unsafe: 4/88,  time: 0.002; 40.938; 3602.558
+progress: 93/1000, correct:  88/93, verified: 69/88, unsafe: 4/88,  time: 0.002; 40.938; 3602.558
+krelu: n 40 split_zero 564 after cutoff 84 number of args 3969
+krelu: n 40 split_zero 68 after cutoff 6 number of args 71
+krelu: n 40 split_zero 39 after cutoff 19 number of args 203
+krelu: n 40 split_zero 31 after cutoff 21 number of args 252
+krelu: n 40 split_zero 8 after cutoff 6 number of args 11
+krelu: n 40 split_zero 18 after cutoff 10 number of args 36
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.215522050857544
+Model status: 2, Objval against label 0: -0.12389139944186356, Final solve time: 1.8662328720092773
+img 93 Failed
+progress: 94/1000, correct:  89/94, verified: 69/89, unsafe: 4/89,  time: 109.385; 41.707; 3711.943
+krelu: n 40 split_zero 597 after cutoff 38 number of args 2080
+krelu: n 40 split_zero 41 after cutoff 3 number of args 42
+krelu: n 40 split_zero 24 after cutoff 13 number of args 79
+krelu: n 40 split_zero 21 after cutoff 17 number of args 161
+krelu: n 40 split_zero 4 after cutoff 3 number of args 5
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+Model status: 6, Objval against label 0: 0.0, Final solve time: 0.8678309917449951
+img 94 Verified 1
+progress: 95/1000, correct:  90/95, verified: 70/90, unsafe: 4/90,  time: 58.733; 41.896; 3770.676
+img 95 Verified 4
+progress: 96/1000, correct:  91/96, verified: 71/91, unsafe: 4/91,  time: 0.036; 41.436; 3770.712
+img 96 Verified 1
+progress: 97/1000, correct:  92/97, verified: 72/92, unsafe: 4/92,  time: 0.047; 40.987; 3770.758
+krelu: n 40 split_zero 605 after cutoff 126 number of args 5714
+krelu: n 40 split_zero 75 after cutoff 3 number of args 76
+krelu: n 40 split_zero 46 after cutoff 20 number of args 235
+krelu: n 40 split_zero 30 after cutoff 24 number of args 408
+krelu: n 40 split_zero 7 after cutoff 6 number of args 10
+krelu: n 40 split_zero 18 after cutoff 9 number of args 32
+Model status: 3, Objval retrival failed, Final solve time: 0.6335082054138184
+model was not successful status is 3
+progress: 98/1000, correct:  93/98, verified: 72/93, unsafe: 4/93,  time: 157.900; 42.244; 3928.659
+img 98 Verified 6
+progress: 99/1000, correct:  94/99, verified: 73/94, unsafe: 4/94,  time: 0.002; 41.794; 3928.661
+img 99 Verified 9
+progress: 100/1000, correct:  95/100, verified: 74/95, unsafe: 4/95,  time: 0.002; 41.354; 3928.664
+img 100 Verified 6
+progress: 101/1000, correct:  96/101, verified: 75/96, unsafe: 4/96,  time: 0.002; 40.924; 3928.666
+img 101 Verified 0
+progress: 102/1000, correct:  97/102, verified: 76/97, unsafe: 4/97,  time: 0.002; 40.502; 3928.668
+krelu: n 40 split_zero 616 after cutoff 143 number of args 6037
+krelu: n 40 split_zero 84 after cutoff 4 number of args 85
+krelu: n 40 split_zero 54 after cutoff 25 number of args 496
+krelu: n 40 split_zero 34 after cutoff 25 number of args 476
+krelu: n 40 split_zero 8 after cutoff 4 number of args 9
+krelu: n 40 split_zero 9 after cutoff 7 number of args 16
+Model status: 3, Objval retrival failed, Final solve time: 0.5903940200805664
+model was not successful status is 3
+progress: 103/1000, correct:  98/103, verified: 76/98, unsafe: 4/98,  time: 187.534; 42.002; 4116.202
+img 103 Verified 4
+progress: 104/1000, correct:  99/104, verified: 77/99, unsafe: 4/99,  time: 0.003; 41.578; 4116.206
+img 104 Verified 9
+progress: 105/1000, correct:  100/105, verified: 78/100, unsafe: 4/100,  time: 0.003; 41.162; 4116.209
+krelu: n 40 split_zero 621 after cutoff 100 number of args 4214
+krelu: n 40 split_zero 83 after cutoff 4 number of args 84
+krelu: n 40 split_zero 52 after cutoff 22 number of args 315
+krelu: n 40 split_zero 31 after cutoff 25 number of args 473
+krelu: n 40 split_zero 8 after cutoff 4 number of args 9
+krelu: n 40 split_zero 14 after cutoff 8 number of args 28
+Model status: 2, Objval against label 0: -0.8869883968964243, Final solve time: 2.1719398498535156
+img 105 Verified unsafe against label  4 correct label  9
+progress: 106/1000, correct:  101/106, verified: 78/101, unsafe: 5/101,  time: 143.872; 42.179; 4260.081
+img 106 Verified 2
+progress: 107/1000, correct:  102/107, verified: 79/102, unsafe: 5/102,  time: 0.037; 41.766; 4260.118
+krelu: n 40 split_zero 641 after cutoff 65 number of args 2785
+krelu: n 40 split_zero 50 after cutoff 4 number of args 51
+krelu: n 40 split_zero 31 after cutoff 19 number of args 195
+krelu: n 40 split_zero 27 after cutoff 19 number of args 191
+krelu: n 40 split_zero 5 after cutoff 4 number of args 6
+krelu: n 40 split_zero 14 after cutoff 8 number of args 28
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.0219311714172363
+img 107 Verified 1
+progress: 108/1000, correct:  103/108, verified: 80/103, unsafe: 5/103,  time: 81.461; 42.151; 4341.578
+img 108 Verified 9
+progress: 109/1000, correct:  104/109, verified: 81/104, unsafe: 5/104,  time: 0.051; 41.746; 4341.629
+img 109 Verified 4
+progress: 110/1000, correct:  105/110, verified: 82/105, unsafe: 5/105,  time: 0.002; 41.349; 4341.631
+img 110 Verified 8
+progress: 111/1000, correct:  106/111, verified: 83/106, unsafe: 5/106,  time: 0.002; 40.959; 4341.633
+krelu: n 40 split_zero 630 after cutoff 81 number of args 4035
+krelu: n 40 split_zero 46 after cutoff 4 number of args 47
+krelu: n 40 split_zero 19 after cutoff 9 number of args 33
+krelu: n 40 split_zero 21 after cutoff 16 number of args 161
+krelu: n 40 split_zero 6 after cutoff 5 number of args 7
+krelu: n 40 split_zero 7 after cutoff 2 number of args 8
+Model status: 2, Objval against label 0: -0.11990089067552545, Final solve time: 1.7538671493530273
+img 111 Failed
+progress: 112/1000, correct:  107/112, verified: 83/107, unsafe: 5/107,  time: 81.292; 41.336; 4422.925
+img 112 Verified 3
+progress: 113/1000, correct:  108/113, verified: 84/108, unsafe: 5/108,  time: 0.053; 40.954; 4422.978
+img 113 Verified 9
+progress: 114/1000, correct:  109/114, verified: 85/109, unsafe: 5/109,  time: 0.002; 40.578; 4422.980
+krelu: n 40 split_zero 633 after cutoff 74 number of args 3591
+krelu: n 40 split_zero 49 after cutoff 1 number of args 50
+krelu: n 40 split_zero 28 after cutoff 11 number of args 54
+krelu: n 40 split_zero 34 after cutoff 23 number of args 349
+krelu: n 40 split_zero 9 after cutoff 7 number of args 16
+krelu: n 40 split_zero 13 after cutoff 4 number of args 14
+Model status: 2, Objval against label 0: -0.015021122810032317, Final solve time: 1.7217779159545898
+img 114 Failed
+progress: 115/1000, correct:  110/115, verified: 85/110, unsafe: 5/110,  time: 98.933; 41.108; 4521.913
+krelu: n 40 split_zero 631 after cutoff 85 number of args 4036
+krelu: n 40 split_zero 45 after cutoff 2 number of args 46
+krelu: n 40 split_zero 27 after cutoff 15 number of args 132
+krelu: n 40 split_zero 23 after cutoff 16 number of args 163
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+krelu: n 40 split_zero 9 after cutoff 5 number of args 10
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.0558030605316162
+Model status: 2, Objval against label 0: -0.5166351543256456, Final solve time: 1.571146011352539
+img 115 Verified unsafe against label  9 correct label  4
+progress: 116/1000, correct:  111/116, verified: 85/111, unsafe: 6/111,  time: 91.265; 41.560; 4613.178
+img 116 Verified 4
+progress: 117/1000, correct:  112/117, verified: 86/112, unsafe: 6/112,  time: 0.056; 41.190; 4613.234
+img 117 Verified 4
+progress: 118/1000, correct:  113/118, verified: 87/113, unsafe: 6/113,  time: 0.002; 40.825; 4613.236
+img 118 Verified 9
+progress: 119/1000, correct:  114/119, verified: 88/114, unsafe: 6/114,  time: 0.047; 40.467; 4613.283
+krelu: n 40 split_zero 589 after cutoff 111 number of args 5078
+krelu: n 40 split_zero 84 after cutoff 5 number of args 85
+krelu: n 40 split_zero 38 after cutoff 19 number of args 202
+krelu: n 40 split_zero 31 after cutoff 25 number of args 473
+krelu: n 40 split_zero 11 after cutoff 7 number of args 18
+krelu: n 40 split_zero 20 after cutoff 13 number of args 75
+Model status: 3, Objval retrival failed, Final solve time: 0.5587830543518066
+model was not successful status is 3
+progress: 120/1000, correct:  115/120, verified: 88/115, unsafe: 6/115,  time: 159.959; 41.506; 4773.242
+krelu: n 40 split_zero 573 after cutoff 124 number of args 5680
+krelu: n 40 split_zero 62 after cutoff 6 number of args 65
+krelu: n 40 split_zero 40 after cutoff 23 number of args 355
+krelu: n 40 split_zero 33 after cutoff 26 number of args 551
+krelu: n 40 split_zero 4 after cutoff 2 number of args 5
+krelu: n 40 split_zero 9 after cutoff 3 number of args 10
+Model status: 3, Objval retrival failed, Final solve time: 0.573901891708374
+model was not successful status is 3
+progress: 121/1000, correct:  116/121, verified: 88/116, unsafe: 6/116,  time: 180.412; 42.704; 4953.654
+krelu: n 40 split_zero 620 after cutoff 110 number of args 4969
+krelu: n 40 split_zero 70 after cutoff 0 number of args 70
+krelu: n 40 split_zero 30 after cutoff 17 number of args 170
+krelu: n 40 split_zero 27 after cutoff 23 number of args 342
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+Model status: 3, Objval retrival failed, Final solve time: 0.5580241680145264
+model was not successful status is 3
+progress: 122/1000, correct:  117/122, verified: 88/117, unsafe: 6/117,  time: 132.570; 43.472; 5086.224
+img 122 Verified 7
+progress: 123/1000, correct:  118/123, verified: 89/118, unsafe: 6/118,  time: 0.003; 43.104; 5086.227
+img 123 Verified 6
+progress: 124/1000, correct:  119/124, verified: 90/119, unsafe: 6/119,  time: 0.003; 42.741; 5086.229
+krelu: n 40 split_zero 616 after cutoff 104 number of args 4398
+krelu: n 40 split_zero 65 after cutoff 5 number of args 66
+krelu: n 40 split_zero 34 after cutoff 19 number of args 198
+krelu: n 40 split_zero 23 after cutoff 18 number of args 171
+krelu: n 40 split_zero 8 after cutoff 4 number of args 9
+krelu: n 40 split_zero 9 after cutoff 2 number of args 10
+Model status: 6, Objval against label 0: 0.0, Final solve time: 0.9484751224517822
+img 124 Verified 7
+progress: 125/1000, correct:  120/125, verified: 91/120, unsafe: 6/120,  time: 99.253; 43.212; 5185.483
+progress: 126/1000, correct:  120/126, verified: 91/120, unsafe: 6/120,  time: 99.253; 43.212; 5185.483
+img 126 Verified 0
+progress: 127/1000, correct:  121/127, verified: 92/121, unsafe: 6/121,  time: 0.002; 42.855; 5185.485
+img 127 Verified 5
+progress: 128/1000, correct:  122/128, verified: 93/122, unsafe: 6/122,  time: 0.002; 42.504; 5185.487
+img 128 Verified 8
+progress: 129/1000, correct:  123/129, verified: 94/123, unsafe: 6/123,  time: 0.002; 42.158; 5185.489
+img 129 Verified 5
+progress: 130/1000, correct:  124/130, verified: 95/124, unsafe: 6/124,  time: 0.002; 41.818; 5185.491
+img 130 Verified 6
+progress: 131/1000, correct:  125/131, verified: 96/125, unsafe: 6/125,  time: 0.002; 41.484; 5185.493
+img 131 Verified 6
+progress: 132/1000, correct:  126/132, verified: 97/126, unsafe: 6/126,  time: 0.002; 41.155; 5185.494
+img 132 Verified 5
+progress: 133/1000, correct:  127/133, verified: 98/127, unsafe: 6/127,  time: 0.002; 40.831; 5185.496
+krelu: n 40 split_zero 584 after cutoff 94 number of args 4065
+krelu: n 40 split_zero 68 after cutoff 3 number of args 69
+krelu: n 40 split_zero 45 after cutoff 22 number of args 308
+krelu: n 40 split_zero 29 after cutoff 22 number of args 292
+krelu: n 40 split_zero 5 after cutoff 4 number of args 6
+krelu: n 40 split_zero 11 after cutoff 5 number of args 12
+Model status: 2, Objval against label 0: -0.3862423643570252, Final solve time: 1.901926040649414
+img 133 Failed
+progress: 134/1000, correct:  128/134, verified: 98/128, unsafe: 6/128,  time: 119.223; 41.443; 5304.719
+img 134 Verified 8
+progress: 135/1000, correct:  129/135, verified: 99/129, unsafe: 6/129,  time: 0.004; 41.122; 5304.724
+img 135 Verified 1
+progress: 136/1000, correct:  130/136, verified: 100/130, unsafe: 6/130,  time: 0.002; 40.806; 5304.726
+img 136 Verified 0
+progress: 137/1000, correct:  131/137, verified: 101/131, unsafe: 6/131,  time: 0.002; 40.494; 5304.728
+img 137 Verified 1
+progress: 138/1000, correct:  132/138, verified: 102/132, unsafe: 6/132,  time: 0.002; 40.187; 5304.730
+img 138 Verified 6
+progress: 139/1000, correct:  133/139, verified: 103/133, unsafe: 6/133,  time: 0.002; 39.885; 5304.732
+krelu: n 40 split_zero 598 after cutoff 109 number of args 4821
+krelu: n 40 split_zero 71 after cutoff 2 number of args 72
+krelu: n 40 split_zero 32 after cutoff 16 number of args 172
+krelu: n 40 split_zero 23 after cutoff 17 number of args 163
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 8 after cutoff 5 number of args 9
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.0729739665985107
+Model status: 2, Objval against label 0: -0.2578000139468939, Final solve time: 1.7235350608825684
+img 139 Failed
+progress: 140/1000, correct:  134/140, verified: 103/134, unsafe: 6/134,  time: 105.039; 40.371; 5409.771
+img 140 Verified 6
+progress: 141/1000, correct:  135/141, verified: 104/135, unsafe: 6/135,  time: 0.005; 40.072; 5409.776
+img 141 Verified 7
+progress: 142/1000, correct:  136/142, verified: 105/136, unsafe: 6/136,  time: 0.003; 39.778; 5409.779
+krelu: n 40 split_zero 633 after cutoff 125 number of args 5740
+krelu: n 40 split_zero 99 after cutoff 0 number of args 99
+krelu: n 40 split_zero 43 after cutoff 18 number of args 191
+krelu: n 40 split_zero 29 after cutoff 22 number of args 292
+krelu: n 40 split_zero 4 after cutoff 2 number of args 5
+krelu: n 40 split_zero 4 after cutoff 0 number of args 4
+Model status: 3, Objval retrival failed, Final solve time: 0.5849900245666504
+model was not successful status is 3
+progress: 143/1000, correct:  137/143, verified: 105/137, unsafe: 6/137,  time: 136.520; 40.484; 5546.299
+img 143 Verified 1
+progress: 144/1000, correct:  138/144, verified: 106/138, unsafe: 6/138,  time: 0.006; 40.191; 5546.304
+img 144 Verified 7
+progress: 145/1000, correct:  139/145, verified: 107/139, unsafe: 6/139,  time: 0.003; 39.901; 5546.307
+img 145 Verified 1
+progress: 146/1000, correct:  140/146, verified: 108/140, unsafe: 6/140,  time: 0.003; 39.616; 5546.310
+img 146 Verified 8
+progress: 147/1000, correct:  141/147, verified: 109/141, unsafe: 6/141,  time: 0.002; 39.336; 5546.312
+img 147 Verified 2
+progress: 148/1000, correct:  142/148, verified: 110/142, unsafe: 6/142,  time: 0.002; 39.059; 5546.314
+img 148 Verified 0
+progress: 149/1000, correct:  143/149, verified: 111/143, unsafe: 6/143,  time: 0.002; 38.785; 5546.316
+krelu: n 40 split_zero 663 after cutoff 120 number of args 5769
+krelu: n 40 split_zero 83 after cutoff 3 number of args 84
+krelu: n 40 split_zero 53 after cutoff 20 number of args 242
+krelu: n 40 split_zero 38 after cutoff 32 number of args 1278
+krelu: n 40 split_zero 14 after cutoff 8 number of args 28
+krelu: n 40 split_zero 16 after cutoff 10 number of args 34
+Model status: 3, Objval retrival failed, Final solve time: 0.6075711250305176
+model was not successful status is 3
+progress: 150/1000, correct:  144/150, verified: 111/144, unsafe: 6/144,  time: 262.407; 40.338; 5808.723
+krelu: n 40 split_zero 632 after cutoff 114 number of args 5292
+krelu: n 40 split_zero 108 after cutoff 4 number of args 109
+krelu: n 40 split_zero 48 after cutoff 20 number of args 237
+krelu: n 40 split_zero 32 after cutoff 21 number of args 253
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 14 after cutoff 9 number of args 28
+Model status: 3, Objval retrival failed, Final solve time: 0.5798549652099609
+model was not successful status is 3
+progress: 151/1000, correct:  145/151, verified: 111/145, unsafe: 6/145,  time: 131.370; 40.966; 5940.093
+krelu: n 40 split_zero 616 after cutoff 142 number of args 5985
+krelu: n 40 split_zero 92 after cutoff 3 number of args 93
+krelu: n 40 split_zero 46 after cutoff 22 number of args 309
+krelu: n 40 split_zero 29 after cutoff 24 number of args 407
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 16 after cutoff 10 number of args 34
+Model status: 3, Objval retrival failed, Final solve time: 0.6059391498565674
+model was not successful status is 3
+progress: 152/1000, correct:  146/152, verified: 111/146, unsafe: 6/146,  time: 167.551; 41.833; 6107.643
+img 152 Verified 5
+progress: 153/1000, correct:  147/153, verified: 112/147, unsafe: 6/147,  time: 0.006; 41.549; 6107.649
+krelu: n 40 split_zero 630 after cutoff 98 number of args 4182
+krelu: n 40 split_zero 88 after cutoff 3 number of args 89
+krelu: n 40 split_zero 49 after cutoff 25 number of args 491
+krelu: n 40 split_zero 32 after cutoff 25 number of args 474
+krelu: n 40 split_zero 11 after cutoff 9 number of args 25
+krelu: n 40 split_zero 18 after cutoff 11 number of args 44
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.6146540641784668
+Model status: 2, Objval against label 0: -1.6505799440728972, Final solve time: 2.471652030944824
+img 153 Verified unsafe against label  8 correct label  5
+progress: 154/1000, correct:  148/154, verified: 112/148, unsafe: 7/148,  time: 165.236; 42.384; 6272.884
+img 154 Verified 1
+progress: 155/1000, correct:  149/155, verified: 113/149, unsafe: 7/149,  time: 0.005; 42.100; 6272.889
+img 155 Verified 5
+progress: 156/1000, correct:  150/156, verified: 114/150, unsafe: 7/150,  time: 0.051; 41.820; 6272.940
+img 156 Verified 6
+progress: 157/1000, correct:  151/157, verified: 115/151, unsafe: 7/151,  time: 0.002; 41.543; 6272.942
+img 157 Verified 0
+progress: 158/1000, correct:  152/158, verified: 116/152, unsafe: 7/152,  time: 0.002; 41.269; 6272.944
+krelu: n 40 split_zero 625 after cutoff 106 number of args 4547
+krelu: n 40 split_zero 56 after cutoff 1 number of args 57
+krelu: n 40 split_zero 35 after cutoff 19 number of args 199
+krelu: n 40 split_zero 29 after cutoff 23 number of args 344
+krelu: n 40 split_zero 2 after cutoff 2 number of args 3
+krelu: n 40 split_zero 7 after cutoff 1 number of args 8
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.1135749816894531
+img 158 Verified 3
+progress: 159/1000, correct:  153/159, verified: 117/153, unsafe: 7/153,  time: 121.688; 41.795; 6394.631
+krelu: n 40 split_zero 667 after cutoff 110 number of args 5016
+krelu: n 40 split_zero 69 after cutoff 7 number of args 76
+krelu: n 40 split_zero 33 after cutoff 21 number of args 254
+krelu: n 40 split_zero 31 after cutoff 28 number of args 738
+krelu: n 40 split_zero 6 after cutoff 5 number of args 7
+krelu: n 40 split_zero 16 after cutoff 10 number of args 34
+Model status: 3, Objval retrival failed, Final solve time: 0.5832109451293945
+model was not successful status is 3
+progress: 160/1000, correct:  154/160, verified: 117/154, unsafe: 7/154,  time: 187.732; 42.743; 6582.363
+krelu: n 40 split_zero 617 after cutoff 89 number of args 4035
+krelu: n 40 split_zero 53 after cutoff 1 number of args 54
+krelu: n 40 split_zero 28 after cutoff 14 number of args 105
+krelu: n 40 split_zero 18 after cutoff 12 number of args 57
+krelu: n 40 split_zero 7 after cutoff 5 number of args 8
+krelu: n 40 split_zero 12 after cutoff 5 number of args 13
+Model status: 2, Objval against label 0: 0.001200297284639884, Final solve time: 1.8106799125671387
+img 160 Verified 4
+progress: 161/1000, correct:  155/161, verified: 118/155, unsafe: 7/155,  time: 74.606; 42.948; 6656.969
+img 161 Verified 6
+progress: 162/1000, correct:  156/162, verified: 119/156, unsafe: 7/156,  time: 0.006; 42.673; 6656.975
+img 162 Verified 5
+progress: 163/1000, correct:  157/163, verified: 120/157, unsafe: 7/157,  time: 0.003; 42.401; 6656.977
+krelu: n 40 split_zero 585 after cutoff 96 number of args 4129
+krelu: n 40 split_zero 72 after cutoff 7 number of args 79
+krelu: n 40 split_zero 41 after cutoff 23 number of args 356
+krelu: n 40 split_zero 27 after cutoff 23 number of args 342
+krelu: n 40 split_zero 9 after cutoff 6 number of args 12
+krelu: n 40 split_zero 8 after cutoff 3 number of args 9
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.1752080917358398
+img 163 Verified 4
+progress: 164/1000, correct:  158/164, verified: 121/158, unsafe: 7/158,  time: 130.078; 42.956; 6787.055
+img 164 Verified 6
+progress: 165/1000, correct:  159/165, verified: 122/159, unsafe: 7/159,  time: 0.005; 42.686; 6787.060
+img 165 Verified 5
+progress: 166/1000, correct:  160/166, verified: 123/160, unsafe: 7/160,  time: 0.004; 42.419; 6787.064
+img 166 Verified 4
+progress: 167/1000, correct:  161/167, verified: 124/161, unsafe: 7/161,  time: 0.048; 42.156; 6787.112
+krelu: n 40 split_zero 639 after cutoff 115 number of args 5331
+krelu: n 40 split_zero 69 after cutoff 0 number of args 69
+krelu: n 40 split_zero 51 after cutoff 27 number of args 657
+krelu: n 40 split_zero 37 after cutoff 28 number of args 744
+krelu: n 40 split_zero 9 after cutoff 5 number of args 10
+krelu: n 40 split_zero 18 after cutoff 14 number of args 95
+Model status: 3, Objval retrival failed, Final solve time: 0.5987119674682617
+model was not successful status is 3
+progress: 168/1000, correct:  162/168, verified: 124/162, unsafe: 7/162,  time: 233.342; 43.336; 7020.454
+img 168 Verified 1
+progress: 169/1000, correct:  163/169, verified: 125/163, unsafe: 7/163,  time: 0.003; 43.070; 7020.458
+img 169 Verified 4
+progress: 170/1000, correct:  164/170, verified: 126/164, unsafe: 7/164,  time: 0.003; 42.808; 7020.461
+img 170 Verified 4
+progress: 171/1000, correct:  165/171, verified: 127/165, unsafe: 7/165,  time: 0.002; 42.548; 7020.463
+img 171 Verified 7
+progress: 172/1000, correct:  166/172, verified: 128/166, unsafe: 7/166,  time: 0.002; 42.292; 7020.465
+img 172 Verified 2
+progress: 173/1000, correct:  167/173, verified: 129/167, unsafe: 7/167,  time: 0.027; 42.039; 7020.493
+krelu: n 40 split_zero 646 after cutoff 134 number of args 5829
+krelu: n 40 split_zero 109 after cutoff 0 number of args 109
+krelu: n 40 split_zero 73 after cutoff 30 number of args 1018
+krelu: n 40 split_zero 49 after cutoff 43 number of args 1752
+krelu: n 40 split_zero 16 after cutoff 8 number of args 30
+krelu: n 40 split_zero 21 after cutoff 9 number of args 35
+Model status: 3, Objval retrival failed, Final solve time: 0.6327309608459473
+model was not successful status is 3
+progress: 174/1000, correct:  168/174, verified: 129/168, unsafe: 7/168,  time: 379.861; 44.050; 7400.353
+img 174 Verified 2
+progress: 175/1000, correct:  169/175, verified: 130/169, unsafe: 7/169,  time: 0.003; 43.789; 7400.357
+krelu: n 40 split_zero 666 after cutoff 64 number of args 2746
+krelu: n 40 split_zero 60 after cutoff 0 number of args 60
+krelu: n 40 split_zero 53 after cutoff 32 number of args 1293
+krelu: n 40 split_zero 44 after cutoff 41 number of args 1747
+krelu: n 40 split_zero 14 after cutoff 9 number of args 28
+krelu: n 40 split_zero 14 after cutoff 8 number of args 28
+Model status: 3, Objval retrival failed, Final solve time: 0.6672301292419434
+model was not successful status is 3
+progress: 176/1000, correct:  170/176, verified: 130/170, unsafe: 7/170,  time: 364.339; 45.675; 7764.696
+img 176 Verified 1
+progress: 177/1000, correct:  171/177, verified: 131/171, unsafe: 7/171,  time: 0.236; 45.409; 7764.932
+img 177 Verified 8
+progress: 178/1000, correct:  172/178, verified: 132/172, unsafe: 7/172,  time: 0.002; 45.145; 7764.934
+img 178 Verified 1
+progress: 179/1000, correct:  173/179, verified: 133/173, unsafe: 7/173,  time: 0.002; 44.884; 7764.936
+img 179 Verified 8
+progress: 180/1000, correct:  174/180, verified: 134/174, unsafe: 7/174,  time: 0.002; 44.626; 7764.938
+img 180 Verified 1
+progress: 181/1000, correct:  175/181, verified: 135/175, unsafe: 7/175,  time: 0.002; 44.371; 7764.939
+img 181 Verified 8
+progress: 182/1000, correct:  176/182, verified: 136/176, unsafe: 7/176,  time: 0.002; 44.119; 7764.941
+img 182 Verified 5
+progress: 183/1000, correct:  177/183, verified: 137/177, unsafe: 7/177,  time: 0.002; 43.870; 7764.943
+img 183 Verified 0
+progress: 184/1000, correct:  178/184, verified: 138/178, unsafe: 7/178,  time: 0.002; 43.623; 7764.945
+krelu: n 40 split_zero 617 after cutoff 126 number of args 5726
+krelu: n 40 split_zero 86 after cutoff 2 number of args 87
+krelu: n 40 split_zero 56 after cutoff 34 number of args 1312
+krelu: n 40 split_zero 30 after cutoff 22 number of args 293
+krelu: n 40 split_zero 7 after cutoff 3 number of args 8
+krelu: n 40 split_zero 13 after cutoff 8 number of args 27
+Model status: 3, Objval retrival failed, Final solve time: 0.623054027557373
+model was not successful status is 3
+progress: 185/1000, correct:  179/185, verified: 138/179, unsafe: 7/179,  time: 231.167; 44.671; 7996.112
+progress: 186/1000, correct:  179/186, verified: 138/179, unsafe: 7/179,  time: 231.167; 44.671; 7996.112
+krelu: n 40 split_zero 544 after cutoff 104 number of args 4326
+krelu: n 40 split_zero 60 after cutoff 3 number of args 61
+krelu: n 40 split_zero 39 after cutoff 18 number of args 187
+krelu: n 40 split_zero 24 after cutoff 15 number of args 129
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+krelu: n 40 split_zero 8 after cutoff 3 number of args 9
+Model status: 2, Objval against label 0: -0.03060829081247851, Final solve time: 1.7679619789123535
+img 186 Failed
+progress: 187/1000, correct:  180/187, verified: 138/180, unsafe: 7/180,  time: 94.365; 44.947; 8090.476
+krelu: n 40 split_zero 599 after cutoff 106 number of args 4521
+krelu: n 40 split_zero 97 after cutoff 0 number of args 97
+krelu: n 40 split_zero 45 after cutoff 20 number of args 234
+krelu: n 40 split_zero 35 after cutoff 25 number of args 477
+krelu: n 40 split_zero 2 after cutoff 1 number of args 3
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+Model status: 2, Objval against label 0: -0.3153834104945732, Final solve time: 1.8733160495758057
+img 187 Verified unsafe against label  3 correct label  5
+progress: 188/1000, correct:  181/188, verified: 138/181, unsafe: 8/181,  time: 139.802; 45.471; 8230.278
+img 188 Verified 0
+progress: 189/1000, correct:  182/189, verified: 139/182, unsafe: 8/182,  time: 0.002; 45.221; 8230.280
+img 189 Verified 1
+progress: 190/1000, correct:  183/190, verified: 140/183, unsafe: 8/183,  time: 0.002; 44.974; 8230.282
+img 190 Verified 1
+progress: 191/1000, correct:  184/191, verified: 141/184, unsafe: 8/184,  time: 0.002; 44.730; 8230.284
+img 191 Verified 1
+progress: 192/1000, correct:  185/192, verified: 142/185, unsafe: 8/185,  time: 0.027; 44.488; 8230.311
+img 192 Verified 0
+progress: 193/1000, correct:  186/193, verified: 143/186, unsafe: 8/186,  time: 0.002; 44.249; 8230.313
+krelu: n 40 split_zero 651 after cutoff 123 number of args 5758
+krelu: n 40 split_zero 67 after cutoff 1 number of args 68
+krelu: n 40 split_zero 33 after cutoff 17 number of args 173
+krelu: n 40 split_zero 21 after cutoff 16 number of args 161
+krelu: n 40 split_zero 4 after cutoff 1 number of args 5
+krelu: n 40 split_zero 7 after cutoff 3 number of args 8
+Model status: 3, Objval retrival failed, Final solve time: 0.5792951583862305
+model was not successful status is 3
+progress: 194/1000, correct:  187/194, verified: 143/187, unsafe: 8/187,  time: 122.237; 44.666; 8352.549
+img 194 Verified 0
+progress: 195/1000, correct:  188/195, verified: 144/188, unsafe: 8/188,  time: 0.004; 44.428; 8352.554
+krelu: n 40 split_zero 667 after cutoff 92 number of args 4110
+krelu: n 40 split_zero 68 after cutoff 4 number of args 69
+krelu: n 40 split_zero 39 after cutoff 16 number of args 179
+krelu: n 40 split_zero 41 after cutoff 35 number of args 1329
+krelu: n 40 split_zero 13 after cutoff 8 number of args 27
+krelu: n 40 split_zero 14 after cutoff 9 number of args 28
+Model status: 3, Objval retrival failed, Final solve time: 0.5822200775146484
+model was not successful status is 3
+progress: 196/1000, correct:  189/196, verified: 144/189, unsafe: 8/189,  time: 240.413; 45.465; 8592.967
+img 196 Verified 1
+progress: 197/1000, correct:  190/197, verified: 145/190, unsafe: 8/190,  time: 0.005; 45.226; 8592.971
+img 197 Verified 6
+progress: 198/1000, correct:  191/198, verified: 146/191, unsafe: 8/191,  time: 0.005; 44.989; 8592.976
+krelu: n 40 split_zero 632 after cutoff 87 number of args 4043
+krelu: n 40 split_zero 51 after cutoff 4 number of args 52
+krelu: n 40 split_zero 36 after cutoff 21 number of args 257
+krelu: n 40 split_zero 19 after cutoff 14 number of args 96
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+krelu: n 40 split_zero 10 after cutoff 2 number of args 11
+Model status: 2, Objval against label 0: -0.36247468147278106, Final solve time: 1.7902908325195312
+img 198 Verified unsafe against label  9 correct label  4
+progress: 199/1000, correct:  192/199, verified: 146/192, unsafe: 9/192,  time: 91.888; 45.234; 8684.865
+krelu: n 40 split_zero 561 after cutoff 107 number of args 4571
+krelu: n 40 split_zero 58 after cutoff 4 number of args 59
+krelu: n 40 split_zero 30 after cutoff 14 number of args 107
+krelu: n 40 split_zero 25 after cutoff 17 number of args 165
+krelu: n 40 split_zero 4 after cutoff 2 number of args 5
+krelu: n 40 split_zero 4 after cutoff 2 number of args 5
+Model status: 2, Objval against label 0: 0.003188969101112882, Final solve time: 1.7631418704986572
+Model status: 2, Objval against label 0: -0.47570423690661157, Final solve time: 5.705451011657715
+img 199 Verified unsafe against label  8 correct label  2
+progress: 200/1000, correct:  193/200, verified: 146/193, unsafe: 10/193,  time: 101.584; 45.526; 8786.448
+krelu: n 40 split_zero 499 after cutoff 114 number of args 5159
+krelu: n 40 split_zero 47 after cutoff 6 number of args 50
+krelu: n 40 split_zero 24 after cutoff 14 number of args 101
+krelu: n 40 split_zero 17 after cutoff 15 number of args 122
+krelu: n 40 split_zero 5 after cutoff 4 number of args 6
+krelu: n 40 split_zero 13 after cutoff 7 number of args 20
+Model status: 3, Objval retrival failed, Final solve time: 0.5598509311676025
+model was not successful status is 3
+progress: 201/1000, correct:  194/201, verified: 146/194, unsafe: 10/194,  time: 107.860; 45.847; 8894.308
+img 201 Verified 6
+progress: 202/1000, correct:  195/202, verified: 147/195, unsafe: 10/195,  time: 0.004; 45.612; 8894.312
+img 202 Verified 1
+progress: 203/1000, correct:  196/203, verified: 148/196, unsafe: 10/196,  time: 0.004; 45.379; 8894.317
+img 203 Verified 1
+progress: 204/1000, correct:  197/204, verified: 149/197, unsafe: 10/197,  time: 0.002; 45.149; 8894.319
+img 204 Verified 1
+progress: 205/1000, correct:  198/205, verified: 150/198, unsafe: 10/198,  time: 0.002; 44.921; 8894.321
+img 205 Verified 3
+progress: 206/1000, correct:  199/206, verified: 151/199, unsafe: 10/199,  time: 0.050; 44.695; 8894.371
+krelu: n 40 split_zero 597 after cutoff 100 number of args 4190
+krelu: n 40 split_zero 65 after cutoff 5 number of args 66
+krelu: n 40 split_zero 33 after cutoff 19 number of args 197
+krelu: n 40 split_zero 20 after cutoff 15 number of args 125
+krelu: n 40 split_zero 8 after cutoff 6 number of args 11
+krelu: n 40 split_zero 11 after cutoff 5 number of args 12
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.135685920715332
+img 206 Verified 9
+progress: 207/1000, correct:  200/207, verified: 152/200, unsafe: 10/200,  time: 93.014; 44.937; 8987.385
+img 207 Verified 5
+progress: 208/1000, correct:  201/208, verified: 153/201, unsafe: 10/201,  time: 0.217; 44.714; 8987.602
+img 208 Verified 2
+progress: 209/1000, correct:  202/209, verified: 154/202, unsafe: 10/202,  time: 0.002; 44.493; 8987.603
+img 209 Verified 9
+progress: 210/1000, correct:  203/210, verified: 155/203, unsafe: 10/203,  time: 0.002; 44.274; 8987.605
+img 210 Verified 4
+progress: 211/1000, correct:  204/211, verified: 156/204, unsafe: 10/204,  time: 0.002; 44.057; 8987.606
+img 211 Verified 5
+progress: 212/1000, correct:  205/212, verified: 157/205, unsafe: 10/205,  time: 0.045; 43.842; 8987.652
+img 212 Verified 9
+progress: 213/1000, correct:  206/213, verified: 158/206, unsafe: 10/206,  time: 0.041; 43.630; 8987.692
+krelu: n 40 split_zero 642 after cutoff 91 number of args 4072
+krelu: n 40 split_zero 58 after cutoff 2 number of args 59
+krelu: n 40 split_zero 41 after cutoff 17 number of args 181
+krelu: n 40 split_zero 30 after cutoff 24 number of args 408
+krelu: n 40 split_zero 9 after cutoff 6 number of args 12
+krelu: n 40 split_zero 8 after cutoff 4 number of args 9
+Model status: 2, Objval against label 0: -0.473915243740453, Final solve time: 2.312835931777954
+img 213 Verified unsafe against label  7 correct label  3
+progress: 214/1000, correct:  207/214, verified: 158/207, unsafe: 11/207,  time: 121.519; 44.006; 9109.212
+img 214 Verified 9
+progress: 215/1000, correct:  208/215, verified: 159/208, unsafe: 11/208,  time: 0.002; 43.794; 9109.214
+img 215 Verified 0
+progress: 216/1000, correct:  209/216, verified: 160/209, unsafe: 11/209,  time: 0.002; 43.585; 9109.216
+img 216 Verified 3
+progress: 217/1000, correct:  210/217, verified: 161/210, unsafe: 11/210,  time: 0.002; 43.377; 9109.218
+progress: 218/1000, correct:  210/218, verified: 161/210, unsafe: 11/210,  time: 0.002; 43.377; 9109.218
+img 218 Verified 5
+progress: 219/1000, correct:  211/219, verified: 162/211, unsafe: 11/211,  time: 0.002; 43.172; 9109.220
+img 219 Verified 5
+progress: 220/1000, correct:  212/220, verified: 163/212, unsafe: 11/212,  time: 0.048; 42.968; 9109.267
+krelu: n 40 split_zero 608 after cutoff 103 number of args 4327
+krelu: n 40 split_zero 51 after cutoff 4 number of args 52
+krelu: n 40 split_zero 35 after cutoff 17 number of args 175
+krelu: n 40 split_zero 26 after cutoff 19 number of args 190
+krelu: n 40 split_zero 6 after cutoff 2 number of args 7
+krelu: n 40 split_zero 6 after cutoff 3 number of args 7
+Model status: 2, Objval against label 0: -1.395644922489571, Final solve time: 1.6625621318817139
+img 220 Verified unsafe against label  9 correct label  7
+progress: 221/1000, correct:  213/221, verified: 163/213, unsafe: 12/213,  time: 99.946; 43.236; 9209.213
+krelu: n 40 split_zero 613 after cutoff 135 number of args 5824
+krelu: n 40 split_zero 103 after cutoff 4 number of args 104
+krelu: n 40 split_zero 46 after cutoff 20 number of args 235
+krelu: n 40 split_zero 23 after cutoff 13 number of args 78
+krelu: n 40 split_zero 4 after cutoff 3 number of args 5
+krelu: n 40 split_zero 12 after cutoff 6 number of args 15
+Model status: 3, Objval retrival failed, Final solve time: 0.5926589965820312
+model was not successful status is 3
+progress: 222/1000, correct:  214/222, verified: 163/214, unsafe: 12/214,  time: 118.106; 43.586; 9327.320
+krelu: n 40 split_zero 509 after cutoff 118 number of args 5396
+krelu: n 40 split_zero 60 after cutoff 8 number of args 74
+krelu: n 40 split_zero 29 after cutoff 14 number of args 106
+krelu: n 40 split_zero 19 after cutoff 13 number of args 74
+krelu: n 40 split_zero 3 after cutoff 2 number of args 4
+krelu: n 40 split_zero 11 after cutoff 6 number of args 14
+Model status: 3, Objval retrival failed, Final solve time: 0.574951171875
+model was not successful status is 3
+progress: 223/1000, correct:  215/223, verified: 163/215, unsafe: 12/215,  time: 105.249; 43.872; 9432.568
+img 223 Verified 7
+progress: 224/1000, correct:  216/224, verified: 164/216, unsafe: 12/216,  time: 0.006; 43.669; 9432.574
+img 224 Verified 1
+progress: 225/1000, correct:  217/225, verified: 165/217, unsafe: 12/217,  time: 0.003; 43.468; 9432.577
+img 225 Verified 2
+progress: 226/1000, correct:  218/226, verified: 166/218, unsafe: 12/218,  time: 0.002; 43.269; 9432.580
+img 226 Verified 8
+progress: 227/1000, correct:  219/227, verified: 167/219, unsafe: 12/219,  time: 0.002; 43.071; 9432.582
+krelu: n 40 split_zero 655 after cutoff 88 number of args 4073
+krelu: n 40 split_zero 62 after cutoff 3 number of args 63
+krelu: n 40 split_zero 39 after cutoff 22 number of args 302
+krelu: n 40 split_zero 34 after cutoff 31 number of args 1119
+krelu: n 40 split_zero 9 after cutoff 7 number of args 16
+krelu: n 40 split_zero 19 after cutoff 13 number of args 74
+Model status: 3, Objval retrival failed, Final solve time: 0.5987629890441895
+model was not successful status is 3
+progress: 228/1000, correct:  220/228, verified: 167/220, unsafe: 12/220,  time: 230.880; 43.925; 9663.462
+img 228 Verified 1
+progress: 229/1000, correct:  221/229, verified: 168/221, unsafe: 12/221,  time: 0.002; 43.726; 9663.463
+img 229 Verified 7
+progress: 230/1000, correct:  222/230, verified: 169/222, unsafe: 12/222,  time: 0.002; 43.529; 9663.465
+krelu: n 40 split_zero 631 after cutoff 104 number of args 4413
+krelu: n 40 split_zero 67 after cutoff 4 number of args 68
+krelu: n 40 split_zero 35 after cutoff 18 number of args 183
+krelu: n 40 split_zero 24 after cutoff 17 number of args 164
+krelu: n 40 split_zero 6 after cutoff 4 number of args 7
+krelu: n 40 split_zero 14 after cutoff 8 number of args 28
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.1355011463165283
+img 230 Verified 3
+progress: 231/1000, correct:  223/231, verified: 170/223, unsafe: 12/223,  time: 100.073; 43.783; 9763.539
+krelu: n 40 split_zero 653 after cutoff 109 number of args 4876
+krelu: n 40 split_zero 72 after cutoff 1 number of args 73
+krelu: n 40 split_zero 48 after cutoff 22 number of args 311
+krelu: n 40 split_zero 32 after cutoff 26 number of args 550
+krelu: n 40 split_zero 9 after cutoff 7 number of args 16
+krelu: n 40 split_zero 12 after cutoff 9 number of args 26
+Model status: 3, Objval retrival failed, Final solve time: 0.5930180549621582
+model was not successful status is 3
+progress: 232/1000, correct:  224/232, verified: 170/224, unsafe: 12/224,  time: 168.317; 44.339; 9931.856
+krelu: n 40 split_zero 593 after cutoff 100 number of args 4186
+krelu: n 40 split_zero 48 after cutoff 3 number of args 49
+krelu: n 40 split_zero 31 after cutoff 20 number of args 220
+krelu: n 40 split_zero 21 after cutoff 14 number of args 98
+krelu: n 40 split_zero 3 after cutoff 2 number of args 4
+krelu: n 40 split_zero 8 after cutoff 2 number of args 9
+Model status: 2, Objval against label 0: -0.0704367316337624, Final solve time: 1.781710147857666
+img 232 Failed
+progress: 233/1000, correct:  225/233, verified: 170/225, unsafe: 12/225,  time: 91.585; 44.549; 10023.441
+krelu: n 40 split_zero 585 after cutoff 118 number of args 5472
+krelu: n 40 split_zero 57 after cutoff 2 number of args 58
+krelu: n 40 split_zero 29 after cutoff 8 number of args 43
+krelu: n 40 split_zero 16 after cutoff 13 number of args 71
+krelu: n 40 split_zero 5 after cutoff 3 number of args 6
+krelu: n 40 split_zero 8 after cutoff 0 number of args 8
+Model status: 3, Objval retrival failed, Final solve time: 0.5872471332550049
+model was not successful status is 3
+progress: 234/1000, correct:  226/234, verified: 170/226, unsafe: 12/226,  time: 99.030; 44.790; 10122.471
+img 234 Verified 7
+progress: 235/1000, correct:  227/235, verified: 171/227, unsafe: 12/227,  time: 0.061; 44.593; 10122.531
+krelu: n 40 split_zero 631 after cutoff 86 number of args 4038
+krelu: n 40 split_zero 64 after cutoff 1 number of args 65
+krelu: n 40 split_zero 35 after cutoff 19 number of args 199
+krelu: n 40 split_zero 26 after cutoff 17 number of args 166
+krelu: n 40 split_zero 5 after cutoff 2 number of args 6
+krelu: n 40 split_zero 6 after cutoff 4 number of args 7
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.0448181629180908
+img 235 Verified 9
+progress: 236/1000, correct:  228/236, verified: 172/228, unsafe: 12/228,  time: 93.664; 44.808; 10216.195
+img 236 Verified 2
+progress: 237/1000, correct:  229/237, verified: 173/229, unsafe: 12/229,  time: 0.003; 44.612; 10216.198
+img 237 Verified 2
+progress: 238/1000, correct:  230/238, verified: 174/230, unsafe: 12/230,  time: 0.003; 44.418; 10216.201
+img 238 Verified 4
+progress: 239/1000, correct:  231/239, verified: 175/231, unsafe: 12/231,  time: 0.003; 44.226; 10216.204
+img 239 Verified 1
+progress: 240/1000, correct:  232/240, verified: 176/232, unsafe: 12/232,  time: 0.002; 44.035; 10216.206
+img 240 Verified 5
+progress: 241/1000, correct:  233/241, verified: 177/233, unsafe: 12/233,  time: 0.002; 43.846; 10216.208
+progress: 242/1000, correct:  233/242, verified: 177/233, unsafe: 12/233,  time: 0.002; 43.846; 10216.208
+progress: 243/1000, correct:  233/243, verified: 177/233, unsafe: 12/233,  time: 0.002; 43.846; 10216.208
+img 243 Verified 7
+progress: 244/1000, correct:  234/244, verified: 178/234, unsafe: 12/234,  time: 0.048; 43.659; 10216.256
+krelu: n 40 split_zero 641 after cutoff 75 number of args 3631
+krelu: n 40 split_zero 50 after cutoff 4 number of args 51
+krelu: n 40 split_zero 36 after cutoff 16 number of args 176
+krelu: n 40 split_zero 23 after cutoff 18 number of args 171
+krelu: n 40 split_zero 8 after cutoff 5 number of args 9
+krelu: n 40 split_zero 9 after cutoff 5 number of args 10
+Model status: 2, Objval against label 0: -1.1823918693939186, Final solve time: 1.9550888538360596
+img 244 Verified unsafe against label  1 correct label  2
+progress: 245/1000, correct:  235/245, verified: 178/235, unsafe: 13/235,  time: 88.342; 43.849; 10304.598
+krelu: n 40 split_zero 643 after cutoff 129 number of args 5763
+krelu: n 40 split_zero 92 after cutoff 3 number of args 93
+krelu: n 40 split_zero 72 after cutoff 37 number of args 1473
+krelu: n 40 split_zero 48 after cutoff 42 number of args 1751
+krelu: n 40 split_zero 15 after cutoff 8 number of args 29
+krelu: n 40 split_zero 18 after cutoff 11 number of args 44
+Model status: 3, Objval retrival failed, Final solve time: 0.622981071472168
+model was not successful status is 3
+progress: 246/1000, correct:  236/246, verified: 178/236, unsafe: 13/236,  time: 418.276; 45.436; 10722.874
+img 246 Verified 0
+progress: 247/1000, correct:  237/247, verified: 179/237, unsafe: 13/237,  time: 0.037; 45.244; 10722.911
+progress: 248/1000, correct:  237/248, verified: 179/237, unsafe: 13/237,  time: 0.037; 45.244; 10722.911
+img 248 Verified 4
+progress: 249/1000, correct:  238/249, verified: 180/238, unsafe: 13/238,  time: 0.002; 45.054; 10722.913
+img 249 Verified 2
+progress: 250/1000, correct:  239/250, verified: 181/239, unsafe: 13/239,  time: 0.002; 44.866; 10722.915
+krelu: n 40 split_zero 578 after cutoff 86 number of args 3985
+krelu: n 40 split_zero 53 after cutoff 3 number of args 54
+krelu: n 40 split_zero 30 after cutoff 17 number of args 170
+krelu: n 40 split_zero 28 after cutoff 17 number of args 168
+krelu: n 40 split_zero 4 after cutoff 3 number of args 5
+krelu: n 40 split_zero 10 after cutoff 3 number of args 11
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.0490550994873047
+img 250 Verified 4
+progress: 251/1000, correct:  240/251, verified: 182/240, unsafe: 13/240,  time: 91.565; 45.060; 10814.479
+img 251 Verified 1
+progress: 252/1000, correct:  241/252, verified: 183/241, unsafe: 13/241,  time: 0.005; 44.873; 10814.484
+img 252 Verified 9
+progress: 253/1000, correct:  242/253, verified: 184/242, unsafe: 13/242,  time: 0.005; 44.688; 10814.488
+img 253 Verified 5
+progress: 254/1000, correct:  243/254, verified: 185/243, unsafe: 13/243,  time: 0.002; 44.504; 10814.491
+img 254 Verified 7
+progress: 255/1000, correct:  244/255, verified: 186/244, unsafe: 13/244,  time: 0.002; 44.322; 10814.493
+krelu: n 40 split_zero 627 after cutoff 70 number of args 3274
+krelu: n 40 split_zero 56 after cutoff 1 number of args 57
+krelu: n 40 split_zero 24 after cutoff 15 number of args 129
+krelu: n 40 split_zero 31 after cutoff 30 number of args 976
+krelu: n 40 split_zero 6 after cutoff 4 number of args 7
+krelu: n 40 split_zero 10 after cutoff 3 number of args 11
+Model status: 2, Objval against label 0: -0.7274300192600225, Final solve time: 2.0462310314178467
+img 255 Verified unsafe against label  3 correct label  7
+progress: 256/1000, correct:  245/256, verified: 186/245, unsafe: 14/245,  time: 176.288; 44.860; 10990.781
+img 256 Verified 2
+progress: 257/1000, correct:  246/257, verified: 187/246, unsafe: 14/246,  time: 0.002; 44.678; 10990.783
+krelu: n 40 split_zero 618 after cutoff 101 number of args 4243
+krelu: n 40 split_zero 58 after cutoff 1 number of args 59
+krelu: n 40 split_zero 28 after cutoff 14 number of args 105
+krelu: n 40 split_zero 17 after cutoff 13 number of args 72
+krelu: n 40 split_zero 3 after cutoff 2 number of args 4
+krelu: n 40 split_zero 8 after cutoff 3 number of args 9
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.0403430461883545
+img 257 Verified 8
+progress: 258/1000, correct:  247/258, verified: 188/247, unsafe: 14/247,  time: 80.023; 44.821; 11070.806
+img 258 Verified 2
+progress: 259/1000, correct:  248/259, verified: 189/248, unsafe: 14/248,  time: 0.006; 44.640; 11070.812
+progress: 260/1000, correct:  248/260, verified: 189/248, unsafe: 14/248,  time: 0.006; 44.640; 11070.812
+img 260 Verified 8
+progress: 261/1000, correct:  249/261, verified: 190/249, unsafe: 14/249,  time: 0.002; 44.461; 11070.814
+krelu: n 40 split_zero 631 after cutoff 104 number of args 4413
+krelu: n 40 split_zero 68 after cutoff 4 number of args 69
+krelu: n 40 split_zero 46 after cutoff 24 number of args 424
+krelu: n 40 split_zero 46 after cutoff 41 number of args 1749
+krelu: n 40 split_zero 12 after cutoff 7 number of args 19
+krelu: n 40 split_zero 15 after cutoff 10 number of args 33
+Model status: 3, Objval retrival failed, Final solve time: 0.5824630260467529
+model was not successful status is 3
+progress: 262/1000, correct:  250/262, verified: 190/250, unsafe: 14/250,  time: 312.685; 45.534; 11383.499
+img 262 Verified 7
+progress: 263/1000, correct:  251/263, verified: 191/251, unsafe: 14/251,  time: 0.002; 45.353; 11383.501
+img 263 Verified 7
+progress: 264/1000, correct:  252/264, verified: 192/252, unsafe: 14/252,  time: 0.002; 45.173; 11383.503
+progress: 265/1000, correct:  252/265, verified: 192/252, unsafe: 14/252,  time: 0.002; 45.173; 11383.503
+img 265 Verified 1
+progress: 266/1000, correct:  253/266, verified: 193/253, unsafe: 14/253,  time: 0.002; 44.994; 11383.505
+krelu: n 40 split_zero 583 after cutoff 132 number of args 5728
+krelu: n 40 split_zero 36 after cutoff 3 number of args 37
+krelu: n 40 split_zero 18 after cutoff 10 number of args 36
+krelu: n 40 split_zero 19 after cutoff 10 number of args 37
+krelu: n 40 split_zero 2 after cutoff 1 number of args 3
+krelu: n 40 split_zero 9 after cutoff 4 number of args 10
+Model status: 3, Objval retrival failed, Final solve time: 0.6017959117889404
+model was not successful status is 3
+progress: 267/1000, correct:  254/267, verified: 193/254, unsafe: 14/254,  time: 100.447; 45.212; 11483.952
+img 267 Verified 1
+progress: 268/1000, correct:  255/268, verified: 194/255, unsafe: 14/255,  time: 0.067; 45.035; 11484.019
+krelu: n 40 split_zero 622 after cutoff 169 number of args 7444
+krelu: n 40 split_zero 83 after cutoff 4 number of args 84
+krelu: n 40 split_zero 51 after cutoff 27 number of args 657
+krelu: n 40 split_zero 35 after cutoff 28 number of args 742
+krelu: n 40 split_zero 6 after cutoff 3 number of args 7
+krelu: n 40 split_zero 14 after cutoff 6 number of args 17
+Model status: 3, Objval retrival failed, Final solve time: 0.6459310054779053
+model was not successful status is 3
+progress: 269/1000, correct:  256/269, verified: 194/256, unsafe: 14/256,  time: 251.847; 45.843; 11735.866
+krelu: n 40 split_zero 630 after cutoff 138 number of args 5884
+krelu: n 40 split_zero 95 after cutoff 4 number of args 96
+krelu: n 40 split_zero 57 after cutoff 31 number of args 1142
+krelu: n 40 split_zero 43 after cutoff 37 number of args 1444
+krelu: n 40 split_zero 9 after cutoff 5 number of args 10
+krelu: n 40 split_zero 11 after cutoff 9 number of args 25
+Model status: 3, Objval retrival failed, Final solve time: 0.6758899688720703
+model was not successful status is 3
+progress: 270/1000, correct:  257/270, verified: 194/257, unsafe: 14/257,  time: 357.109; 47.054; 12092.976
+img 270 Verified 3
+progress: 271/1000, correct:  258/271, verified: 195/258, unsafe: 14/258,  time: 0.050; 46.872; 12093.026
+img 271 Verified 0
+progress: 272/1000, correct:  259/272, verified: 196/259, unsafe: 14/259,  time: 0.002; 46.691; 12093.028
+img 272 Verified 1
+progress: 273/1000, correct:  260/273, verified: 197/260, unsafe: 14/260,  time: 0.002; 46.512; 12093.030
+img 273 Verified 9
+progress: 274/1000, correct:  261/274, verified: 198/261, unsafe: 14/261,  time: 0.002; 46.333; 12093.031
+img 274 Verified 9
+progress: 275/1000, correct:  262/275, verified: 199/262, unsafe: 14/262,  time: 0.002; 46.157; 12093.033
+krelu: n 40 split_zero 612 after cutoff 105 number of args 4458
+krelu: n 40 split_zero 86 after cutoff 8 number of args 100
+krelu: n 40 split_zero 37 after cutoff 19 number of args 201
+krelu: n 40 split_zero 19 after cutoff 16 number of args 159
+krelu: n 40 split_zero 6 after cutoff 3 number of args 7
+krelu: n 40 split_zero 7 after cutoff 3 number of args 8
+Model status: 2, Objval against label 0: -0.419452225579219, Final solve time: 1.6052780151367188
+img 275 Verified unsafe against label  9 correct label  4
+progress: 276/1000, correct:  263/276, verified: 199/263, unsafe: 15/263,  time: 101.711; 46.368; 12194.745
+img 276 Verified 1
+progress: 277/1000, correct:  264/277, verified: 200/264, unsafe: 15/264,  time: 0.003; 46.192; 12194.748
+img 277 Verified 8
+progress: 278/1000, correct:  265/278, verified: 201/265, unsafe: 15/265,  time: 0.052; 46.018; 12194.800
+krelu: n 40 split_zero 568 after cutoff 84 number of args 3973
+krelu: n 40 split_zero 57 after cutoff 1 number of args 58
+krelu: n 40 split_zero 26 after cutoff 10 number of args 44
+krelu: n 40 split_zero 17 after cutoff 13 number of args 72
+krelu: n 40 split_zero 5 after cutoff 4 number of args 6
+krelu: n 40 split_zero 13 after cutoff 7 number of args 20
+Model status: 2, Objval against label 0: -0.1834002360856385, Final solve time: 1.829077959060669
+img 278 Verified unsafe against label  8 correct label  2
+progress: 279/1000, correct:  266/279, verified: 201/266, unsafe: 16/266,  time: 75.160; 46.128; 12269.960
+img 279 Verified 1
+progress: 280/1000, correct:  267/280, verified: 202/267, unsafe: 16/267,  time: 0.002; 45.955; 12269.963
+img 280 Verified 2
+progress: 281/1000, correct:  268/281, verified: 203/268, unsafe: 16/268,  time: 0.002; 45.783; 12269.965
+img 281 Verified 9
+progress: 282/1000, correct:  269/282, verified: 204/269, unsafe: 16/269,  time: 0.002; 45.613; 12269.967
+krelu: n 40 split_zero 637 after cutoff 94 number of args 4118
+krelu: n 40 split_zero 75 after cutoff 4 number of args 76
+krelu: n 40 split_zero 32 after cutoff 14 number of args 109
+krelu: n 40 split_zero 28 after cutoff 24 number of args 406
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 5 after cutoff 1 number of args 6
+Model status: 2, Objval against label 0: -1.458397243935319, Final solve time: 2.1247828006744385
+img 282 Verified unsafe against label  1 correct label  7
+progress: 283/1000, correct:  270/283, verified: 204/270, unsafe: 17/270,  time: 117.423; 45.879; 12387.390
+img 283 Verified 5
+progress: 284/1000, correct:  271/284, verified: 205/271, unsafe: 17/271,  time: 0.002; 45.710; 12387.392
+img 284 Verified 9
+progress: 285/1000, correct:  272/285, verified: 206/272, unsafe: 17/272,  time: 0.002; 45.542; 12387.394
+img 285 Verified 2
+progress: 286/1000, correct:  273/286, verified: 207/273, unsafe: 17/273,  time: 0.002; 45.375; 12387.396
+img 286 Verified 6
+progress: 287/1000, correct:  274/287, verified: 208/274, unsafe: 17/274,  time: 0.002; 45.209; 12387.398
+krelu: n 40 split_zero 596 after cutoff 98 number of args 4148
+krelu: n 40 split_zero 72 after cutoff 8 number of args 86
+krelu: n 40 split_zero 40 after cutoff 18 number of args 188
+krelu: n 40 split_zero 22 after cutoff 20 number of args 211
+krelu: n 40 split_zero 5 after cutoff 2 number of args 6
+krelu: n 40 split_zero 10 after cutoff 7 number of args 17
+Model status: 2, Objval against label 0: -0.17509418899537144, Final solve time: 1.7671360969543457
+img 287 Failed
+progress: 288/1000, correct:  275/288, verified: 208/275, unsafe: 17/275,  time: 103.643; 45.422; 12491.041
+img 288 Verified 1
+progress: 289/1000, correct:  276/289, verified: 209/276, unsafe: 17/276,  time: 0.003; 45.257; 12491.044
+img 289 Verified 5
+progress: 290/1000, correct:  277/290, verified: 210/277, unsafe: 17/277,  time: 0.003; 45.094; 12491.047
+progress: 291/1000, correct:  277/291, verified: 210/277, unsafe: 17/277,  time: 0.003; 45.094; 12491.047
+img 291 Verified 2
+progress: 292/1000, correct:  278/292, verified: 211/278, unsafe: 17/278,  time: 0.002; 44.932; 12491.049
+img 292 Verified 9
+progress: 293/1000, correct:  279/293, verified: 212/279, unsafe: 17/279,  time: 0.002; 44.771; 12491.051
+img 293 Verified 2
+progress: 294/1000, correct:  280/294, verified: 213/280, unsafe: 17/280,  time: 0.047; 44.611; 12491.098
+img 294 Verified 0
+progress: 295/1000, correct:  281/295, verified: 214/281, unsafe: 17/281,  time: 0.002; 44.452; 12491.100
+krelu: n 40 split_zero 637 after cutoff 99 number of args 4205
+krelu: n 40 split_zero 92 after cutoff 3 number of args 93
+krelu: n 40 split_zero 42 after cutoff 18 number of args 190
+krelu: n 40 split_zero 28 after cutoff 22 number of args 291
+krelu: n 40 split_zero 9 after cutoff 5 number of args 10
+krelu: n 40 split_zero 13 after cutoff 8 number of args 27
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.2353639602661133
+Model status: 2, Objval against label 0: -0.43757699227370406, Final solve time: 2.665311098098755
+img 295 Verified unsafe against label  9 correct label  4
+progress: 296/1000, correct:  282/296, verified: 214/282, unsafe: 18/282,  time: 116.363; 44.707; 12607.463
+img 296 Verified 0
+progress: 297/1000, correct:  283/297, verified: 215/283, unsafe: 18/283,  time: 0.005; 44.549; 12607.467
+img 297 Verified 0
+progress: 298/1000, correct:  284/298, verified: 216/284, unsafe: 18/284,  time: 0.002; 44.392; 12607.470
+img 298 Verified 2
+progress: 299/1000, correct:  285/299, verified: 217/285, unsafe: 18/285,  time: 0.002; 44.237; 12607.472
+img 299 Verified 8
+progress: 300/1000, correct:  286/300, verified: 218/286, unsafe: 18/286,  time: 0.047; 44.082; 12607.518
+progress: 301/1000, correct:  286/301, verified: 218/286, unsafe: 18/286,  time: 0.047; 44.082; 12607.518
+krelu: n 40 split_zero 587 after cutoff 92 number of args 4030
+krelu: n 40 split_zero 62 after cutoff 2 number of args 63
+krelu: n 40 split_zero 35 after cutoff 13 number of args 90
+krelu: n 40 split_zero 24 after cutoff 21 number of args 245
+krelu: n 40 split_zero 4 after cutoff 4 number of args 5
+krelu: n 40 split_zero 8 after cutoff 3 number of args 9
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.2216160297393799
+img 301 Verified 7
+progress: 302/1000, correct:  287/302, verified: 219/287, unsafe: 18/287,  time: 96.448; 44.265; 12703.967
+img 302 Verified 1
+progress: 303/1000, correct:  288/303, verified: 220/288, unsafe: 18/288,  time: 0.004; 44.111; 12703.971
+krelu: n 40 split_zero 671 after cutoff 131 number of args 5803
+krelu: n 40 split_zero 97 after cutoff 3 number of args 98
+krelu: n 40 split_zero 65 after cutoff 37 number of args 1466
+krelu: n 40 split_zero 57 after cutoff 49 number of args 1773
+krelu: n 40 split_zero 16 after cutoff 9 number of args 30
+krelu: n 40 split_zero 18 after cutoff 7 number of args 25
+Model status: 3, Objval retrival failed, Final solve time: 0.645082950592041
+model was not successful status is 3
+progress: 304/1000, correct:  289/304, verified: 220/289, unsafe: 18/289,  time: 418.710; 45.407; 13122.681
+krelu: n 40 split_zero 615 after cutoff 82 number of args 4020
+krelu: n 40 split_zero 46 after cutoff 3 number of args 47
+krelu: n 40 split_zero 20 after cutoff 9 number of args 34
+krelu: n 40 split_zero 18 after cutoff 14 number of args 95
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 9 after cutoff 2 number of args 10
+Model status: 2, Objval against label 0: -0.6355922223078765, Final solve time: 1.7021489143371582
+img 304 Verified unsafe against label  8 correct label  4
+progress: 305/1000, correct:  290/305, verified: 220/290, unsafe: 19/290,  time: 74.473; 45.507; 13197.154
+img 305 Verified 0
+progress: 306/1000, correct:  291/306, verified: 221/291, unsafe: 19/291,  time: 0.003; 45.351; 13197.157
+img 306 Verified 2
+progress: 307/1000, correct:  292/307, verified: 222/292, unsafe: 19/292,  time: 0.002; 45.196; 13197.159
+img 307 Verified 7
+progress: 308/1000, correct:  293/308, verified: 223/293, unsafe: 19/293,  time: 0.002; 45.042; 13197.161
+img 308 Verified 4
+progress: 309/1000, correct:  294/309, verified: 224/294, unsafe: 19/294,  time: 0.002; 44.888; 13197.163
+img 309 Verified 3
+progress: 310/1000, correct:  295/310, verified: 225/295, unsafe: 19/295,  time: 0.002; 44.736; 13197.165
+img 310 Verified 3
+progress: 311/1000, correct:  296/311, verified: 226/296, unsafe: 19/296,  time: 0.002; 44.585; 13197.166
+img 311 Verified 0
+progress: 312/1000, correct:  297/312, verified: 227/297, unsafe: 19/297,  time: 0.002; 44.435; 13197.168
+img 312 Verified 0
+progress: 313/1000, correct:  298/313, verified: 228/298, unsafe: 19/298,  time: 0.002; 44.286; 13197.170
+krelu: n 40 split_zero 617 after cutoff 134 number of args 5800
+krelu: n 40 split_zero 89 after cutoff 2 number of args 90
+krelu: n 40 split_zero 56 after cutoff 27 number of args 662
+krelu: n 40 split_zero 35 after cutoff 27 number of args 641
+krelu: n 40 split_zero 9 after cutoff 3 number of args 10
+krelu: n 40 split_zero 11 after cutoff 7 number of args 18
+Model status: 3, Objval retrival failed, Final solve time: 0.597801923751831
+model was not successful status is 3
+progress: 314/1000, correct:  299/314, verified: 228/299, unsafe: 19/299,  time: 217.833; 44.866; 13415.003
+img 314 Verified 1
+progress: 315/1000, correct:  300/315, verified: 229/300, unsafe: 19/300,  time: 0.003; 44.717; 13415.005
+img 315 Verified 9
+progress: 316/1000, correct:  301/316, verified: 230/301, unsafe: 19/301,  time: 0.003; 44.568; 13415.008
+img 316 Verified 6
+progress: 317/1000, correct:  302/317, verified: 231/302, unsafe: 19/302,  time: 0.047; 44.421; 13415.055
+img 317 Verified 5
+progress: 318/1000, correct:  303/318, verified: 232/303, unsafe: 19/303,  time: 0.002; 44.274; 13415.057
+progress: 319/1000, correct:  303/319, verified: 232/303, unsafe: 19/303,  time: 0.002; 44.274; 13415.057
+img 319 Verified 5
+progress: 320/1000, correct:  304/320, verified: 233/304, unsafe: 19/304,  time: 0.002; 44.128; 13415.058
+progress: 321/1000, correct:  304/321, verified: 233/304, unsafe: 19/304,  time: 0.002; 44.128; 13415.058
+progress: 322/1000, correct:  304/322, verified: 233/304, unsafe: 19/304,  time: 0.002; 44.128; 13415.058
+img 322 Verified 9
+progress: 323/1000, correct:  305/323, verified: 234/305, unsafe: 19/305,  time: 0.002; 43.984; 13415.060
+img 323 Verified 3
+progress: 324/1000, correct:  306/324, verified: 235/306, unsafe: 19/306,  time: 0.002; 43.840; 13415.062
+krelu: n 40 split_zero 658 after cutoff 124 number of args 5765
+krelu: n 40 split_zero 73 after cutoff 3 number of args 74
+krelu: n 40 split_zero 44 after cutoff 28 number of args 751
+krelu: n 40 split_zero 27 after cutoff 22 number of args 290
+krelu: n 40 split_zero 4 after cutoff 1 number of args 5
+krelu: n 40 split_zero 8 after cutoff 4 number of args 9
+Model status: 3, Objval retrival failed, Final solve time: 0.6073348522186279
+model was not successful status is 3
+progress: 325/1000, correct:  307/325, verified: 235/307, unsafe: 19/307,  time: 183.613; 44.295; 13598.676
+krelu: n 40 split_zero 626 after cutoff 91 number of args 4056
+krelu: n 40 split_zero 59 after cutoff 1 number of args 60
+krelu: n 40 split_zero 32 after cutoff 18 number of args 180
+krelu: n 40 split_zero 24 after cutoff 21 number of args 245
+krelu: n 40 split_zero 11 after cutoff 8 number of args 25
+krelu: n 40 split_zero 16 after cutoff 10 number of args 34
+Model status: 2, Objval against label 0: -1.6067732811563107, Final solve time: 1.895024061203003
+img 325 Verified unsafe against label  0 correct label  4
+progress: 326/1000, correct:  308/326, verified: 235/308, unsafe: 20/308,  time: 107.575; 44.501; 13706.251
+krelu: n 40 split_zero 616 after cutoff 94 number of args 4097
+krelu: n 40 split_zero 75 after cutoff 3 number of args 76
+krelu: n 40 split_zero 39 after cutoff 21 number of args 260
+krelu: n 40 split_zero 26 after cutoff 23 number of args 341
+krelu: n 40 split_zero 7 after cutoff 4 number of args 8
+krelu: n 40 split_zero 11 after cutoff 6 number of args 14
+Model status: 2, Objval against label 0: -0.47749448936143857, Final solve time: 1.9367530345916748
+img 326 Failed
+progress: 327/1000, correct:  309/327, verified: 235/309, unsafe: 20/309,  time: 122.529; 44.753; 13828.780
+img 327 Verified 0
+progress: 328/1000, correct:  310/328, verified: 236/310, unsafe: 20/310,  time: 0.004; 44.609; 13828.784
+krelu: n 40 split_zero 621 after cutoff 102 number of args 4288
+krelu: n 40 split_zero 55 after cutoff 3 number of args 56
+krelu: n 40 split_zero 29 after cutoff 20 number of args 218
+krelu: n 40 split_zero 35 after cutoff 26 number of args 553
+krelu: n 40 split_zero 10 after cutoff 7 number of args 17
+krelu: n 40 split_zero 10 after cutoff 2 number of args 11
+Model status: 6, Objval against label 0: 0.0, Final solve time: 1.3010780811309814
+Model status: 2, Objval against label 0: -0.0036543939574302797, Final solve time: 1.794018030166626
+img 328 Failed
+progress: 329/1000, correct:  311/329, verified: 236/311, unsafe: 20/311,  time: 148.918; 44.944; 13977.702
+img 329 Verified 1
+progress: 330/1000, correct:  312/330, verified: 237/312, unsafe: 20/312,  time: 0.003; 44.800; 13977.705
+img 330 Verified 1
+progress: 331/1000, correct:  313/331, verified: 238/313, unsafe: 20/313,  time: 0.003; 44.657; 13977.709
+img 331 Verified 2
+progress: 332/1000, correct:  314/332, verified: 239/314, unsafe: 20/314,  time: 0.048; 44.515; 13977.757
+img 332 Verified 1
+progress: 333/1000, correct:  315/333, verified: 240/315, unsafe: 20/315,  time: 0.002; 44.374; 13977.759
+img 333 Verified 5
+progress: 334/1000, correct:  316/334, verified: 241/316, unsafe: 20/316,  time: 0.195; 44.234; 13977.953
+img 334 Verified 3
+progress: 335/1000, correct:  317/335, verified: 242/317, unsafe: 20/317,  time: 0.001; 44.094; 13977.954
+img 335 Verified 3
+progress: 336/1000, correct:  318/336, verified: 243/318, unsafe: 20/318,  time: 0.001; 43.956; 13977.956
+progress: 337/1000, correct:  318/337, verified: 243/318, unsafe: 20/318,  time: 0.001; 43.956; 13977.956
+img 337 Verified 7
+progress: 338/1000, correct:  319/338, verified: 244/319, unsafe: 20/319,  time: 0.001; 43.818; 13977.957
+krelu: n 40 split_zero 596 after cutoff 177 number of args 7544
+krelu: n 40 split_zero 93 after cutoff 4 number of args 94
+krelu: n 40 split_zero 52 after cutoff 20 number of args 241
+krelu: n 40 split_zero 45 after cutoff 36 number of args 1382
+krelu: n 40 split_zero 4 after cutoff 1 number of args 5
+krelu: n 40 split_zero 12 after cutoff 7 number of args 19
+Model status: 3, Objval retrival failed, Final solve time: 0.6626620292663574
+model was not successful status is 3
+progress: 339/1000, correct:  320/339, verified: 244/320, unsafe: 20/320,  time: 297.196; 44.610; 14275.153
+img 339 Verified 6
+progress: 340/1000, correct:  321/340, verified: 245/321, unsafe: 20/321,  time: 0.040; 44.471; 14275.194
+krelu: n 40 split_zero 617 after cutoff 86 number of args 4024
+krelu: n 40 split_zero 71 after cutoff 1 number of args 72
+krelu: n 40 split_zero 28 after cutoff 10 number of args 46
+krelu: n 40 split_zero 18 after cutoff 15 number of args 123
+krelu: n 40 split_zero 3 after cutoff 1 number of args 4
+krelu: n 40 split_zero 3 after cutoff 1 number of args 4
+Model status: 2, Objval against label 0: -0.7073052387875913, Final solve time: 1.5441539287567139
+img 340 Verified unsafe against label  3 correct label  5
+progress: 341/1000, correct:  322/341, verified: 245/322, unsafe: 21/322,  time: 78.528; 44.577; 14353.721
+krelu: n 40 split_zero 673 after cutoff 102 number of args 4340
+krelu: n 40 split_zero 76 after cutoff 1 number of args 77
+krelu: n 40 split_zero 52 after cutoff 26 number of args 570
+krelu: n 40 split_zero 37 after cutoff 32 number of args 1277
+krelu: n 40 split_zero 7 after cutoff 6 number of args 10
+krelu: n 40 split_zero 14 after cutoff 9 number of args 28
+Model status: 3, Objval retrival failed, Final solve time: 0.5742621421813965
+model was not successful status is 3
+progress: 342/1000, correct:  323/342, verified: 245/323, unsafe: 21/323,  time: 268.842; 45.271; 14622.564
+img 342 Verified 1
+progress: 343/1000, correct:  324/343, verified: 246/324, unsafe: 21/324,  time: 0.003; 45.131; 14622.567
+krelu: n 40 split_zero 613 after cutoff 122 number of args 5720
+krelu: n 40 split_zero 87 after cutoff 4 number of args 88
+krelu: n 40 split_zero 48 after cutoff 22 number of args 311
+krelu: n 40 split_zero 18 after cutoff 16 number of args 158
+krelu: n 40 split_zero 4 after cutoff 2 number of args 5
+krelu: n 40 split_zero 10 after cutoff 5 number of args 11
+Model status: 3, Objval retrival failed, Final solve time: 0.5848100185394287
+model was not successful status is 3
+progress: 344/1000, correct:  325/344, verified: 246/325, unsafe: 21/325,  time: 134.596; 45.407; 14757.163
+krelu: n 40 split_zero 634 after cutoff 139 number of args 5904
+
+Process finished with exit code 137 (interrupted by signal 9: SIGKILL)
+

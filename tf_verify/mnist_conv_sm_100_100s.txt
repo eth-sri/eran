@@ -1,0 +1,701 @@
+/home/mark/miniconda3/envs/eran/bin/python /home/mark/Projects/ERAN/eran/tf_verify/__main__.py --netname ../nets/convSmallRELU__Point.pyt --epsilon 0.12 --domain refinegpupoly --dataset mnist --complete False --use_milp False --timeout_lp 100 --from_test 0 --num_test 100 --sparse_n 100
+2020-12-14 17:59:11.804730: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+GPUPoly 0.9.0S (built Dec 13 2020 19:38:47) - Copyright (C) 2020 Department of Computer Science, ETH Zurich.
+This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it and to modify it under the terms of the GNU LGPLv3.
+
+2020-12-14 17:59:11.827036: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 3600000000 Hz
+2020-12-14 17:59:11.827521: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5558d7d6a2e0 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2020-12-14 17:59:11.827532: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2020-12-14 17:59:11.827597: I tensorflow/core/common_runtime/process_util.cc:147] Creating new thread pool with default inter op setting: 2. Tune using inter_op_parallelism_threads for best performance.
+{'attack': False,
+ 'complete': False,
+ 'data_dir': None,
+ 'dataset': 'mnist',
+ 'debug': False,
+ 'delta': 0.3,
+ 'domain': 'refinegpupoly',
+ 'epsfile': None,
+ 'epsilon': 0.12,
+ 'from_test': 0,
+ 'gamma': inf,
+ 'geometric': False,
+ 'geometric_config': None,
+ 'input_box': None,
+ 'logdir': None,
+ 'logname': None,
+ 'mean': None,
+ 'netname': '../nets/convSmallRELU__Point.pyt',
+ 'normalized_region': True,
+ 'num_params': 0,
+ 'num_tests': 100,
+ 'numproc': 16,
+ 'output_constraints': None,
+ 'refine_neurons': False,
+ 'sparse_n': 100,
+ 'spatial': False,
+ 'specnumber': None,
+ 'std': None,
+ 'subset': None,
+ 't_norm': 'inf',
+ 'target': None,
+ 'timeout_complete': 1,
+ 'timeout_lp': 100.0,
+ 'timeout_milp': 1,
+ 'use_default_heuristic': True,
+ 'use_milp': False,
+ 'zonotope': None}
+netname  ../nets/convSmallRELU__Point.pyt  epsilon  0.12  domain  refinegpupoly  dataset  mnist args complete  False  complete  False  timeout_lp  100.0
+W shape (4, 4, 1, 16)
+Conv2D {'filters': 16, 'kernel_size': [4, 4], 'input_shape': [28, 28, 1], 'stride': [2, 2], 'padding': 0} W.shape: (4, 4, 1, 16) b.shape: (16,)
+	OutShape:  (1, 13, 13, 16)
+W shape (4, 4, 16, 32)
+Conv2D {'filters': 32, 'kernel_size': [4, 4], 'input_shape': [13, 13, 16], 'stride': [2, 2], 'padding': 0} W.shape: (4, 4, 16, 32) b.shape: (32,)
+	OutShape:  (1, 5, 5, 32)
+ReLU
+	OutShape:  (1, 100)
+	WShape:  (800, 100)
+	BShape:  (100,)
+Affine
+	OutShape:  (1, 10)
+	WShape:  (100, 10)
+	BShape:  (10,)
+WARNING:tensorflow:From /home/mark/Projects/ERAN/eran/tf_verify/tensorflow_translator.py:123: convert_variables_to_constants (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.compat.v1.graph_util.convert_variables_to_constants`
+WARNING:tensorflow:From /home/mark/miniconda3/envs/eran/lib/python3.8/site-packages/tensorflow/python/framework/graph_util_impl.py:359: extract_sub_graph (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.compat.v1.graph_util.extract_sub_graph`
+WARNING:tensorflow:From /home/mark/Projects/ERAN/eran/tf_verify/tensorflow_translator.py:124: remove_training_nodes (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.compat.v1.graph_util.remove_training_nodes`
+img 0 Verified 7
+progress: 1/100, correct:  1/1, verified: 1/1, unsafe: 0/1,  time: 0.018; 0.018; 0.018
+img 1 Verified 2
+progress: 2/100, correct:  2/2, verified: 2/2, unsafe: 0/2,  time: 0.017; 0.017; 0.035
+krelu: n 100 split_zero 1012 after cutoff 13 number of args 1034
+krelu: n 100 split_zero 292 after cutoff 63 number of args 943
+krelu: n 100 split_zero 30 after cutoff 30 number of args 170
+Using license file /home/mark/gurobi.lic
+Academic license - for non-commercial use only
+objval  2 2 0.9310221060331809
+objval  5 2 1.484849746411942
+objval  6 2 1.5868469563541199
+objval  8 2 0.3547147236776502
+img 2 Verified 1
+progress: 3/100, correct:  3/3, verified: 3/3, unsafe: 0/3,  time: 44.035; 14.690; 44.069
+img 3 Verified 0
+progress: 4/100, correct:  4/4, verified: 4/4, unsafe: 0/4,  time: 0.043; 11.028; 44.112
+krelu: n 100 split_zero 992 after cutoff 26 number of args 1082
+krelu: n 100 split_zero 158 after cutoff 102 number of args 1476
+krelu: n 100 split_zero 40 after cutoff 39 number of args 223
+objval  0 2 1.4964549367208912
+objval  1 2 1.4775410905130149
+objval  2 2 0.1182823019784256
+objval  3 2 1.0071163453555487
+objval  5 2 1.9888789032140246
+objval  6 2 0.8552836935571525
+objval  7 2 -2.576355478267553
+img 4 Failed
+progress: 5/100, correct:  5/5, verified: 4/5, unsafe: 0/5,  time: 113.927; 31.608; 158.039
+krelu: n 100 split_zero 1021 after cutoff 17 number of args 1057
+krelu: n 100 split_zero 270 after cutoff 66 number of args 924
+krelu: n 100 split_zero 27 after cutoff 27 number of args 128
+objval  7 2 1.6434095458438147
+img 5 Verified 1
+progress: 6/100, correct:  6/6, verified: 5/6, unsafe: 0/6,  time: 3.565; 26.934; 161.604
+krelu: n 100 split_zero 974 after cutoff 26 number of args 1064
+krelu: n 100 split_zero 156 after cutoff 92 number of args 1213
+krelu: n 100 split_zero 41 after cutoff 37 number of args 211
+objval  1 2 0.2180353127007586
+objval  2 2 0.24136897512676692
+objval  3 2 -0.04753253665702458
+img 6 Verified unsafe against label  8 correct label  4
+progress: 7/100, correct:  7/7, verified: 5/7, unsafe: 1/7,  time: 83.940; 35.078; 245.544
+krelu: n 100 split_zero 904 after cutoff 18 number of args 942
+krelu: n 100 split_zero 188 after cutoff 87 number of args 1115
+krelu: n 100 split_zero 32 after cutoff 32 number of args 187
+objval  1 2 2.064468424477863
+objval  2 2 -2.490352758967191
+img 7 Failed
+progress: 8/100, correct:  8/8, verified: 5/8, unsafe: 1/8,  time: 6.065; 31.451; 251.609
+krelu: n 100 split_zero 921 after cutoff 27 number of args 1022
+krelu: n 100 split_zero 123 after cutoff 77 number of args 865
+krelu: n 100 split_zero 22 after cutoff 21 number of args 72
+objval  6 2 -6.034269488097797
+img 8 Verified unsafe against label  6 correct label  5
+progress: 9/100, correct:  9/9, verified: 5/9, unsafe: 2/9,  time: 3.566; 28.353; 255.175
+krelu: n 100 split_zero 882 after cutoff 16 number of args 917
+krelu: n 100 split_zero 143 after cutoff 69 number of args 809
+krelu: n 100 split_zero 32 after cutoff 32 number of args 187
+objval  3 2 0.928321597964838
+objval  4 2 -0.14435406653416286
+img 9 Failed
+progress: 10/100, correct:  10/10, verified: 5/10, unsafe: 2/10,  time: 26.318; 28.149; 281.493
+krelu: n 100 split_zero 821 after cutoff 25 number of args 901
+krelu: n 100 split_zero 142 after cutoff 118 number of args 1497
+krelu: n 100 split_zero 33 after cutoff 31 number of args 188
+objval  2 2 1.5249428640970875
+objval  5 2 3.1708266143457156
+img 10 Verified 0
+progress: 11/100, correct:  11/11, verified: 6/11, unsafe: 2/11,  time: 52.250; 30.340; 333.742
+krelu: n 100 split_zero 908 after cutoff 30 number of args 1048
+krelu: n 100 split_zero 183 after cutoff 120 number of args 1545
+krelu: n 100 split_zero 45 after cutoff 38 number of args 221
+objval  0 2 -1.0553462787229515
+img 11 Failed
+progress: 12/100, correct:  12/12, verified: 6/12, unsafe: 2/12,  time: 5.619; 28.280; 339.362
+krelu: n 100 split_zero 921 after cutoff 19 number of args 962
+krelu: n 100 split_zero 156 after cutoff 85 number of args 1038
+krelu: n 100 split_zero 34 after cutoff 33 number of args 190
+objval  2 2 3.6599494615850614
+objval  3 2 0.9990398808344239
+objval  4 2 -2.4176097132246412
+img 12 Failed
+progress: 13/100, correct:  13/13, verified: 6/13, unsafe: 2/13,  time: 22.248; 27.816; 361.610
+krelu: n 100 split_zero 938 after cutoff 29 number of args 1064
+krelu: n 100 split_zero 137 after cutoff 100 number of args 1454
+krelu: n 100 split_zero 33 after cutoff 32 number of args 188
+objval  7 2 0.8727404541495227
+objval  9 2 1.7379817069304924
+img 13 Verified 0
+progress: 14/100, correct:  14/14, verified: 7/14, unsafe: 2/14,  time: 30.210; 27.987; 391.819
+img 14 Verified 1
+progress: 15/100, correct:  15/15, verified: 8/15, unsafe: 2/15,  time: 0.035; 26.124; 391.854
+krelu: n 100 split_zero 939 after cutoff 21 number of args 989
+krelu: n 100 split_zero 134 after cutoff 95 number of args 1281
+krelu: n 100 split_zero 40 after cutoff 35 number of args 201
+objval  0 2 2.4082902076367856
+objval  1 2 1.885075824734825
+objval  2 2 1.2273956341328738
+objval  3 2 -3.8107736213397856
+img 15 Verified unsafe against label  3 correct label  5
+progress: 16/100, correct:  16/16, verified: 8/16, unsafe: 3/16,  time: 36.717; 26.786; 428.571
+krelu: n 100 split_zero 936 after cutoff 20 number of args 981
+krelu: n 100 split_zero 155 after cutoff 100 number of args 1472
+krelu: n 100 split_zero 37 after cutoff 36 number of args 202
+objval  0 2 0.7526542202881248
+objval  1 2 2.411130824115743
+objval  2 2 0.23964492303537233
+objval  3 2 0.644243039458166
+objval  4 2 -3.6051031102631006
+img 16 Failed
+progress: 17/100, correct:  17/17, verified: 8/17, unsafe: 3/17,  time: 96.775; 30.903; 525.345
+img 17 Verified 7
+progress: 18/100, correct:  18/18, verified: 9/18, unsafe: 3/18,  time: 0.042; 29.188; 525.387
+krelu: n 100 split_zero 845 after cutoff 24 number of args 916
+krelu: n 100 split_zero 158 after cutoff 106 number of args 1479
+krelu: n 100 split_zero 34 after cutoff 33 number of args 190
+objval  0 2 -2.391897800927246
+img 18 Verified unsafe against label  5 correct label  3
+progress: 19/100, correct:  19/19, verified: 9/19, unsafe: 4/19,  time: 5.157; 27.923; 530.544
+krelu: n 100 split_zero 987 after cutoff 21 number of args 1037
+krelu: n 100 split_zero 224 after cutoff 84 number of args 1085
+krelu: n 100 split_zero 37 after cutoff 35 number of args 198
+objval  2 2 1.552721060579544
+objval  3 2 2.2959732079483173
+objval  5 2 2.3459867887395243
+objval  7 2 -1.1010956327415982
+img 19 Failed
+progress: 20/100, correct:  20/20, verified: 9/20, unsafe: 4/20,  time: 56.520; 29.353; 587.064
+krelu: n 100 split_zero 897 after cutoff 16 number of args 932
+krelu: n 100 split_zero 156 after cutoff 61 number of args 746
+krelu: n 100 split_zero 28 after cutoff 28 number of args 141
+objval  3 2 2.051711216911775
+objval  5 2 0.2419078452809016
+objval  7 2 -4.536909802732168
+img 20 Verified unsafe against label  7 correct label  9
+progress: 21/100, correct:  21/21, verified: 9/21, unsafe: 5/21,  time: 28.304; 29.303; 615.368
+krelu: n 100 split_zero 974 after cutoff 26 number of args 1064
+krelu: n 100 split_zero 253 after cutoff 94 number of args 1369
+krelu: n 100 split_zero 34 after cutoff 31 number of args 189
+objval  5 2 -2.650708971762648
+img 21 Failed
+progress: 22/100, correct:  22/22, verified: 9/22, unsafe: 5/22,  time: 5.850; 28.237; 621.219
+krelu: n 100 split_zero 980 after cutoff 28 number of args 1093
+krelu: n 100 split_zero 178 after cutoff 104 number of args 1496
+krelu: n 100 split_zero 47 after cutoff 42 number of args 257
+objval  0 2 1.6166625731351516
+objval  1 2 1.428801578547228
+objval  2 2 0.9540466120848117
+objval  3 2 1.7487803868787761
+objval  4 2 -0.19416431153177316
+img 22 Failed
+progress: 23/100, correct:  23/23, verified: 9/23, unsafe: 5/23,  time: 102.918; 31.484; 724.137
+krelu: n 100 split_zero 988 after cutoff 24 number of args 1059
+krelu: n 100 split_zero 198 after cutoff 86 number of args 1102
+krelu: n 100 split_zero 36 after cutoff 35 number of args 197
+objval  3 2 1.7957863295153258
+img 23 Verified 5
+progress: 24/100, correct:  24/24, verified: 10/24, unsafe: 5/24,  time: 4.494; 30.360; 728.631
+krelu: n 100 split_zero 1090 after cutoff 25 number of args 1170
+krelu: n 100 split_zero 215 after cutoff 102 number of args 1533
+krelu: n 100 split_zero 45 after cutoff 43 number of args 266
+objval  0 2 -0.20846948219848832
+img 24 Failed
+progress: 25/100, correct:  25/25, verified: 10/25, unsafe: 5/25,  time: 5.673; 29.372; 734.304
+img 25 Verified 0
+progress: 26/100, correct:  26/26, verified: 11/26, unsafe: 5/26,  time: 0.016; 28.243; 734.320
+krelu: n 100 split_zero 959 after cutoff 18 number of args 997
+krelu: n 100 split_zero 222 after cutoff 86 number of args 1126
+krelu: n 100 split_zero 34 after cutoff 33 number of args 190
+objval  9 2 -1.5626476534726503
+img 26 Failed
+progress: 27/100, correct:  27/27, verified: 11/27, unsafe: 5/27,  time: 4.520; 27.364; 738.840
+krelu: n 100 split_zero 963 after cutoff 23 number of args 1026
+krelu: n 100 split_zero 159 after cutoff 88 number of args 1110
+krelu: n 100 split_zero 28 after cutoff 27 number of args 129
+objval  7 2 2.4275270027347906
+objval  9 2 0.10389733291548979
+img 27 Verified 4
+progress: 28/100, correct:  28/28, verified: 12/28, unsafe: 5/28,  time: 22.591; 27.194; 761.431
+img 28 Verified 0
+progress: 29/100, correct:  29/29, verified: 13/29, unsafe: 5/29,  time: 0.035; 26.257; 761.465
+krelu: n 100 split_zero 968 after cutoff 13 number of args 990
+krelu: n 100 split_zero 300 after cutoff 57 number of args 780
+krelu: n 100 split_zero 30 after cutoff 30 number of args 170
+objval  3 2 1.3202918864148963
+objval  8 2 -0.5698091449058786
+img 29 Failed
+progress: 30/100, correct:  30/30, verified: 13/30, unsafe: 5/30,  time: 37.360; 26.628; 798.825
+img 30 Verified 3
+progress: 31/100, correct:  31/31, verified: 14/31, unsafe: 5/31,  time: 0.038; 25.770; 798.863
+krelu: n 100 split_zero 973 after cutoff 14 number of args 1001
+krelu: n 100 split_zero 327 after cutoff 75 number of args 1044
+krelu: n 100 split_zero 33 after cutoff 33 number of args 189
+objval  3 2 0.9558256276450652
+objval  7 2 1.635999854615644
+objval  8 2 0.11615703304611716
+objval  9 2 1.000431311182913
+img 31 Verified 1
+progress: 32/100, correct:  32/32, verified: 15/32, unsafe: 5/32,  time: 43.446; 26.322; 842.309
+krelu: n 100 split_zero 962 after cutoff 27 number of args 1063
+krelu: n 100 split_zero 197 after cutoff 69 number of args 863
+krelu: n 100 split_zero 33 after cutoff 32 number of args 188
+objval  5 2 1.3591970757274705
+img 32 Verified 3
+progress: 33/100, correct:  33/33, verified: 16/33, unsafe: 5/33,  time: 3.915; 25.643; 846.224
+krelu: n 100 split_zero 971 after cutoff 28 number of args 1084
+krelu: n 100 split_zero 199 after cutoff 103 number of args 1517
+krelu: n 100 split_zero 31 after cutoff 30 number of args 171
+objval  0 2 -3.8897888509465712
+img 33 Verified unsafe against label  0 correct label  4
+progress: 34/100, correct:  34/34, verified: 16/34, unsafe: 6/34,  time: 5.530; 25.052; 851.753
+img 34 Verified 7
+progress: 35/100, correct:  35/35, verified: 17/35, unsafe: 6/35,  time: 0.016; 24.336; 851.769
+krelu: n 100 split_zero 952 after cutoff 31 number of args 1107
+krelu: n 100 split_zero 107 after cutoff 85 number of args 989
+krelu: n 100 split_zero 23 after cutoff 22 number of args 79
+objval  1 2 -0.35805293899416846
+img 35 Failed
+progress: 36/100, correct:  36/36, verified: 17/36, unsafe: 6/36,  time: 4.122; 23.775; 855.892
+krelu: n 100 split_zero 992 after cutoff 29 number of args 1118
+krelu: n 100 split_zero 147 after cutoff 77 number of args 889
+krelu: n 100 split_zero 26 after cutoff 25 number of args 106
+objval  2 2 -1.2529564156086996
+img 36 Failed
+progress: 37/100, correct:  37/37, verified: 17/37, unsafe: 6/37,  time: 4.191; 23.245; 860.083
+krelu: n 100 split_zero 986 after cutoff 10 number of args 996
+krelu: n 100 split_zero 309 after cutoff 76 number of args 1038
+krelu: n 100 split_zero 30 after cutoff 30 number of args 170
+objval  8 2 1.0068502475799006
+img 37 Verified 1
+progress: 38/100, correct:  38/38, verified: 18/38, unsafe: 6/38,  time: 4.223; 22.745; 864.306
+krelu: n 100 split_zero 979 after cutoff 22 number of args 1035
+krelu: n 100 split_zero 235 after cutoff 98 number of args 1481
+krelu: n 100 split_zero 34 after cutoff 32 number of args 189
+objval  0 2 -1.4504275884543545
+img 38 Failed
+progress: 39/100, correct:  39/39, verified: 18/39, unsafe: 6/39,  time: 5.784; 22.310; 870.090
+krelu: n 100 split_zero 951 after cutoff 13 number of args 973
+krelu: n 100 split_zero 273 after cutoff 68 number of args 934
+krelu: n 100 split_zero 25 after cutoff 25 number of args 105
+objval  8 2 0.3004650940060438
+img 39 Verified 1
+progress: 40/100, correct:  40/40, verified: 19/40, unsafe: 6/40,  time: 3.832; 21.848; 873.922
+krelu: n 100 split_zero 1021 after cutoff 14 number of args 1049
+krelu: n 100 split_zero 376 after cutoff 79 number of args 1147
+krelu: n 100 split_zero 40 after cutoff 38 number of args 216
+objval  2 2 0.07509172590188373
+objval  3 2 -0.7003433075013111
+img 40 Failed
+progress: 41/100, correct:  41/41, verified: 19/41, unsafe: 6/41,  time: 16.839; 21.726; 890.760
+krelu: n 100 split_zero 1012 after cutoff 22 number of args 1068
+krelu: n 100 split_zero 189 after cutoff 70 number of args 861
+krelu: n 100 split_zero 34 after cutoff 33 number of args 190
+objval  2 2 -0.517236419449187
+img 41 Failed
+progress: 42/100, correct:  42/42, verified: 19/42, unsafe: 6/42,  time: 4.125; 21.307; 894.886
+krelu: n 100 split_zero 936 after cutoff 20 number of args 981
+krelu: n 100 split_zero 134 after cutoff 84 number of args 995
+krelu: n 100 split_zero 28 after cutoff 27 number of args 129
+objval  1 2 1.2146695082587122
+objval  3 2 1.6148061398536044
+objval  7 2 -0.31742027374087944
+img 42 Failed
+progress: 43/100, correct:  43/43, verified: 19/43, unsafe: 6/43,  time: 52.052; 22.022; 946.937
+krelu: n 100 split_zero 1017 after cutoff 24 number of args 1088
+krelu: n 100 split_zero 200 after cutoff 66 number of args 854
+krelu: n 100 split_zero 29 after cutoff 28 number of args 142
+objval  1 2 0.27942181765834384
+objval  3 2 0.5825597955147366
+objval  4 2 1.0747933878926714
+img 43 Verified 2
+progress: 44/100, correct:  44/44, verified: 20/44, unsafe: 6/44,  time: 11.560; 21.784; 958.497
+krelu: n 100 split_zero 932 after cutoff 18 number of args 970
+krelu: n 100 split_zero 183 after cutoff 58 number of args 689
+krelu: n 100 split_zero 31 after cutoff 31 number of args 186
+objval  1 2 1.2093578917637196
+objval  2 2 1.8492020662427622
+objval  5 2 -1.6254496281153237
+img 44 Failed
+progress: 45/100, correct:  45/45, verified: 20/45, unsafe: 6/45,  time: 33.807; 22.051; 992.304
+krelu: n 100 split_zero 1000 after cutoff 22 number of args 1056
+krelu: n 100 split_zero 188 after cutoff 102 number of args 1506
+krelu: n 100 split_zero 41 after cutoff 40 number of args 232
+objval  0 2 -0.6819241985737825
+img 45 Failed
+progress: 46/100, correct:  46/46, verified: 20/46, unsafe: 6/46,  time: 5.478; 21.691; 997.782
+krelu: n 100 split_zero 917 after cutoff 11 number of args 930
+krelu: n 100 split_zero 238 after cutoff 49 number of args 546
+krelu: n 100 split_zero 29 after cutoff 29 number of args 155
+objval  3 2 1.2422027697136944
+objval  8 2 -0.6708082060198335
+img 46 Failed
+progress: 47/100, correct:  47/47, verified: 20/47, unsafe: 6/47,  time: 11.346; 21.471; 1009.128
+krelu: n 100 split_zero 997 after cutoff 22 number of args 1053
+krelu: n 100 split_zero 215 after cutoff 102 number of args 1533
+krelu: n 100 split_zero 49 after cutoff 42 number of args 259
+objval  0 2 1.475482683965157
+objval  1 2 -1.6637677414218692
+img 47 Failed
+progress: 48/100, correct:  48/48, verified: 20/48, unsafe: 6/48,  time: 17.871; 21.396; 1026.999
+krelu: n 100 split_zero 780 after cutoff 17 number of args 816
+krelu: n 100 split_zero 155 after cutoff 81 number of args 959
+krelu: n 100 split_zero 30 after cutoff 29 number of args 156
+objval  3 2 2.0800525968878505
+objval  7 2 1.4689168757688136
+objval  8 2 -3.6695692609976316
+img 48 Failed
+progress: 49/100, correct:  49/49, verified: 20/49, unsafe: 6/49,  time: 74.112; 22.472; 1101.110
+krelu: n 100 split_zero 993 after cutoff 22 number of args 1049
+krelu: n 100 split_zero 135 after cutoff 93 number of args 1221
+krelu: n 100 split_zero 31 after cutoff 29 number of args 157
+objval  7 2 1.5592030794781113
+objval  9 2 0.11303932700464792
+img 49 Verified 4
+progress: 50/100, correct:  50/50, verified: 21/50, unsafe: 6/50,  time: 8.367; 22.190; 1109.477
+krelu: n 100 split_zero 978 after cutoff 22 number of args 1034
+krelu: n 100 split_zero 246 after cutoff 93 number of args 1332
+krelu: n 100 split_zero 39 after cutoff 37 number of args 209
+objval  0 2 1.479083900535338
+objval  3 2 1.895664789715373
+objval  5 2 -1.0546053697302606
+img 50 Failed
+progress: 51/100, correct:  51/51, verified: 21/51, unsafe: 6/51,  time: 63.914; 23.008; 1173.392
+krelu: n 100 split_zero 789 after cutoff 17 number of args 825
+krelu: n 100 split_zero 105 after cutoff 90 number of args 1107
+krelu: n 100 split_zero 29 after cutoff 28 number of args 142
+objval  2 2 1.4121816662358757
+objval  5 2 0.6380071776251418
+objval  8 2 1.2600884225915054
+img 51 Verified 3
+progress: 52/100, correct:  52/52, verified: 22/52, unsafe: 6/52,  time: 50.926; 23.545; 1224.318
+krelu: n 100 split_zero 978 after cutoff 24 number of args 1049
+krelu: n 100 split_zero 131 after cutoff 91 number of args 1160
+krelu: n 100 split_zero 41 after cutoff 40 number of args 232
+objval  0 2 1.4997811573670434
+objval  2 2 3.1010892620977817
+objval  3 2 -0.7201253525622422
+img 52 Failed
+progress: 53/100, correct:  53/53, verified: 22/53, unsafe: 6/53,  time: 18.094; 23.442; 1242.411
+krelu: n 100 split_zero 1029 after cutoff 23 number of args 1092
+krelu: n 100 split_zero 180 after cutoff 112 number of args 1514
+krelu: n 100 split_zero 51 after cutoff 43 number of args 272
+objval  0 2 -0.7008475349330646
+img 53 Failed
+progress: 54/100, correct:  54/54, verified: 22/54, unsafe: 6/54,  time: 6.043; 23.120; 1248.454
+krelu: n 100 split_zero 829 after cutoff 27 number of args 930
+krelu: n 100 split_zero 147 after cutoff 99 number of args 1428
+krelu: n 100 split_zero 41 after cutoff 36 number of args 206
+objval  5 2 0.16182657538063605
+objval  8 2 -0.6918369985928887
+img 54 Failed
+progress: 55/100, correct:  55/55, verified: 22/55, unsafe: 6/55,  time: 8.407; 22.852; 1256.861
+krelu: n 100 split_zero 878 after cutoff 21 number of args 928
+krelu: n 100 split_zero 173 after cutoff 108 number of args 1497
+krelu: n 100 split_zero 40 after cutoff 39 number of args 223
+objval  2 2 2.219923146956231
+objval  5 2 0.44264487383247353
+objval  8 2 0.282327575620851
+img 55 Verified 0
+progress: 56/100, correct:  56/56, verified: 23/56, unsafe: 6/56,  time: 68.041; 23.659; 1324.903
+img 56 Verified 4
+progress: 57/100, correct:  57/57, verified: 24/57, unsafe: 6/57,  time: 0.044; 23.245; 1324.946
+krelu: n 100 split_zero 996 after cutoff 13 number of args 1018
+krelu: n 100 split_zero 309 after cutoff 69 number of args 975
+krelu: n 100 split_zero 27 after cutoff 27 number of args 128
+objval  7 2 1.520582038028583
+img 57 Verified 1
+progress: 58/100, correct:  58/58, verified: 25/58, unsafe: 6/58,  time: 3.731; 22.908; 1328.677
+krelu: n 100 split_zero 888 after cutoff 21 number of args 938
+krelu: n 100 split_zero 139 after cutoff 74 number of args 845
+krelu: n 100 split_zero 31 after cutoff 30 number of args 171
+objval  2 2 3.408516800972568
+objval  3 2 2.1190625445336644
+objval  4 2 -1.9687162843493091
+img 58 Failed
+progress: 59/100, correct:  59/59, verified: 25/59, unsafe: 6/59,  time: 47.649; 23.328; 1376.326
+krelu: n 100 split_zero 1016 after cutoff 21 number of args 1066
+krelu: n 100 split_zero 301 after cutoff 90 number of args 1303
+krelu: n 100 split_zero 37 after cutoff 36 number of args 202
+objval  0 2 0.28417694846129526
+objval  1 2 1.9567693625876403
+objval  2 2 2.390224778525254
+objval  3 2 1.2461808324968242
+objval  4 2 1.8539991802823526
+objval  7 2 -2.473827732491541
+img 59 Failed
+progress: 60/100, correct:  60/60, verified: 25/60, unsafe: 6/60,  time: 112.403; 24.812; 1488.730
+img 60 Verified 7
+progress: 61/100, correct:  61/61, verified: 26/61, unsafe: 6/61,  time: 0.033; 24.406; 1488.762
+krelu: n 100 split_zero 849 after cutoff 20 number of args 894
+krelu: n 100 split_zero 192 after cutoff 96 number of args 1371
+krelu: n 100 split_zero 33 after cutoff 33 number of args 189
+objval  2 2 -3.8051925768919483
+img 61 Verified unsafe against label  2 correct label  8
+progress: 62/100, correct:  62/62, verified: 26/62, unsafe: 7/62,  time: 4.919; 24.092; 1493.681
+krelu: n 100 split_zero 1015 after cutoff 22 number of args 1071
+krelu: n 100 split_zero 262 after cutoff 120 number of args 1624
+krelu: n 100 split_zero 43 after cutoff 42 number of args 253
+objval  0 2 -1.8108295207871996
+img 62 Failed
+progress: 63/100, correct:  63/63, verified: 26/63, unsafe: 7/63,  time: 6.724; 23.816; 1500.405
+krelu: n 100 split_zero 973 after cutoff 26 number of args 1063
+krelu: n 100 split_zero 201 after cutoff 79 number of args 972
+krelu: n 100 split_zero 34 after cutoff 34 number of args 192
+objval  2 2 -1.8502780189840946
+img 63 Failed
+progress: 64/100, correct:  64/64, verified: 26/64, unsafe: 7/64,  time: 4.348; 23.512; 1504.753
+krelu: n 100 split_zero 937 after cutoff 30 number of args 1077
+krelu: n 100 split_zero 125 after cutoff 82 number of args 947
+krelu: n 100 split_zero 30 after cutoff 29 number of args 156
+objval  3 2 1.5973587948209467
+img 64 Verified 7
+progress: 65/100, correct:  65/65, verified: 27/65, unsafe: 7/65,  time: 4.203; 23.215; 1508.956
+krelu: n 100 split_zero 998 after cutoff 16 number of args 1033
+krelu: n 100 split_zero 242 after cutoff 86 number of args 1146
+krelu: n 100 split_zero 39 after cutoff 38 number of args 215
+objval  0 2 1.0911767440134295
+objval  1 2 -0.06331139293484325
+img 65 Failed
+progress: 66/100, correct:  66/66, verified: 27/66, unsafe: 7/66,  time: 26.115; 23.259; 1535.071
+krelu: n 100 split_zero 919 after cutoff 23 number of args 982
+krelu: n 100 split_zero 151 after cutoff 123 number of args 1531
+krelu: n 100 split_zero 44 after cutoff 43 number of args 265
+objval  0 2 -3.026936940554567
+img 66 Failed
+progress: 67/100, correct:  67/67, verified: 27/67, unsafe: 7/67,  time: 5.902; 23.000; 1540.974
+krelu: n 100 split_zero 1061 after cutoff 29 number of args 1187
+krelu: n 100 split_zero 183 after cutoff 81 number of args 987
+krelu: n 100 split_zero 34 after cutoff 33 number of args 190
+objval  2 2 1.8490261288929295
+objval  8 2 2.0175342668453853
+objval  9 2 1.8667505006985365
+img 67 Verified 4
+progress: 68/100, correct:  68/68, verified: 28/68, unsafe: 7/68,  time: 83.147; 23.884; 1624.121
+img 68 Verified 3
+progress: 69/100, correct:  69/69, verified: 29/69, unsafe: 7/69,  time: 0.022; 23.538; 1624.143
+krelu: n 100 split_zero 847 after cutoff 21 number of args 897
+krelu: n 100 split_zero 143 after cutoff 96 number of args 1322
+krelu: n 100 split_zero 31 after cutoff 31 number of args 186
+objval  5 2 1.0630044440440418
+img 69 Verified 0
+progress: 70/100, correct:  70/70, verified: 30/70, unsafe: 7/70,  time: 4.682; 23.269; 1628.825
+img 70 Verified 7
+progress: 71/100, correct:  71/71, verified: 31/71, unsafe: 7/71,  time: 0.016; 22.941; 1628.841
+img 71 Verified 0
+progress: 72/100, correct:  72/72, verified: 32/72, unsafe: 7/72,  time: 0.016; 22.623; 1628.857
+krelu: n 100 split_zero 903 after cutoff 21 number of args 953
+krelu: n 100 split_zero 189 after cutoff 87 number of args 1116
+krelu: n 100 split_zero 30 after cutoff 25 number of args 110
+objval  3 2 -1.0799257715327935
+img 72 Failed
+progress: 73/100, correct:  73/73, verified: 32/73, unsafe: 7/73,  time: 4.283; 22.372; 1633.139
+krelu: n 100 split_zero 874 after cutoff 13 number of args 896
+krelu: n 100 split_zero 188 after cutoff 66 number of args 842
+krelu: n 100 split_zero 28 after cutoff 28 number of args 141
+objval  2 2 -1.0813442310285342
+img 73 Verified unsafe against label  8 correct label  9
+progress: 74/100, correct:  74/74, verified: 32/74, unsafe: 8/74,  time: 3.686; 22.119; 1636.826
+krelu: n 100 split_zero 936 after cutoff 8 number of args 943
+krelu: n 100 split_zero 277 after cutoff 65 number of args 929
+krelu: n 100 split_zero 27 after cutoff 27 number of args 128
+objval  8 2 0.6656623363623968
+img 74 Verified 1
+progress: 75/100, correct:  75/75, verified: 33/75, unsafe: 8/75,  time: 3.804; 21.875; 1640.629
+krelu: n 100 split_zero 933 after cutoff 23 number of args 996
+krelu: n 100 split_zero 188 after cutoff 65 number of args 840
+krelu: n 100 split_zero 36 after cutoff 36 number of args 201
+objval  3 2 1.1266344004169557
+img 75 Verified 7
+progress: 76/100, correct:  76/76, verified: 34/76, unsafe: 8/76,  time: 3.877; 21.638; 1644.506
+krelu: n 100 split_zero 924 after cutoff 19 number of args 965
+krelu: n 100 split_zero 189 after cutoff 75 number of args 906
+krelu: n 100 split_zero 37 after cutoff 37 number of args 207
+objval  1 2 2.7291905031955848
+objval  5 2 -0.8505077953700919
+img 76 Failed
+progress: 77/100, correct:  77/77, verified: 34/77, unsafe: 8/77,  time: 14.334; 21.543; 1658.840
+krelu: n 100 split_zero 979 after cutoff 19 number of args 1020
+krelu: n 100 split_zero 130 after cutoff 81 number of args 934
+krelu: n 100 split_zero 40 after cutoff 39 number of args 223
+objval  0 2 0.2761336552138274
+objval  1 2 0.24682793731806907
+objval  3 2 0.40598855457544436
+objval  5 2 2.3903203109945403
+objval  7 2 -2.090357632890273
+img 77 Failed
+progress: 78/100, correct:  78/78, verified: 34/78, unsafe: 8/78,  time: 53.519; 21.953; 1712.359
+krelu: n 100 split_zero 909 after cutoff 16 number of args 944
+krelu: n 100 split_zero 232 after cutoff 64 number of args 883
+krelu: n 100 split_zero 29 after cutoff 29 number of args 155
+objval  1 2 0.10418444604644606
+objval  3 2 0.38291447730789197
+objval  4 2 -1.986463592398747
+img 78 Failed
+progress: 79/100, correct:  79/79, verified: 34/79, unsafe: 8/79,  time: 22.081; 21.955; 1734.440
+img 79 Verified 7
+progress: 80/100, correct:  80/80, verified: 35/80, unsafe: 8/80,  time: 0.034; 21.681; 1734.474
+krelu: n 100 split_zero 942 after cutoff 18 number of args 980
+krelu: n 100 split_zero 168 after cutoff 67 number of args 825
+krelu: n 100 split_zero 35 after cutoff 34 number of args 193
+objval  9 2 -0.8835998605849866
+img 80 Failed
+progress: 81/100, correct:  81/81, verified: 35/81, unsafe: 8/81,  time: 4.039; 21.463; 1738.514
+krelu: n 100 split_zero 895 after cutoff 21 number of args 945
+krelu: n 100 split_zero 141 after cutoff 88 number of args 1092
+krelu: n 100 split_zero 36 after cutoff 35 number of args 197
+objval  5 2 0.46597780774473563
+objval  9 2 0.32646154628967095
+img 81 Verified 6
+progress: 82/100, correct:  82/82, verified: 36/82, unsafe: 8/82,  time: 9.929; 21.322; 1748.442
+img 82 Verified 2
+progress: 83/100, correct:  83/83, verified: 37/83, unsafe: 8/83,  time: 0.016; 21.066; 1748.458
+krelu: n 100 split_zero 962 after cutoff 15 number of args 997
+krelu: n 100 split_zero 139 after cutoff 77 number of args 881
+krelu: n 100 split_zero 35 after cutoff 33 number of args 191
+objval  9 2 -0.012082115965306173
+img 83 Failed
+progress: 84/100, correct:  84/84, verified: 37/84, unsafe: 8/84,  time: 3.997; 20.863; 1752.455
+krelu: n 100 split_zero 904 after cutoff 27 number of args 1005
+krelu: n 100 split_zero 161 after cutoff 94 number of args 1277
+krelu: n 100 split_zero 40 after cutoff 39 number of args 223
+objval  0 2 1.419010967080561
+objval  1 2 0.5489025119013099
+objval  2 2 1.2372809291405233
+objval  3 2 -0.23412622806012104
+img 84 Failed
+progress: 85/100, correct:  85/85, verified: 37/85, unsafe: 8/85,  time: 174.303; 22.668; 1926.758
+krelu: n 100 split_zero 842 after cutoff 21 number of args 892
+krelu: n 100 split_zero 92 after cutoff 77 number of args 834
+krelu: n 100 split_zero 26 after cutoff 25 number of args 106
+objval  8 2 0.46258585304788635
+img 85 Verified 4
+progress: 86/100, correct:  86/86, verified: 38/86, unsafe: 8/86,  time: 3.786; 22.448; 1930.543
+img 86 Verified 7
+progress: 87/100, correct:  87/87, verified: 39/87, unsafe: 8/87,  time: 0.017; 22.190; 1930.560
+krelu: n 100 split_zero 937 after cutoff 29 number of args 1063
+krelu: n 100 split_zero 153 after cutoff 68 number of args 814
+krelu: n 100 split_zero 36 after cutoff 35 number of args 197
+objval  1 2 1.9766793517086185
+objval  4 2 3.305576057336391
+objval  5 2 0.31777718966789614
+objval  7 2 -1.40605548741573
+img 87 Failed
+progress: 88/100, correct:  88/88, verified: 39/88, unsafe: 8/88,  time: 24.372; 22.215; 1954.933
+krelu: n 100 split_zero 863 after cutoff 17 number of args 899
+krelu: n 100 split_zero 183 after cutoff 96 number of args 1362
+krelu: n 100 split_zero 35 after cutoff 32 number of args 190
+objval  4 2 2.66853071882245
+img 88 Verified 6
+progress: 89/100, correct:  89/89, verified: 40/89, unsafe: 8/89,  time: 4.999; 22.022; 1959.931
+krelu: n 100 split_zero 948 after cutoff 14 number of args 976
+krelu: n 100 split_zero 270 after cutoff 61 number of args 860
+krelu: n 100 split_zero 24 after cutoff 24 number of args 95
+objval  5 2 1.5596901988823015
+objval  6 2 1.125911539759355
+objval  8 2 -1.2587656307301176
+img 89 Failed
+progress: 90/100, correct:  90/90, verified: 40/90, unsafe: 8/90,  time: 7.080; 21.856; 1967.012
+krelu: n 100 split_zero 951 after cutoff 29 number of args 1077
+krelu: n 100 split_zero 167 after cutoff 74 number of args 873
+krelu: n 100 split_zero 31 after cutoff 31 number of args 186
+objval  5 2 0.47846078200281106
+objval  8 2 1.0819203184330355
+objval  9 2 0.24342291907634284
+img 90 Verified 3
+progress: 91/100, correct:  91/91, verified: 41/91, unsafe: 8/91,  time: 23.856; 21.878; 1990.868
+krelu: n 100 split_zero 934 after cutoff 20 number of args 979
+krelu: n 100 split_zero 235 after cutoff 95 number of args 1382
+krelu: n 100 split_zero 36 after cutoff 34 number of args 194
+objval  5 2 2.3490673753715816
+img 91 Verified 6
+progress: 92/100, correct:  92/92, verified: 42/92, unsafe: 8/92,  time: 5.393; 21.698; 1996.261
+krelu: n 100 split_zero 1032 after cutoff 23 number of args 1095
+krelu: n 100 split_zero 313 after cutoff 117 number of args 1666
+krelu: n 100 split_zero 44 after cutoff 44 number of args 277
+objval  0 2 -1.9046251002037358
+img 92 Verified unsafe against label  4 correct label  9
+progress: 93/100, correct:  93/93, verified: 42/93, unsafe: 9/93,  time: 6.984; 21.540; 2003.245
+krelu: n 100 split_zero 844 after cutoff 22 number of args 900
+krelu: n 100 split_zero 112 after cutoff 65 number of args 764
+krelu: n 100 split_zero 25 after cutoff 25 number of args 105
+objval  5 2 0.5953892273516885
+objval  9 2 -0.22914139345453563
+img 93 Failed
+progress: 94/100, correct:  94/94, verified: 42/94, unsafe: 9/94,  time: 11.320; 21.432; 2014.565
+krelu: n 100 split_zero 924 after cutoff 19 number of args 965
+krelu: n 100 split_zero 242 after cutoff 67 number of args 899
+krelu: n 100 split_zero 25 after cutoff 25 number of args 105
+objval  8 2 -1.5661765004909682
+img 94 Failed
+progress: 95/100, correct:  95/95, verified: 42/95, unsafe: 9/95,  time: 3.847; 21.246; 2018.412
+krelu: n 100 split_zero 886 after cutoff 23 number of args 949
+krelu: n 100 split_zero 111 after cutoff 77 number of args 853
+krelu: n 100 split_zero 36 after cutoff 36 number of args 201
+objval  0 2 0.4687947340961718
+objval  2 2 0.08507301126374012
+objval  3 2 -0.24582539189783684
+img 95 Failed
+progress: 96/100, correct:  96/96, verified: 42/96, unsafe: 9/96,  time: 24.129; 21.276; 2042.541
+krelu: n 100 split_zero 996 after cutoff 13 number of args 1018
+krelu: n 100 split_zero 296 after cutoff 68 number of args 957
+krelu: n 100 split_zero 30 after cutoff 30 number of args 170
+objval  3 2 -0.40137675203783996
+img 96 Failed
+progress: 97/100, correct:  97/97, verified: 42/97, unsafe: 9/97,  time: 4.245; 21.101; 2046.786
+krelu: n 100 split_zero 929 after cutoff 22 number of args 985
+krelu: n 100 split_zero 169 after cutoff 80 number of args 956
+krelu: n 100 split_zero 32 after cutoff 32 number of args 187
+objval  3 2 0.4773434506980667
+objval  8 2 1.422237060868941
+img 97 Verified 7
+progress: 98/100, correct:  98/98, verified: 43/98, unsafe: 9/98,  time: 13.616; 21.025; 2060.402
+krelu: n 100 split_zero 945 after cutoff 26 number of args 1035
+krelu: n 100 split_zero 187 after cutoff 101 number of args 1505
+krelu: n 100 split_zero 30 after cutoff 29 number of args 156
+objval  0 2 -0.7011065783490942
+img 98 Failed
+progress: 99/100, correct:  99/99, verified: 43/99, unsafe: 9/99,  time: 5.355; 20.866; 2065.757
+krelu: n 100 split_zero 843 after cutoff 16 number of args 878
+krelu: n 100 split_zero 81 after cutoff 66 number of args 735
+krelu: n 100 split_zero 25 after cutoff 24 number of args 96
+objval  2 2 3.161990428352503
+objval  3 2 0.5232069848733687
+objval  7 2 -1.5946685079209129
+img 99 Failed
+progress: 100/100, correct:  100/100, verified: 43/100, unsafe: 9/100,  time: 10.798; 20.766; 2076.555
+analysis precision  43 /  100
+
+Process finished with exit code 0
+

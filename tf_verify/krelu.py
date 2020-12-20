@@ -115,10 +115,12 @@ def sparse_heuristic_with_cutoff(length, lb, ub, K=3, s=-2):
         vars_above_cutoff = vars_above_cutoff[grouplen:]
         if grouplen <= K:
             kact_args.append(group)
-        else:
+        elif K>2:
             sparsed_combs = generate_sparse_cover(grouplen, K, s=s)
             for comb in sparsed_combs:
                 kact_args.append(tuple([group[i] for i in comb]))
+        elif K==2:
+            raise RuntimeError("K=2 is not supported")
 
     # Also just apply 1-relu for every var.
     for var in all_vars:

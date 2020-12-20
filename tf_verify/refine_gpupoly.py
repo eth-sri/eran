@@ -2,7 +2,9 @@ from optimizer import *
 from krelu import *
 import time
 
-def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, K=3, timeout_lp=10, timeout_milp=10, timeout_final_lp=100, use_milp=False):
+def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, K=3, s=-2,
+                           timeout_lp=10, timeout_milp=10, timeout_final_lp=100, timeout_final_milp=100, use_milp=False,
+                           partial_milp=False, max_milp_neurons=30, complete=False):
     relu_groups = []
     nlb = []
     nub = []
@@ -52,8 +54,6 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         layerno = new_relu_layers[index]
         index = index+1
 
-
-
         if config.refine_neurons==True:
             predecessor_index = nn.predecessors[layerno + 1][0] - 1
             if predecessor_index == second_FC:
@@ -84,7 +84,7 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         #print("LBI ", lbi, "UBI ", ubi, "specLB")
         num_neurons = len(lbi)
 
-        kact_args = sparse_heuristic_with_cutoff(num_neurons, lbi, ubi, K=K)
+        kact_args = sparse_heuristic_with_cutoff(num_neurons, lbi, ubi, K=K, s=s)
         kact_cons = []
         total_size = 0
         for varsid in kact_args:
@@ -131,11 +131,38 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             kact_cons.append(inst)
             gid = gid+1
         relu_groups.append(kact_cons)
-    counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer, config.complete==True, is_nchw=True)
-    model.setParam(GRB.Param.TimeLimit, timeout_final_lp)
-    model.setParam(GRB.Param.Cutoff, 0.01)
+    counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer,
+                                            complete, is_nchw=True)
+    if complete:
+        model.setParam(GRB.Param.TimeLimit, timeout_final_milp)
+    else:
+        model.setParam(GRB.Param.TimeLimit, timeout_final_lp)
+        model.setParam(GRB.Param.Cutoff, 0.01)
 
-    num_var = len(var_list)
+    if partial_milp != 0 and not complete:
+        nn.ffn_counter = 0
+        nn.conv_counter = 0
+        nn.pool_counter = 0
+        nn.concat_counter = 0
+        nn.tile_counter = 0
+        nn.residual_counter = 0
+        nn.activation_counter = 0
+        counter_partial_milp, var_list_partial_milp, model_partial_milp = create_model(nn, nn.specLB, nn.specUB, nlb,
+                                                                                       nub, relu_groups, nn.numlayer,
+                                                                                       complete, is_nchw=True,
+                                                                                       partial_milp=partial_milp,
+                                                                                       max_milp_neurons=max_milp_neurons)
+        model_partial_milp.setParam(GRB.Param.TimeLimit, timeout_final_milp)
+
+        # a1=time.time()
+        # model_partial_milp.optimize()
+        # if model_partial_milp.Status==3:
+        #     model_partial_milp.setParam(GRB.Param.FeasibilityTol, 1e-4)
+        #     print(f"Infeasible model encountered. Increased tolerance")
+        # a2=time.time()
+        # print(f"time for feasibility check: {a2-a1:.3f}")
+
+    # num_var = len(var_list)
     #output_size = num_var - counter
     #print("TIMEOUT ", config.timeout_lp)
     flag = True
@@ -146,25 +173,59 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         obj += 1*var_list[counter + true_label]
         obj += -1*var_list[counter + label]
         model.setObjective(obj,GRB.MINIMIZE)
-        model.optimize()
-        # model.optimize(lp_callback)
+        # model.optimize()
+        if complete:
+            model.optimize(milp_callback)
+        else:
+            model.optimize(lp_callback)
         # model.computeIIS()
         #model.write("model_refinegpupo.ilp")
         try:
-            print(f"Model status: {model.Status}, Objval against label {j}: {model.objval}, Final solve time: {model.Runtime}")
+            print(
+                f"Model status: {model.Status}, Objval against label {label}: {model.objval:.4f}, Final solve time: {model.Runtime:.3f}")
         except:
-            print(f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime}")
-        if model.Status == 6:
+            print(
+                f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+        if model.Status == 6 or (model.Status == 2 and model.objval > 0):
+            # Cutoff active, or optimal with positive objective => sound against adv_label
             pass
-        elif model.Status!=2:
-            print("model was not successful status is", model.Status)
+        elif partial_milp != 0 and not complete:
+            obj = LinExpr()
+            obj += 1 * var_list_partial_milp[counter_partial_milp + true_label]
+            obj += -1 * var_list_partial_milp[counter_partial_milp + label]
+            model_partial_milp.setObjective(obj, GRB.MINIMIZE)
+            model_partial_milp.optimize(milp_callback)
+            if model_partial_milp.Status == 3:
+                model_partial_milp.setParam(GRB.Param.FeasibilityTol, 1e-4)
+                print(f"Infeasible model encountered. Increased tolerance")
+                model_partial_milp.reset()
+                model_partial_milp.optimize(milp_callback)
+            try:
+                print(
+                    f"Partial MILP model status: {model_partial_milp.Status}, Obj bound against label {label}: {model_partial_milp.ObjBound:.4f}, Final solve time: {model_partial_milp.Runtime:.3f}")
+            except:
+                print(
+                    f"Partial MILP model status: {model_partial_milp.Status}, Objbound retrival failed, Final solve time: {model_partial_milp.Runtime:.3f}")
+
+            if model_partial_milp.Status in [2, 9, 11] and model_partial_milp.ObjBound > 0:
+                pass
+            elif model_partial_milp.Status not in [2, 9, 11]:
+                print("Partial milp model was not successful status is", model_partial_milp.Status)
+                model_partial_milp.write("final.mps")
+                flag = False
+            else:
+                flag = False
+        elif model.Status != 2:
+            print("Model was not successful status is",
+                  model.Status)
             model.write("final.mps")
             flag = False
-            break                       
-        elif model.objval < 0:
-                               
+        else:
             flag = False
+        if not flag and model.Status == 2 and model.objval < 0:
             if model.objval != math.inf:
-                  x = model.x[0:len(nn.specLB)]
-            break
+                x = model.x[0:len(nn.specLB)]
+
+        if not flag:
+                break
     return flag, x
