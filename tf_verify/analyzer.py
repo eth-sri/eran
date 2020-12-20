@@ -210,8 +210,7 @@ class Analyzer:
         label_failed = []
         x = None
         if self.output_constraints is None:
-            #linexpr = get_output_uexpr_defined_over_previous_layers(self.man, element, 7, 0)
-            #elina_linexpr0_print(linexpr,None)
+            
             candidate_labels = []
             if self.label == -1:
                 for i in range(output_size):
@@ -234,7 +233,8 @@ class Analyzer:
                             break
                     else:
                         if label!=j and not self.is_greater(self.man, element, label, j, self.use_default_heuristic):
-
+                            #linexpr = get_output_uexpr_defined_over_previous_layers(self.man, element, 7, 0)
+                            #elina_linexpr0_print(linexpr,None)				
                             if(self.domain=='refinepoly'):
                                 obj = LinExpr()
                                 obj += 1*var_list[counter+label]
