@@ -130,6 +130,10 @@ def normalize(image, means, stds, dataset):
         if is_conv and not is_gpupoly:
             for i in range(3072):
                 image[i] = tmp[i]
+            #for i in range(1024):
+            #    image[i*3] = tmp[i]
+            #    image[i*3+1] = tmp[i+1024]
+            #    image[i*3+2] = tmp[i+2048]
         else:
             count = 0
             for i in range(1024):
@@ -340,6 +344,8 @@ parser.add_argument('--spatial', action='store_true', default=config.spatial, he
 parser.add_argument('--t-norm', type=str, default=config.t_norm, help='vector field norm (1, 2, or inf)')
 parser.add_argument('--delta', type=float, default=config.delta, help='vector field displacement magnitude')
 parser.add_argument('--gamma', type=float, default=config.gamma, help='vector field smoothness constraint')
+parser.add_argument('--quant_step', type=float, default=config.quant_step, help='Quantization step for quantized networks')
+
 
 # Logging options
 parser.add_argument('--logdir', type=str, default=None, help='Location to save logs to. If not specified, logs are not saved and emitted to stdout')
@@ -1254,9 +1260,20 @@ else:
         image= np.float64(test[1:len(test)])/np.float64(255)
         specLB = np.copy(image)
         specUB = np.copy(image)
-
+        if config.quant_step:
+            specLB = np.round(specLB/config.quant_step)
+            specUB = np.round(specUB/config.quant_step)
+        #cifarfile = open('/home/gagandeepsi/eevbnn/input.txt', 'r')
+        
+        #cifarimages = csv.reader(cifarfile, delimiter=',')
+        #for _, image in enumerate(cifarimages):
+        #    specLB = np.float64(image)
+        #specUB = np.copy(specLB)
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
+
+
+        #print("specLB ", len(specLB), "specUB ", specUB)
         is_correctly_classified = False
         if domain == 'gpupoly' or domain == 'refinegpupoly':
             #specLB = np.reshape(specLB, (32,32,3))#np.ascontiguousarray(specLB, dtype=np.double)
@@ -1290,6 +1307,9 @@ else:
             else:
                 specLB = specLB - epsilon
                 specUB = specUB + epsilon
+            if config.quant_step:
+                specLB = np.round(specLB/config.quant_step)
+                specUB = np.round(specUB/config.quant_step)
             start = time.time()
             if config.target == None:
                 prop = -1

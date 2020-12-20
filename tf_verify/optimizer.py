@@ -191,6 +191,12 @@ class Optimizer:
                     execute_list.append(DeeppolyReluNode(*self.resources[i][domain]))
                 nn.numlayer += 1
                 i += 1
+            elif self.operations[i] == "Sign":
+                nn.layertypes.append('Sign')
+                if domain == 'deeppoly':
+                   execute_list.append(DeeppolySignNode(*self.resources[i][domain]))
+                nn.numlayer += 1
+                i += 1
             elif self.operations[i] == "Sigmoid":
                 if domain == 'deepzono':
                     execute_list.append(DeepzonoSigmoid(*self.resources[i][domain]))

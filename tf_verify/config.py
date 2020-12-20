@@ -74,4 +74,5 @@ class config:
     t_norm = 'inf'
     delta = 0.3
     gamma = float('inf')
+    quant_step = None
 

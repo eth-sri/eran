@@ -312,6 +312,35 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
             return element, nlb[-1], nub[-1]
 
         return element
+ 
+
+class DeeppolySignNode(DeeppolyNonlinearity):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        """
+        transforms element with handle_sign_layer
+        
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            man to which element belongs
+        element : ElinaAbstract0Ptr
+            abstract element onto which the transformer gets applied
+        
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            abstract element after the transformer
+        """
+        #if refine:
+        #    refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+        #else:
+        handle_sign_layer(*self.get_arguments(man, element))
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=False)
+        nn.activation_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
+
+        return element
 
 
 class DeeppolySigmoidNode(DeeppolyNonlinearity):
