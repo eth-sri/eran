@@ -131,6 +131,10 @@ def normalize(image, means, stds, dataset):
         if is_conv and not is_gpupoly:
             for i in range(3072):
                 image[i] = tmp[i]
+            #for i in range(1024):
+            #    image[i*3] = tmp[i]
+            #    image[i*3+1] = tmp[i+1024]
+            #    image[i*3+2] = tmp[i+2048]
         else:
             count = 0
             for i in range(1024):
@@ -348,6 +352,7 @@ parser.add_argument('--delta', type=float, default=config.delta, help='vector fi
 parser.add_argument('--gamma', type=float, default=config.gamma, help='vector field smoothness constraint')
 parser.add_argument('--k', type=int, default=config.k, help='refine group size')
 parser.add_argument('--s', type=int, default=config.s, help='refine group sparsity parameter')
+parser.add_argument('--quant_step', type=float, default=config.quant_step, help='Quantization step for quantized networks')
 
 
 # Logging options
@@ -1265,17 +1270,27 @@ else:
         image= np.float64(test[1:len(test)])/np.float64(255)
         specLB = np.copy(image)
         specUB = np.copy(image)
-
+        if config.quant_step:
+            specLB = np.round(specLB/config.quant_step)
+            specUB = np.round(specUB/config.quant_step)
+        #cifarfile = open('/home/gagandeepsi/eevbnn/input.txt', 'r')
+        
+        #cifarimages = csv.reader(cifarfile, delimiter=',')
+        #for _, image in enumerate(cifarimages):
+        #    specLB = np.float64(image)
+        #specUB = np.copy(specLB)
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
+
+
+        #print("specLB ", len(specLB), "specUB ", specUB)
         is_correctly_classified = False
         start = time.time()
         if domain == 'gpupoly' or domain == 'refinegpupoly':
             #specLB = np.reshape(specLB, (32,32,3))#np.ascontiguousarray(specLB, dtype=np.double)
             #specUB = np.reshape(specUB, (32,32,3))
             #print("specLB ", specLB)
-            res = network.test(specLB, specUB, int(test[0]), True)    
-            is_correctly_classified = (res > 0).all()
+            is_correctly_classified = network.test(specLB, specUB, int(test[0]), True)
         else:
             label,nn,nlb,nub,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
             print("concrete ", nlb[-1])
@@ -1303,19 +1318,30 @@ else:
                 specLB = specLB - epsilon
                 specUB = specUB + epsilon
 
+            if config.quant_step:
+                specLB = np.round(specLB/config.quant_step)
+                specUB = np.round(specUB/config.quant_step)
+
             if config.target == None:
                 prop = -1
             else:
                 prop = int(target[i])
 
             if domain == 'gpupoly' or domain =='refinegpupoly':
-                res = network.test(specLB, specUB, int(test[0]))
-                is_verified = (res > 0).all()
+                is_verified = network.test(specLB, specUB, int(test[0]))
                 #print("res ", res)
                 if is_verified:
                     print("img", i, "Verified", int(test[0]))
                     verified_images+=1
                 elif domain == 'refinegpupoly':
+                    # Matrix that computes the difference with the expected layer.
+                    diffMatrix = np.delete(-np.eye(num_outputs), int(test[0]), 0)
+                    diffMatrix[:, label] = 1
+                    diffMatrix = diffMatrix.astype(np.float64)
+                    
+                    # gets the values from GPUPoly.
+                    res=network.evalAffineExpr(diffMatrix, back_substitute=network.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO)
+                    
                     
                     labels_to_be_verified = []
                     num_outputs = len(nn.weights[-1])
@@ -1353,22 +1379,13 @@ else:
                     else:
                         if x != None:
                             adv_image = np.array(x)
-                            res = network.test(adv_image,adv_image,int(test[0]))
-                            is_verified = (res > 0).all()
-                            var = 0
-                            cex_label = None
-                            for labels in range(num_outputs):
-                                if labels != int(test[0]):
-                                    if res[var][0] < 0:
-                                        cex_label = labels
-                                        break
-                                    var = var+1
-                                        
-                            if is_verified==False:
+                            res=np.argmax((network.eval(adv_image))[:,0])
+                            if res!=int(test[0]):
                                 denormalize(x,means, stds, dataset)
                                 # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
                                 print("img", i, "Verified unsafe against label ", cex_label, "correct label ", int(test[0]))
                                 unsafe_images += 1
+
                             else:
                                 print("img", i, "Failed")
                         else:

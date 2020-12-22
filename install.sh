@@ -52,6 +52,7 @@ rm mpfr-4.1.0.tar.xz
 
 git clone https://github.com/cddlib/cddlib.git
 cd cddlib
+./bootstrap
 ./configure
 make
 make install
@@ -78,7 +79,7 @@ git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 if test "$has_cuda" -eq 1
 then
-    ./configure -use-cuda -use-deepoly -use-gurobi -use-fconv
+    ./configure -use-cuda -use-deeppoly -use-gurobi -use-fconv
 else
     ./configure -use-deeppoly -use-gurobi -use-fconv
 fi

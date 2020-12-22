@@ -601,7 +601,9 @@ Contributors
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
-* Christoph Müller (contact for GPU version of DeepPoly) - christoph.mueller@inf.ethz.ch
+* Christoph Müller - christoph.mueller@inf.ethz.ch
+
+* [François Serre](https://fserre.github.io/) (contact for GPUPoly) - serref@inf.ethz.ch
 
 * Gleb Makarchuk (contact for FConv library for relaxation computation) -  hlebm@ethz.ch gleb.makarchuk@gmail.com 
 
