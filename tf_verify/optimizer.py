@@ -514,7 +514,7 @@ class Optimizer:
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
                 #print("filter shape ", nn.out_shapes[-1])
-                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), True, 1, strides[0], pad_top)
+                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), strides[0], pad_top)
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 network.add_bias(bias)
                 num_gpu_layers +=2
@@ -534,7 +534,7 @@ class Optimizer:
                 nn.layertypes.append('Conv')
                 nn.numlayer+=1
                 #print("Filter Matrix ", filters)
-                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), True, 1, strides[0], pad_top)
+                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), strides[0], pad_top)
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 #print("Filter Bias ", bias)
                 network.add_bias(bias.astype("float64"))
