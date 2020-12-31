@@ -147,7 +147,7 @@ class TFTranslator:
 			with tf.Session() as sess:
 				self.sess = sess
 				tf.import_graph_def(self.graph_def)
-				print("Operations ", graph.get_operations())
+				#print("Operations ", graph.get_operations())
 				for op in graph.get_operations():
 					if op.type in operations_to_be_ignored_without_reshape:
 						continue
