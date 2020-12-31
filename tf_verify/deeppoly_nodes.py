@@ -364,7 +364,7 @@ class DeeppolySigmoidNode(DeeppolyNonlinearity):
         if refine:
             refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
         else:
-            handle_sigmoid_layer(*self.get_arguments(man, element))
+            handle_sigmoid_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:
@@ -395,7 +395,7 @@ class DeeppolyTanhNode(DeeppolyNonlinearity):
         if refine:
             refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
         else:
-            handle_tanh_layer(*self.get_arguments(man, element))
+            handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:

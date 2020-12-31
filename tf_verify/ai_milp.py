@@ -364,6 +364,49 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
     return relu_counter
 
 
+
+def handle_sign(model,var_list, affine_counter, num_neurons, lbi, ubi):
+    start= len(var_list)
+    binary_counter = start
+    sign_counter = start + num_neurons
+    for j in range(num_neurons):
+        var_name = "x" + str(start+j)
+        var = model.addVar(vtype=GRB.BINARY, name=var_name)
+        var_list.append(var)
+
+    # sign variables
+    for j in range(num_neurons):
+        var_name = "x" + str(sign_counter+j)
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=1.0,  name=var_name)
+        var_list.append(var)
+
+
+    for j in range(num_neurons):
+        if(ubi[j]<=0):
+            expr = var_list[sign_counter+j]
+            model.addConstr(expr, GRB.EQUAL, 0)
+        elif(lbi[j]>=0):
+            expr = var_list[sign_counter+j] - var_list[affine_counter+j]
+            model.addConstr(expr, GRB.EQUAL, 1)
+        else:
+            # x >= l(1-a)
+            expr = - var_list[affine_counter+j] - lbi[j]*var_list[binary_counter+j]
+            model.addConstr(expr, GRB.LESS_EQUAL, -lbi[j])
+
+
+            # x <= u.a
+            expr = var_list[affine_counter+j] - ubi[j]*var_list[binary_counter+j]
+            model.addConstr(expr, GRB.LESS_EQUAL, 0)
+
+            # y = a
+            expr = var_list[sign_counter+j]
+            model.addConstr(expr, GRB.GREATER_EQUAL, var_list[binary_counter+j])
+
+            # indicator constraint
+            model.addGenConstrIndicator(var_list[binary_counter+j], True, var_list[affine_counter+j], GRB.GREATER_EQUAL, 0.0)
+
+    return sign_counter
+
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
@@ -488,6 +531,12 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
             index = nn.predecessors[i+1][0]
             counter = handle_tanh_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1],
                                           relu_groups[nn.activation_counter], nn.layertypes[i])
+            nn.activation_counter += 1
+            start_counter.append(counter)
+            
+        elif nn.layertypes[i] == 'Sign':
+            index = nn.predecessors[i+1][0]
+            counter = handle_sign(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1])
             nn.activation_counter += 1
             start_counter.append(counter)
 
