@@ -192,9 +192,11 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             pass
         elif partial_milp != 0 and not complete:
             if model.Status == 2:
-                x_adv=np.array(model.x[0:len(nn.specLB)])
-                is_not_unsafe = network.test(x_adv,x_adv, int(true_label))
-            if not is_not_unsafe:
+                x_adv = np.array(model.x[0:len(nn.specLB)])
+                is_not_shown_unsafe = network.test(x_adv, x_adv, int(true_label))
+            else:
+                is_not_shown_unsafe = True
+            if not is_not_shown_unsafe:
                 flag = False
                 print(f"Counterexample found, partial MILP skipped.")
             else:
