@@ -186,35 +186,43 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         except:
             print(
                 f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+
         if model.Status == 6 or (model.Status == 2 and model.objval > 0):
             # Cutoff active, or optimal with positive objective => sound against adv_label
             pass
         elif partial_milp != 0 and not complete:
-            obj = LinExpr()
-            obj += 1 * var_list_partial_milp[counter_partial_milp + true_label]
-            obj += -1 * var_list_partial_milp[counter_partial_milp + label]
-            model_partial_milp.setObjective(obj, GRB.MINIMIZE)
-            model_partial_milp.optimize(milp_callback)
-            if model_partial_milp.Status == 3:
-                model_partial_milp.setParam(GRB.Param.FeasibilityTol, 1e-4)
-                print(f"Infeasible model encountered. Increased tolerance")
-                model_partial_milp.reset()
-                model_partial_milp.optimize(milp_callback)
-            try:
-                print(
-                    f"Partial MILP model status: {model_partial_milp.Status}, Obj bound against label {label}: {model_partial_milp.ObjBound:.4f}, Final solve time: {model_partial_milp.Runtime:.3f}")
-            except:
-                print(
-                    f"Partial MILP model status: {model_partial_milp.Status}, Objbound retrival failed, Final solve time: {model_partial_milp.Runtime:.3f}")
-
-            if model_partial_milp.Status in [2, 9, 11] and model_partial_milp.ObjBound > 0:
-                pass
-            elif model_partial_milp.Status not in [2, 9, 11]:
-                print("Partial milp model was not successful status is", model_partial_milp.Status)
-                model_partial_milp.write("final.mps")
+            if model.Status == 2:
+                x_adv=np.array(model.x[0:len(nn.specLB)])
+                is_not_unsafe = network.test(x_adv,x_adv, int(true_label))
+            if not is_not_unsafe:
                 flag = False
+                print(f"Counterexample found, partial MILP skipped.")
             else:
-                flag = False
+                obj = LinExpr()
+                obj += 1 * var_list_partial_milp[counter_partial_milp + true_label]
+                obj += -1 * var_list_partial_milp[counter_partial_milp + label]
+                model_partial_milp.setObjective(obj, GRB.MINIMIZE)
+                model_partial_milp.optimize(milp_callback)
+                if model_partial_milp.Status == 3:
+                    model_partial_milp.setParam(GRB.Param.FeasibilityTol, 1e-4)
+                    print(f"Infeasible model encountered. Increased tolerance")
+                    model_partial_milp.reset()
+                    model_partial_milp.optimize(milp_callback)
+                try:
+                    print(
+                        f"Partial MILP model status: {model_partial_milp.Status}, Obj bound against label {label}: {model_partial_milp.ObjBound:.4f}, Final solve time: {model_partial_milp.Runtime:.3f}")
+                except:
+                    print(
+                        f"Partial MILP model status: {model_partial_milp.Status}, Objbound retrival failed, Final solve time: {model_partial_milp.Runtime:.3f}")
+
+                if model_partial_milp.Status in [2, 9, 11] and model_partial_milp.ObjBound > 0:
+                    pass
+                elif model_partial_milp.Status not in [2, 9, 11]:
+                    print("Partial milp model was not successful status is", model_partial_milp.Status)
+                    model_partial_milp.write("final.mps")
+                    flag = False
+                else:
+                    flag = False
         elif model.Status != 2:
             print("Model was not successful status is",
                   model.Status)
