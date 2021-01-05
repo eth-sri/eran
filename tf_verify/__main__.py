@@ -1334,9 +1334,11 @@ else:
                     print("img", i, "Verified", int(test[0]))
                     verified_images+=1
                 elif domain == 'refinegpupoly':
+                    num_outputs = len(nn.weights[-1])
+
                     # Matrix that computes the difference with the expected layer.
                     diffMatrix = np.delete(-np.eye(num_outputs), int(test[0]), 0)
-                    diffMatrix[:, label] = 1
+                    diffMatrix[:, int(test[0])] = 1
                     diffMatrix = diffMatrix.astype(np.float64)
                     
                     # gets the values from GPUPoly.
@@ -1344,7 +1346,6 @@ else:
                     
                     
                     labels_to_be_verified = []
-                    num_outputs = len(nn.weights[-1])
                     var = 0
                     nn.specLB = specLB
                     nn.specUB = specUB
@@ -1379,11 +1380,11 @@ else:
                     else:
                         if x != None:
                             adv_image = np.array(x)
-                            res=np.argmax((network.eval(adv_image))[:,0])
+                            res = np.argmax((network.eval(adv_image))[:,0])
                             if res!=int(test[0]):
                                 denormalize(x,means, stds, dataset)
                                 # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
-                                print("img", i, "Verified unsafe against label ", cex_label, "correct label ", int(test[0]))
+                                print("img", i, "Verified unsafe against label ", res, "correct label ", int(test[0]))
                                 unsafe_images += 1
 
                             else:
