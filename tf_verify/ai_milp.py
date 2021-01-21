@@ -529,8 +529,13 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
 
         elif nn.layertypes[i] == 'Sigmoid' or nn.layertypes[i] == 'Tanh':
             index = nn.predecessors[i+1][0]
-            counter = handle_tanh_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1],
+            if relu_groups is None:
+                counter = handle_tanh_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1],
+                                          [], nn.layertypes[i])
+            else:
+                counter = handle_tanh_sigmoid(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1],
                                           relu_groups[nn.activation_counter], nn.layertypes[i])
+
             nn.activation_counter += 1
             start_counter.append(counter)
             
