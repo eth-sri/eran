@@ -242,7 +242,7 @@ class Analyzer:
                                 model.setObjective(obj,GRB.MINIMIZE)
                                 if config.complete == True:
                                     model.optimize(milp_callback)
-                                    if model.objbound <= 0:
+                                    if not hasattr(model,"objbound") or model.objbound <= 0:
                                         flag = False
                                         if self.label!=-1:
                                             label_failed.append(j)
