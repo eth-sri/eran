@@ -98,7 +98,7 @@ class ERAN:
                                 timeout_final_lp=timeout_final_lp, timeout_final_milp=timeout_final_milp,
                                 use_milp=use_milp, complete=complete,
                                 partial_milp=partial_milp, max_milp_neurons=max_milp_neurons,
-                                approx=approx_k)
+                                approx_k=approx_k)
         dominant_class, nlb, nub, failed_labels, x = analyzer.analyze(terminate_on_failure=terminate_on_failure)
         if terminate_on_failure:
             failed_labels = None # rather return nothing than an incomplete list

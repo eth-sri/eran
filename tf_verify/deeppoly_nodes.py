@@ -303,7 +303,9 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
         """
         length = self.output_length
         if refine:
-            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly', K=K, s=s, use_milp=use_milp, approx)
+            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp,
+                                                 timeout_milp, use_default_heuristic, 'deeppoly',
+                                                 K=K, s=s, use_milp=use_milp, approx=approx)
         else:
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=False)

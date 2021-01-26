@@ -112,7 +112,9 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False, K=3, s=-2, timeout_final_lp=100, timeout_final_milp=100, use_milp=False, complete=False, partial_milp=False, max_milp_neurons=30, approx_k=True):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label,
+                 prop, testing = False, K=3, s=-2, timeout_final_lp=100, timeout_final_milp=100, use_milp=False,
+                 complete=False, partial_milp=False, max_milp_neurons=30, approx_k=True):
         """
         Arguments
         ---------
@@ -171,7 +173,8 @@ class Analyzer:
                                                                   self.relu_groups, 'refine' in self.domain,
                                                                   self.timeout_lp, self.timeout_milp,
                                                                   self.use_default_heuristic, self.testing,
-                                                                  K=self.K, s=self.s, use_milp=self.use_milp, self.approx_k)
+                                                                  K=self.K, s=self.s, use_milp=self.use_milp,
+                                                                  approx=self.approx_k)
             else:
                 element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub,
                                                                   self.relu_groups, 'refine' in self.domain,
