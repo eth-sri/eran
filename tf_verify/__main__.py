@@ -353,6 +353,7 @@ parser.add_argument('--gamma', type=float, default=config.gamma, help='vector fi
 parser.add_argument('--k', type=int, default=config.k, help='refine group size')
 parser.add_argument('--s', type=int, default=config.s, help='refine group sparsity parameter')
 parser.add_argument('--quant_step', type=float, default=config.quant_step, help='Quantization step for quantized networks')
+parser.add_argument("--approx_k",type=str2bool, default=config.approx_k, help="Use approximate fast k neuron constraints")
 
 
 # Logging options
@@ -1307,6 +1308,7 @@ else:
         
         #if(label == int(test[0])):
         if is_correctly_classified == True:
+            label = int(test[0])
             perturbed_label = None
             correctly_classified_images +=1
             if config.normalized_region==True:
@@ -1338,7 +1340,7 @@ else:
 
                     # Matrix that computes the difference with the expected layer.
                     diffMatrix = np.delete(-np.eye(num_outputs), int(test[0]), 0)
-                    diffMatrix[:, int(test[0])] = 1
+                    diffMatrix[:, label] = 1
                     diffMatrix = diffMatrix.astype(np.float64)
                     
                     # gets the values from GPUPoly.
@@ -1373,7 +1375,8 @@ else:
                                                             timeout_milp=config.timeout_milp,
                                                             use_milp=config.use_milp,
                                                             partial_milp=config.partial_milp,
-                                                            max_milp_neurons=config.max_milp_neurons)
+                                                            max_milp_neurons=config.max_milp_neurons,
+                                                            approx=config.approx_k)
                     if is_verified:
                         print("img", i, "Verified", int(test[0]))
                         verified_images += 1
@@ -1405,7 +1408,8 @@ else:
                                                                                   complete=config.complete,
                                                                                   terminate_on_failure = not config.complete and domain == "refinepoly",
                                                                                   partial_milp=config.partial_milp,
-                                                                                  max_milp_neurons=config.max_milp_neurons)
+                                                                                  max_milp_neurons=config.max_milp_neurons,
+                                                                                  approx_k=config.approx_k)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
                 if(perturbed_label==label):
                     print("img", i, "Verified", label)
@@ -1419,7 +1423,7 @@ else:
                             verified_images += 1
                         else:
                             if adv_image != None:
-                                cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                                cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic, approx_k=config.approx_k)
                                 if(cex_label!=label):
                                     denormalize(adv_image[0], means, stds, dataset)
                                     # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
@@ -1429,7 +1433,7 @@ else:
                     else:
                     
                         if x != None:
-                            cex_label,_,_,_,_,_ = eran.analyze_box(x,x,'deepzono',config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                            cex_label,_,_,_,_,_ = eran.analyze_box(x,x,'deepzono',config.timeout_lp, config.timeout_milp, config.use_default_heuristic, approx_k=config.approx_k)
                             print("cex label ", cex_label, "label ", label)
                             if(cex_label!=label):
                                 denormalize(x,means, stds, dataset)

@@ -142,11 +142,12 @@ class TFTranslator:
 		reshape_map = {}
 		operations_to_be_ignored = ["Reshape", "Pack", "Shape", "StridedSlice", "Prod", "ConcatV2"]
 		operations_to_be_ignored_without_reshape = ["NoOp", "Assign", "Const", "RestoreV2", "SaveV2", "IsVariableInitialized", "Identity"]
-
+		
 		with tf.Graph().as_default() as graph:
 			with tf.Session() as sess:
 				self.sess = sess
 				tf.import_graph_def(self.graph_def)
+				#print("Operations ", graph.get_operations())
 				for op in graph.get_operations():
 					if op.type in operations_to_be_ignored_without_reshape:
 						continue
@@ -276,7 +277,8 @@ class TFTranslator:
 			addend = self.sess.run(right)
 		return (addend,)
 		
-		
+	
+	    	
 	def conv2d_resources(self, op):
 		"""
 		Extracts the filter, the stride of the filter, and the padding from op as well as the shape of the input coming into op

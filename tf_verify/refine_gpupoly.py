@@ -4,7 +4,7 @@ import time
 
 def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, K=3, s=-2,
                            timeout_lp=10, timeout_milp=10, timeout_final_lp=100, timeout_final_milp=100, use_milp=False,
-                           partial_milp=False, max_milp_neurons=30, complete=False):
+                           partial_milp=False, max_milp_neurons=30, complete=False, approx=True):
     relu_groups = []
     nlb = []
     nub = []
@@ -120,9 +120,9 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
                 i = i + 1
             input_hrep_array.append(input_hrep)
         KAct.type = "ReLU"
-        # with multiprocessing.Pool(config.numproc) as pool:
-        #     kact_results = pool.map(make_kactivation_obj, input_hrep_array)
-        kact_results = list(map(make_kactivation_obj, input_hrep_array))
+        with multiprocessing.Pool(config.numproc) as pool:
+            # kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+            kact_results = list(pool.starmap(make_kactivation_obj, zip(input_hrep_array, len(input_hrep_array) * [approx])))
 
         gid = 0
         for inst in kact_results:

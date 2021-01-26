@@ -64,6 +64,7 @@ class config:
     data_dir = None # data location for geometric analysis
     geometric_config = None # geometric config location
     num_params = 0 # Number of transformation parameters for geometric analysis
+    approx_k = True
 
     # Acas Xu
     specnumber = None # Acas Xu spec number

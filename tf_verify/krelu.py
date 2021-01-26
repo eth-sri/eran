@@ -57,21 +57,26 @@ def generate_linexpr0(offset, varids, coeffs):
 
 
 class KAct:
-    def __init__(self, input_hrep):
+    def __init__(self, input_hrep, approx=True):
         assert KAct.type in ["ReLU", "Tanh", "Sigmoid"]
         self.k = len(input_hrep[0]) - 1
         self.input_hrep = np.array(input_hrep)
 
         if KAct.type == "ReLU":
-            self.cons = fkrelu(self.input_hrep)
+            if approx:
+                self.cons = fkrelu(self.input_hrep)
+            else:
+                self.cons = krelu_with_cdd(self.input_hrep)
+        elif not approx:
+            assert False, "not implemented"
         elif KAct.type == "Tanh":
             self.cons = ftanh_orthant(self.input_hrep)
         else:
             self.cons = fsigm_orthant(self.input_hrep)
 
 
-def make_kactivation_obj(input_hrep):
-    return KAct(input_hrep)
+def make_kactivation_obj(input_hrep, approx=True):
+    return KAct(input_hrep, approx)
 
 
 def get_ineqs_zono(varsid):
@@ -173,7 +178,7 @@ def sparse_heuristic_curve(length, lb, ub, is_sigm, s=-2):
     return kact_args
 
 
-def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type, K=3, s=-2):
+def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type, K=3, s=-2, approx=True):
     import deepzono_nodes as dn
     if need_pop:
         constraint_groups.pop()
@@ -238,7 +243,8 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     # end1 = time.time()
 
     with multiprocessing.Pool(config.numproc) as pool:
-        kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+        # kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+        kact_results = pool.starmap(make_kactivation_obj, zip(input_hrep_array, len(input_hrep_array) * [approx]))
 
     # end2 = time.time()
 
