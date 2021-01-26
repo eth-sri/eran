@@ -112,7 +112,8 @@ class layers:
 
 
 class Analyzer:
-    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing = False):
+    def __init__(self, ir_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label,
+                 prop, testing = False, approx_k=True):
         """
         Arguments
         ---------
@@ -142,6 +143,7 @@ class Analyzer:
         self.relu_groups = []
         self.label = label
         self.prop = prop
+        self.approx_k=approx_k
     
     def __del__(self):
         elina_manager_free(self.man)
@@ -157,7 +159,10 @@ class Analyzer:
         testing_nlb = []
         testing_nub = []
         for i in range(1, len(self.ir_list)):
-            element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups, 'refine' in self.domain, self.timeout_lp, self.timeout_milp, self.use_default_heuristic, self.testing)
+            element_test_bounds = self.ir_list[i].transformer(self.nn, self.man, element, nlb, nub, self.relu_groups,
+                                                              'refine' in self.domain, self.timeout_lp,
+                                                              self.timeout_milp, self.use_default_heuristic,
+                                                              self.testing, self.approx_k)
 
             if self.testing and isinstance(element_test_bounds, tuple):
                 element, test_lb, test_ub = element_test_bounds

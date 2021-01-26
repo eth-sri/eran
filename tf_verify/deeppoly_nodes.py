@@ -223,7 +223,7 @@ class DeeppolyNode:
 
 
 class DeeppolyFCNode(DeeppolyNode):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         """
         transformer for the first layer of a neural network, if that first layer is fully connected with relu
         
@@ -285,7 +285,8 @@ class DeeppolyNonlinearity:
 
 
 class DeeppolyReluNode(DeeppolyNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp,
+                    use_default_heuristic, testing, approx=True):
         """
         transforms element with handle_relu_layer
         
@@ -303,7 +304,8 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
         """
         length = self.output_length
         if refine:
-            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp,
+                                                 timeout_milp, use_default_heuristic, 'deeppoly', approx)
         else:
             handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=False)
@@ -315,7 +317,8 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
  
 
 class DeeppolySignNode(DeeppolyNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp,
+                    use_default_heuristic, testing, approx=True):
         """
         transforms element with handle_sign_layer
         
@@ -344,7 +347,7 @@ class DeeppolySignNode(DeeppolyNonlinearity):
 
 
 class DeeppolySigmoidNode(DeeppolyNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         """
         transforms element with handle_sigmoid_layer
         
@@ -374,7 +377,7 @@ class DeeppolySigmoidNode(DeeppolyNonlinearity):
         
         
 class DeeppolyTanhNode(DeeppolyNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         """
         transforms element with handle_tanh_layer
         
@@ -449,7 +452,7 @@ class DeeppolyConv2dNode:
         return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, True, self.predecessors, len(self.predecessors)
 
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         """
         transformer for a convolutional layer, if that layer is an intermediate of the network
         
@@ -498,7 +501,7 @@ class DeeppolyPoolNode:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         """
         transformer for a maxpool/averagepool layer, this can't be the first layer of a network
         
@@ -538,7 +541,7 @@ class DeeppolyResidualNode:
         """
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         handle_residual_layer(man,element,self.output_length,self.predecessors, len(self.predecessors))
         calc_bounds(man, element, nn, nlb, nub, relu_groups, use_krelu=refine, is_refine_layer=True)
         # print("Residual ", nn.layertypes[layerno],layerno)
@@ -566,7 +569,7 @@ class DeeppolyGather:
         self.indexes = np.ascontiguousarray(indexes, dtype=np.uintp)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         handle_gather_layer(man, element, self.indexes)
         return element
 
@@ -581,7 +584,7 @@ class DeeppolyConcat:
             self.channels[i] = channel
 
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         handle_concatenation_layer(man, element, self.predecessors, len(self.predecessors), self.channels)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
         nn.concat_counter += 1
@@ -595,7 +598,7 @@ class DeeppolyTile:
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
         self.repeats = repeats
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         handle_tiling_layer(man, element, self.predecessors, len(self.predecessors), self.repeats)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
         nn.tile_counter += 1
@@ -622,7 +625,7 @@ class DeeppolySubNode:
         self.is_minuend = is_minuend
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         layerno = nn.calc_layerno()
         num_neurons = get_num_neurons_in_layer(man, element, layerno)
         handle_sub_layer(man, element, self.bias, self.is_minuend, num_neurons, self.predecessors, len(self.predecessors))
@@ -650,7 +653,7 @@ class DeeppolyMulNode:
         self.bias = np.ascontiguousarray(bias.reshape(-1), dtype=np.float64)
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
         handle_mul_layer(man, element, self.bias, len(self.bias.reshape(-1)), self.predecessors, len(self.predecessors))
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
         nn.ffn_counter+=1

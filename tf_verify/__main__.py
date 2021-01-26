@@ -44,8 +44,8 @@ from tensorflow_translator import *
 from onnx_translator import *
 from optimizer import *
 from analyzer import *
-if config.domain=='gpupoly' or config.domain=='refinegpupoly':
-    from refine_gpupoly import *
+# if config.domain=='gpupoly' or config.domain=='refinegpupoly':
+from refine_gpupoly import *
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -345,6 +345,7 @@ parser.add_argument('--t-norm', type=str, default=config.t_norm, help='vector fi
 parser.add_argument('--delta', type=float, default=config.delta, help='vector field displacement magnitude')
 parser.add_argument('--gamma', type=float, default=config.gamma, help='vector field smoothness constraint')
 parser.add_argument('--quant_step', type=float, default=config.quant_step, help='Quantization step for quantized networks')
+parser.add_argument("--approx_k",type=str2bool, default=config.approx_k, help="Use approximate fast k neuron constraints")
 
 
 # Logging options
@@ -1296,6 +1297,7 @@ else:
         
         #if(label == int(test[0])):
         if is_correctly_classified == True:
+            label = int(test[0])
             perturbed_label = None
             correctly_classified_images +=1
             if config.normalized_region==True:
@@ -1321,6 +1323,8 @@ else:
                     print("img", i, "Verified", int(test[0]))
                     verified_images+=1
                 elif domain == 'refinegpupoly':
+                    num_outputs = len(nn.weights[-1])
+
                     # Matrix that computes the difference with the expected layer.
                     diffMatrix = np.delete(-np.eye(num_outputs), int(test[0]), 0)
                     diffMatrix[:, label] = 1
@@ -1331,7 +1335,6 @@ else:
                     
                     
                     labels_to_be_verified = []
-                    num_outputs = len(nn.weights[-1])
                     var = 0
                     nn.specLB = specLB
                     nn.specUB = specUB
@@ -1349,7 +1352,8 @@ else:
                                 labels_to_be_verified.append(labels)
                             var = var+1
                     #print("relu layers", relu_layers)
-                    is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]), labels_to_be_verified)
+                    is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]),
+                                                            labels_to_be_verified, config.approx_k)
                     if is_verified:
                         print("img", i, "Verified", int(test[0]))
                         verified_images+=1 
@@ -1365,7 +1369,7 @@ else:
                 else:
                     print("img", i, "Failed")
             else:    
-                perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop)
+                perturbed_label, _, nlb, nub,failed_labels, x = eran.analyze_box(specLB, specUB, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic,label=label, prop=prop, approx_k=config.approx_k)
                 print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
                 if(perturbed_label==label):
                     print("img", i, "Verified", label)
@@ -1380,7 +1384,7 @@ else:
                         else:
                         
                             if adv_image != None:
-                                cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                                cex_label,_,_,_,_,_ = eran.analyze_box(adv_image[0], adv_image[0], 'deepzono', config.timeout_lp, config.timeout_milp, config.use_default_heuristic, approx_k=config.approx_k)
                                 if(cex_label!=label):
                                     denormalize(adv_image[0], means, stds, dataset)
                                     print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
@@ -1389,7 +1393,7 @@ else:
                     else:
                     
                         if x != None:
-                            cex_label,_,_,_,_,_ = eran.analyze_box(x,x,'deepzono',config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+                            cex_label,_,_,_,_,_ = eran.analyze_box(x,x,'deepzono',config.timeout_lp, config.timeout_milp, config.use_default_heuristic, approx_k=config.approx_k)
                             print("cex label ", cex_label, "label ", label)
                             if(cex_label!=label):
                                 denormalize(x,means, stds, dataset)

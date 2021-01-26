@@ -1,7 +1,7 @@
 from optimizer import *
 from krelu import *
 
-def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified):
+def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label, labels_to_be_verified, approx=True):
     relu_groups = []
     nlb = []
     nub = []
@@ -77,7 +77,9 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             input_hrep_array.append(input_hrep)
         KAct.type = "ReLU"
         with multiprocessing.Pool(config.numproc) as pool:
-            kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+            # kact_results = pool.map(make_kactivation_obj, input_hrep_array)
+            kact_results = pool.starmap(make_kactivation_obj, zip(input_hrep_array, len(input_hrep_array) * [approx]))
+
         gid = 0
         for inst in kact_results:
             varsid = kact_args[gid]
