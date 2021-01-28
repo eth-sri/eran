@@ -84,6 +84,7 @@ Install cddlib:
 ```
 git clone https://github.com/cddlib/cddlib.git
 cd cddlib
+./bootstrap
 ./configure
 make
 make install
