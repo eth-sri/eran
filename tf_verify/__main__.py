@@ -480,6 +480,9 @@ if not is_trained_with_pytorch:
     elif dataset == 'acasxu':
         means = [1.9791091e+04,0.0,0.0,650.0,600.0]
         stds = [60261.0,6.28318530718,6.28318530718,1100.0,1200.0]
+    elif dataset == "cifar10":
+        means = [0.4914, 0.4822, 0.4465]
+        stds = [0.2023, 0.1994, 0.2010]
     else:
         means = [0.5, 0.5, 0.5]
         stds = [1, 1, 1]
