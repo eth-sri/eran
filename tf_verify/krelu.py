@@ -89,8 +89,8 @@ def get_ineqs_zono(varsid):
             continue
 
         linexpr0 = generate_linexpr0(KAct.offset, varsid, coeffs)
-        element = elina_abstract0_assign_linexpr_array(KAct.man, True, Krelu.element,
-                                                       Krelu.tdim, linexpr0, 1, None)
+        element = elina_abstract0_assign_linexpr_array(KAct.man, True, KAct.element,
+                                                       KAct.tdim, linexpr0, 1, None)
         bound_linexpr = elina_abstract0_bound_dimension(KAct.man, KAct.element,
                                                         KAct.offset + KAct.length)
         upper_bound = bound_linexpr.contents.sup.contents.val.dbl
