@@ -1400,20 +1400,37 @@ else:
                 else:
                     print("img", i, "Failed")
             else:
-                perturbed_label, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
-                                                                                  config.timeout_lp,
-                                                                                  config.timeout_milp,
-                                                                                  config.use_default_heuristic,
-                                                                                  label=label, prop=prop, K=config.k, s=config.s,
-                                                                                  timeout_final_lp=config.timeout_final_lp,
-                                                                                  timeout_final_milp=config.timeout_final_milp,
-                                                                                  use_milp=config.use_milp,
-                                                                                  complete=config.complete,
-                                                                                  terminate_on_failure = not config.complete and domain == "refinepoly",
-                                                                                  partial_milp=config.partial_milp,
-                                                                                  max_milp_neurons=config.max_milp_neurons,
-                                                                                  approx_k=config.approx_k)
-                print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
+                if domain.endswith("poly"):
+                    perturbed_label, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, "deeppoly",
+                                                                                      config.timeout_lp,
+                                                                                      config.timeout_milp,
+                                                                                      config.use_default_heuristic,
+                                                                                      label=label, prop=prop, K=0, s=0,
+                                                                                      timeout_final_lp=config.timeout_final_lp,
+                                                                                      timeout_final_milp=config.timeout_final_milp,
+                                                                                      use_milp=False,
+                                                                                      complete=False,
+                                                                                      terminate_on_failure = True,
+                                                                                      partial_milp=0,
+                                                                                      max_milp_neurons=0,
+                                                                                      approx_k=0)
+                    print("nlb ", nlb[-1], " nub ", nub[-1],"adv labels ", failed_labels)
+                if not domain.endswith("poly") or not (perturbed_label==label):
+                    perturbed_label, _, nlb, nub, failed_labels, x = eran.analyze_box(specLB, specUB, domain,
+                                                                                      config.timeout_lp,
+                                                                                      config.timeout_milp,
+                                                                                      config.use_default_heuristic,
+                                                                                      label=label, prop=prop,
+                                                                                      K=config.k, s=config.s,
+                                                                                      timeout_final_lp=config.timeout_final_lp,
+                                                                                      timeout_final_milp=config.timeout_final_milp,
+                                                                                      use_milp=config.use_milp,
+                                                                                      complete=config.complete,
+                                                                                      terminate_on_failure=not config.complete and domain == "refinepoly",
+                                                                                      partial_milp=config.partial_milp,
+                                                                                      max_milp_neurons=config.max_milp_neurons,
+                                                                                      approx_k=config.approx_k)
+                    print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels)
                 if(perturbed_label==label):
                     print("img", i, "Verified", label)
                     verified_images += 1
