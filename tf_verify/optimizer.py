@@ -18,7 +18,10 @@
 from deepzono_nodes import *
 from deeppoly_nodes import *
 # if config.domain=='gpupoly' or config.domain=='refinegpupoly':
-from gpupoly import Network
+try:
+    from gpupoly import Network
+except:
+    print("gpupoly not available.")
 from functools import reduce
 import numpy as np
 from read_net_file import *
