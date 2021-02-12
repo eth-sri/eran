@@ -1436,6 +1436,7 @@ else:
                     verified_images += 1
                 else:
                     if complete==True and failed_labels is not None:
+                        failed_labels = list(set(failed_labels))
                         constraints = get_constraints_for_dominant_label(label, failed_labels)
                         verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                         if(verified_flag==True):

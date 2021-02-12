@@ -640,7 +640,7 @@ def solver_call(ind):
     model.optimize()
     runtime += model.RunTime
     soll = Cache.lbi[ind] if model.SolCount==0 else model.objbound
-    #print (f"{ind} {model.status} lb ({Cache.lbi[ind]}, {soll}) {model.RunTime}s")
+    # print (f"{ind} {model.status} lb ({Cache.lbi[ind]}, {soll}) {model.RunTime}s")
     sys.stdout.flush()
 
     model.setObjective(obj, GRB.MAXIMIZE)
@@ -648,7 +648,7 @@ def solver_call(ind):
     model.optimize()
     runtime += model.RunTime
     solu = Cache.ubi[ind] if model.SolCount==0 else model.objbound
-    #print (f"{ind} {model.status} ub ({Cache.ubi[ind]}, {solu}) {model.RunTime}s")
+    # print (f"{ind} {model.status} ub ({Cache.ubi[ind]}, {solu}) {model.RunTime}s")
     sys.stdout.flush()
 
     soll = max(soll, Cache.lbi[ind])
@@ -666,7 +666,7 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
     widths = [u-l for u, l in zip(ubi,lbi)]
 
     candidate_vars = sorted(candidate_vars, key=lambda k: widths[k])
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, layerno+1, use_milp)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, layerno+1, use_milp, partial_milp=-1)
     resl = [0]*len(lbi)
     resu = [0]*len(ubi)
     indices = []
@@ -779,7 +779,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True, partial_milp=-1, max_milp_neurons=1e5)
     #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_complete)
     

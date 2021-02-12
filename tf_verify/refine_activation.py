@@ -98,7 +98,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
 
     else:
-        if predecessor_index==second_FC or domain=="deepzono" and predecessor_index>second_FC:
+        if predecessor_index==second_FC:# or domain=="deepzono" and predecessor_index>second_FC:
             use_milp_temp = use_milp
         else:
             use_milp_temp = 0
@@ -116,7 +116,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                                                                  use_milp_temp,  candidate_vars, timeout)
             end = time.time()
             if config.debug:
-                print(f"Refinement of bounds time: {end-start:.3f}. MILP used: {use_milp_temp}")
+                print(f"Refinement of bounds time: {end-start:.3f}. MILP used: {use_milp_temp}. {len(indices)} bounds refined.")
             nlb[predecessor_index] = resl
             nub[predecessor_index] = resu
 
