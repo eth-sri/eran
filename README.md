@@ -41,7 +41,24 @@ git clone https://github.com/eth-sri/ERAN.git
 cd ERAN
 ```
 
-The dependencies for ERAN can be installed step by step as follows (sudo rights might be required):
+The dependencies for ERAN can be installed step by step as follows (sudo rights might be required):  
+Note that it might be required to use `sudo -E` to for the right environment variables to be set.
+
+Ensure that the following tools are available:
+python-distutils,
+cmake,
+autoconf,
+libtool,
+pdftex.  
+On Ubuntu systems they can be installed using (setting the python version in use):
+```
+sudo apt-get install python3.X-distutils
+sudo apt-get install build-essential
+sudo apt-get install cmake
+sudo apt-get install autoconf
+sudo apt-get install libtool
+sudo apt-get install texlive-latex-base
+```
 
 Install m4:
 ```
@@ -133,7 +150,6 @@ mkdir build
 make shared_object
 cp ./build/libgeometric.so /usr/lib
 cd ../..
-
 ```
 
 We also provide scripts that will install ELINA and all the necessary dependencies. One can run it as follows:
@@ -598,6 +614,8 @@ Contributors
 * [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
 
 * [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
+
+* [Mark Müller](https://www.sri.inf.ethz.ch/people/mark) mark.mueller@inf.ethz.ch
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
