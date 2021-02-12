@@ -292,7 +292,11 @@ def get_tests(dataset, geometric):
         csvfile = open('../deepg/code/datasets/{}_test.csv'.format(dataset), 'r')
     else:
         if config.subset == None:
-            csvfile = open('../data/{}_test_full.csv'.format(dataset), 'r')
+            try:
+                csvfile = open('../data/{}_test_full.csv'.format(dataset), 'r')
+            except:
+                csvfile = open('../data/{}_test.csv'.format(dataset), 'r')
+                print("Only the first 100 samples are available.")
         else:
             filename = '../data/'+ dataset+ '_test_' + config.subset + '.csv'
             csvfile = open(filename, 'r')
