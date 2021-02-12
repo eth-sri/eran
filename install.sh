@@ -50,21 +50,6 @@ make install
 cd ..
 rm mpfr-4.1.0.tar.xz
 
-if ! command -v autoreconf &> /dev/null
-then
-	apt-get install autoconf
-fi
-
-if ! command -v libtool &> /dev/null
-then 
-	apt-get install libtool
-fi
-
-if ! command -v pdftex &> /dev/null
-then 
-	apt-get install texlive-latex-base
-fi
-
 
 git clone https://github.com/cddlib/cddlib.git
 cd cddlib
