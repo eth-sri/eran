@@ -310,6 +310,8 @@ class Analyzer:
                                     except:
                                         print(
                                             f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+                                    if model.Status == 11:
+                                        model.optimize() #very rarely lp_callback seems to leave model in interrupted state
                                     if model.Status == 6 or (model.Status == 2 and model.objval > 0):
                                         # Cutoff active, or optimal with positive objective => sound against adv_label
                                         pass
