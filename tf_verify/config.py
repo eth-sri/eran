@@ -53,6 +53,7 @@ class config:
     # refine options
     use_milp = True # Whether to use MILP
     refine_neurons = False # refine neurons
+    n_milp_refine = 1
     sparse_n = 70
     numproc = multiprocessing.cpu_count() # number of processes for milp/lp/krelu
     normalized_region = True

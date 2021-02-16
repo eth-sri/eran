@@ -304,8 +304,8 @@ class Analyzer:
                                 else:
                                     model.optimize(lp_callback)
                                     # model.optimize()
-                                    if model.Status == 11:
-                                        model.optimize() #very rarely lp_callback seems to leave model in interrupted state
+                                    # if model.Status == 11:
+                                    #     model.optimize() #very rarely lp_callback seems to leave model in interrupted state
 
                                     try:
                                         print(

@@ -65,6 +65,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
     ubi = nub[predecessor_index]
     second_FC = -2
     timeout = timeout_milp
+    affine_layers = np.array([x=="Conv" or x=="FC" for x in nn.layertypes]).nonzero()[0]
     for i in range(nn.numlayer):
         if nn.layertypes[i] == 'Conv':
             if second_FC == -2:
@@ -98,7 +99,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
 
     else:
-        if predecessor_index==second_FC:# or domain=="deepzono" and predecessor_index>second_FC:
+        if 0<sum((affine_layers>=second_FC).__and__(predecessor_index>=affine_layers))<=config.n_milp_refine: #predecessor_index >= second_FC :#and domain=="deepzono" and predecessor_index>second_FC:
             use_milp_temp = use_milp
         else:
             use_milp_temp = 0

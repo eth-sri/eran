@@ -337,6 +337,7 @@ parser.add_argument('--sparse_n', type=int, default=config.sparse_n,  help='Numb
 parser.add_argument('--use_default_heuristic', type=str2bool, default=config.use_default_heuristic,  help='whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation')
 parser.add_argument('--use_milp', type=str2bool, default=config.use_milp,  help='whether to use milp or not')
 parser.add_argument('--refine_neurons', action='store_true', default=config.refine_neurons, help='whether to refine intermediate neurons')
+parser.add_argument('--n_milp_refine', type=int, default=config.n_milp_refine, help='Number of milp refined layers')
 parser.add_argument('--mean', nargs='+', type=float, default=config.mean, help='the mean used to normalize the data with')
 parser.add_argument('--std', nargs='+', type=float, default=config.std, help='the standard deviation used to normalize the data with')
 parser.add_argument('--data_dir', type=str, default=config.data_dir, help='data location')
