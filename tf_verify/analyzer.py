@@ -41,6 +41,8 @@ class layers:
         self.conv_counter = 0
         self.residual_counter = 0
         self.pool_counter = 0
+        self.concat_counter = 0
+        self.tile_counter = 0
         self.activation_counter = 0
         self.specLB = []
         self.specUB = []
@@ -53,7 +55,7 @@ class layers:
         self.prop = -1
 
     def calc_layerno(self):
-        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter
+        return self.ffn_counter + self.conv_counter + self.residual_counter + self.pool_counter + self.activation_counter + self.concat_counter + self.tile_counter
 
     def is_ffn(self):
         return not any(x in ['Conv2D', 'Conv2DNoReLU', 'Resadd', 'Resaddnorelu'] for x in self.layertypes)
@@ -193,6 +195,8 @@ class Analyzer:
             self.nn.ffn_counter = 0
             self.nn.conv_counter = 0
             self.nn.pool_counter = 0
+            self.nn.concat_counter = 0
+            self.nn.tile_counter = 0
             self.nn.residual_counter = 0
             self.nn.activation_counter = 0
             counter, var_list, model = create_model(self.nn, self.nn.specLB, self.nn.specUB, nlb, nub,self.relu_groups, self.nn.numlayer, config.complete==True)
@@ -206,6 +210,7 @@ class Analyzer:
         label_failed = []
         x = None
         if self.output_constraints is None:
+            
             candidate_labels = []
             if self.label == -1:
                 for i in range(output_size):
@@ -228,7 +233,8 @@ class Analyzer:
                             break
                     else:
                         if label!=j and not self.is_greater(self.man, element, label, j, self.use_default_heuristic):
-
+                            #linexpr = get_output_uexpr_defined_over_previous_layers(self.man, element, 7, 0)
+                            #elina_linexpr0_print(linexpr,None)				
                             if(self.domain=='refinepoly'):
                                 obj = LinExpr()
                                 obj += 1*var_list[counter+label]
@@ -236,7 +242,7 @@ class Analyzer:
                                 model.setObjective(obj,GRB.MINIMIZE)
                                 if config.complete == True:
                                     model.optimize(milp_callback)
-                                    if model.objbound <= 0:
+                                    if not hasattr(model,"objbound") or model.objbound <= 0:
                                         flag = False
                                         if self.label!=-1:
                                             label_failed.append(j)
@@ -245,6 +251,7 @@ class Analyzer:
                                         break    
                                 else:
                                     model.optimize()
+                                    print("objval ", j, model.objval)
                                     if model.Status!=2:
                                         print("model was not successful status is", model.Status)
                                         model.write("final.mps")

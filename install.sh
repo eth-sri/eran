@@ -50,14 +50,13 @@ make install
 cd ..
 rm mpfr-4.1.0.tar.xz
 
-wget https://github.com/cddlib/cddlib/releases/download/0.94j/cddlib-0.94j.tar.gz
-tar -xvf cddlib-0.94j.tar.gz
-cd cddlib-0.94j
+git clone https://github.com/cddlib/cddlib.git
+cd cddlib
+./bootstrap
 ./configure
 make
 make install
 cd ..
-rm cddlib-0.94j.tar.gz
 
 wget https://packages.gurobi.com/9.0/gurobi9.0.3_linux64.tar.gz
 tar -xvf gurobi9.0.3_linux64.tar.gz
@@ -80,7 +79,7 @@ git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 if test "$has_cuda" -eq 1
 then
-    ./configure -use-cuda -use-deepoly -use-gurobi -use-fconv
+    ./configure -use-cuda -use-deeppoly -use-gurobi -use-fconv
 else
     ./configure -use-deeppoly -use-gurobi -use-fconv
 fi

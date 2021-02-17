@@ -47,7 +47,7 @@ class ERAN:
             have to provide a session, this function will automatically get it.
         """
         if is_onnx:
-            translator = ONNXTranslator(model)
+            translator = ONNXTranslator(model, False)
         else:
             translator = TFTranslator(model, session)
         operations, resources = translator.translate()
@@ -87,6 +87,8 @@ class ERAN:
             execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size, spatial_constraints)
             analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing)
         dominant_class, nlb, nub, failed_labels, x = analyzer.analyze()
+
+            
         if testing:
             return dominant_class, nn, nlb, nub, output_info
         else:

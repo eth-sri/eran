@@ -312,6 +312,35 @@ class DeeppolyReluNode(DeeppolyNonlinearity):
             return element, nlb[-1], nub[-1]
 
         return element
+ 
+
+class DeeppolySignNode(DeeppolyNonlinearity):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        """
+        transforms element with handle_sign_layer
+        
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            man to which element belongs
+        element : ElinaAbstract0Ptr
+            abstract element onto which the transformer gets applied
+        
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            abstract element after the transformer
+        """
+        #if refine:
+        #    refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+        #else:
+        handle_sign_layer(*self.get_arguments(man, element))
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=False)
+        nn.activation_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
+
+        return element
 
 
 class DeeppolySigmoidNode(DeeppolyNonlinearity):
@@ -335,7 +364,7 @@ class DeeppolySigmoidNode(DeeppolyNonlinearity):
         if refine:
             refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
         else:
-            handle_sigmoid_layer(*self.get_arguments(man, element))
+            handle_sigmoid_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:
@@ -366,7 +395,7 @@ class DeeppolyTanhNode(DeeppolyNonlinearity):
         if refine:
             refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
         else:
-            handle_tanh_layer(*self.get_arguments(man, element))
+            handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:
@@ -539,6 +568,39 @@ class DeeppolyGather:
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
         handle_gather_layer(man, element, self.indexes)
+        return element
+
+
+class DeeppolyConcat:
+    def __init__(self, width, height, channels, input_names, output_name, output_shape):
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+        self.width = width
+        self.height = height
+        self.channels = (c_size_t * len(channels))()
+        for i, channel in enumerate(channels):
+            self.channels[i] = channel
+
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        handle_concatenation_layer(man, element, self.predecessors, len(self.predecessors), self.channels)
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
+        nn.concat_counter += 1
+        if testing:
+            return element, nlb[-1], nub[-1]
+        return element
+
+
+class DeeppolyTile:
+    def __init__(self, repeats, input_names, output_name, output_shape):
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+        self.repeats = repeats
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        handle_tiling_layer(man, element, self.predecessors, len(self.predecessors), self.repeats)
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, destroy=False)
+        nn.tile_counter += 1
+        if testing:
+            return element, nlb[-1], nub[-1]
         return element
 
 

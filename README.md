@@ -82,14 +82,13 @@ rm mpfr-4.1.0.tar.xz
 
 Install cddlib:
 ```
-wget https://github.com/cddlib/cddlib/releases/download/0.94j/cddlib-0.94j.tar.gz
-tar -xvf cddlib-0.94j.tar.gz
-cd cddlib-0.94j
+git clone https://github.com/cddlib/cddlib.git
+cd cddlib
+./bootstrap
 ./configure
 make
 make install
 cd ..
-rm cddlib-0.94j.tar.gz
 
 ```
 
@@ -603,7 +602,9 @@ Contributors
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
-* Christoph Müller (contact for GPU version of DeepPoly) - christoph.mueller@inf.ethz.ch
+* Christoph Müller - christoph.mueller@inf.ethz.ch
+
+* [François Serre](https://fserre.github.io/) (contact for GPUPoly) - serref@inf.ethz.ch
 
 * Gleb Makarchuk (contact for FConv library for relaxation computation) -  hlebm@ethz.ch gleb.makarchuk@gmail.com 
 

@@ -46,6 +46,35 @@ def onnxshape_to_intlist(onnxshape):
 	return result
 
 
+def nchw_to_nhwc_shape(shape):
+	"""
+	Reorders dimensions of a 1D array from NCHW to NHWC, since ONNX uses NCHW, ELINA expects NHWC.
+
+	:param index: the array to be converted
+
+	:return: converted array
+	"""
+	assert len(shape) == 4, "Unexpected shape size"
+	return [shape[0], shape[2], shape[3], shape[1]]
+
+
+def nchw_to_nhwc_index(index: int) -> int:
+	"""
+	Converts an single index from NCHW to NHWC, since ONNX uses NCHW, ELINA expects NHWC,
+
+	:param index: the index to be converted
+
+	:return: converted index
+	"""
+	assert 0 <= index <= 3, f"index out of range: {index}"
+	if index == 0:  # batch (N)
+		return 0
+	elif index == 1:  # channel (C)
+		return 3
+	else:
+		return index - 1
+
+
 def nchw_to_nhwc(array):
 	"""
 	ONNX uses NCHW. ELINA expects NHWC
@@ -102,22 +131,22 @@ def prepare_model(model):
 
 	placeholdernames = []
 	#print("graph ", model.graph.input)
-	for input in model.graph.input:
-		placeholdernames.append(input.name)
-		if input.name not in shape_map:
-			shape_map[input.name] = onnxshape_to_intlist(input.type.tensor_type.shape)
-			input_node_map[input.name] = input
+	for node_input in model.graph.input:
+		placeholdernames.append(node_input.name)
+		if node_input.name not in shape_map:
+			shape_map[node_input.name] = onnxshape_to_intlist(node_input.type.tensor_type.shape)
+			input_node_map[node_input.name] = node_input
 			
 	for node in model.graph.node:
 		#print(node.op_type)
 		output_node_map[node.output[0]] = node
-		for input in node.input:
-			input_node_map[input] = node
+		for node_input in node.input:
+			input_node_map[node_input] = node
 		if node.op_type == "Flatten":
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 		elif node.op_type == "Constant":
 			const = node.attribute
-			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t))
+			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t)).copy()
 			constants_map[node.output[0]] = const
 			shape_map[node.output[0]] = const.shape
 
@@ -192,7 +221,7 @@ def prepare_model(model):
 				output_shape.append(1 + strided_kernel_positions)
 
 			if require_kernel_shape:
-				output_shape.append(input_shape[1])
+				output_shape.append(input_shape[3])
 			else:
 				output_shape.append(filter_shape[0])
 
@@ -263,24 +292,38 @@ def prepare_model(model):
 
 		elif node.op_type == "Concat":
 			all_constant = True
-			axis = node.attribute[0].i
-			for input in node.input:
-				if not input in constants_map:
+			axis = nchw_to_nhwc_index(node.attribute[0].i)
+			for node_input in node.input:
+				if not node_input in constants_map:
 					all_constant = False
 					break
 			if all_constant:
 				constants_map[node.output[0]] = np.concatenate([constants_map[input] for input in node.input], axis=axis)
-
 			all_shape_known = True
-			for input in node.input:
-				if not input in shape_map:
+			for node_input in node.input:
+				if not node_input in shape_map:
 					all_shape_known = False
 					break
-			if all_shape_known:
-				new_axis_size = 0
-				for input in node.input:
-					new_axis_size += shape_map[input][axis]
-				shape_map[node.output[0]] = [shape_map[node.input[0]][i] if i != axis else new_axis_size for i in range(len(shape_map[node.input[0]]))]
+			assert all_shape_known, "Unknown shape for at least one node input!"
+			new_axis_size = 0
+			for node_input in node.input:
+				new_axis_size += shape_map[node_input][axis]
+			shape_map[node.output[0]] = [shape_map[node.input[0]][i] if i != axis else new_axis_size for i in range(len(shape_map[node.input[0]]))]
+			if not all_constant:
+				assert axis == 3, "ELINA currently only supports concatenation on the channel dimension"
+
+		elif node.op_type == "Tile":
+			repeats = nchw_to_nhwc_shape(constants_map[node.input[1]])
+			input_shape = list(shape_map[node.input[0]])
+			assert len(repeats) == len(input_shape), "Expecting one repeat factor per dimension"
+			output_shape = [factor * size for factor, size in zip(repeats, input_shape)]
+			shape_map[node.output[0]] = output_shape
+
+			repeat_index = np.where(np.array(repeats) != 1)[0]
+			assert len(repeat_index) == 1, "ELINA backend currently only supports repeats for one dimension"
+			repeat_index = repeat_index.item()
+			assert repeat_index == 1, "ELINA backend currently only supports repeats for the first dimension"
+			assert input_shape[0] == 1, "ELINA backend currently only supports repeats for dimensions of size 1"
 
 		elif node.op_type == "Expand":
 			if node.input[1] in constants_map:
@@ -305,7 +348,7 @@ class ONNXTranslator:
 	"""
 	This class is used to turn a ONNX model into two lists that then can be processed by an Optimizer object
 	"""	
-	def __init__(self, model):
+	def __init__(self, model, is_gpupoly):
 		"""
 		This constructor takes a reference to a ONNX Model and checks model, infers intermediate shapes and sets up maps from name to type and node or constant value
 		graph_util.convert_variables_to_constants and graph_util.remove_training_nodes to cleanse the graph of any nodes that are linked to training. This leaves us with 
@@ -321,7 +364,7 @@ class ONNXTranslator:
 			onnx.checker.check_model(model)
 			self.model = model
 			self.nodes = self.model.graph.node
-
+			self.is_gpupoly = is_gpupoly
 			self.shape_map, self.constants_map, self.output_node_map, self.input_node_map, self.placeholdernames = prepare_model(model)
 		else:
 			assert 0, 'not onnx model'
@@ -345,8 +388,8 @@ class ONNXTranslator:
 		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
-		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Concat", "Unsqueeze", "Softmax", "Flatten", "BatchNormalization"]
-		#print("nodes ", self.nodes, "placeholder ", self.model.graph.input[0])
+		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Unsqueeze", "Softmax", "Flatten", "Concat", "BatchNormalization"]
+		#print("nodes ", self.nodes)
 		for node in self.nodes:
 			if node.op_type == "Constant":
 				continue
@@ -443,6 +486,7 @@ class ONNXTranslator:
 			# Gather is for the moment solely for shapes
 			elif node.op_type == "Gather":
 				only_shape, image_shape, indexes, axis = self.gather_resources(node)
+				
 				if only_shape:
 					self.ignore_node(node, operation_types, reshape_map)
 				else:
@@ -460,7 +504,9 @@ class ONNXTranslator:
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
 			elif node.op_type == "Reshape":
+				      
 				if node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["MatMul", "Gemm"]:
+					
 					self.ignore_node(node, operation_types, reshape_map)
 
 				elif node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["Relu", "Sigmoid", "Tanh"] and self.input_node_map[self.input_node_map[node.output[0]].output[0]].op_type == "Reshape":
@@ -478,6 +524,22 @@ class ONNXTranslator:
 						deeppoly_res = (indexes,) + in_out_info
 						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+
+			#elif node.op_type == "Concat":
+			#	axis = nchw_to_nhwc_index(node.attribute[0].i)
+			#	assert axis == 3, "ELINA backend currently only supports concatenation on the channel dimension"
+			#	channels = []
+			#	for input in node.input:
+			#		channels.append(self.get_shape(input)[axis])
+			#	width = shape[1]
+			#	height = shape[2]
+			#	operation_resources.append({'deeppoly': (width, height, channels) + in_out_info})
+
+			elif node.op_type == "Tile":
+				repeats = nchw_to_nhwc_shape(self.constants_map[node.input[1]])
+				repeat_factor = repeats[repeats != 1].item()
+				operation_resources.append({'deeppoly': (repeat_factor,) + in_out_info})
+
 			else:
 				assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
@@ -537,11 +599,12 @@ class ONNXTranslator:
 		return matrix,
 
 	def reshape_adjust(self, element, matrix, is_right=False):
-		if self.get_kind(element) == 'Reshape':
+		if self.get_kind(element) == 'Reshape' and not self.is_gpupoly:
 			shape_in = self.get_shape(self.output_node_map[element].input[0])
 			shape_out = self.get_shape(self.output_node_map[element].output[0])
 			if config.debug:
 				print('reshape adjust ', str(shape_in), 'to', str(shape_out))
+			
 			indexes = reshape_nhwc(shape_in, shape_out)
 			#indexes = indexes[0]
 			inverse_perm = np.arange(len(indexes))[np.argsort(indexes)]

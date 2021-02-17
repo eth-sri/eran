@@ -67,7 +67,6 @@ def myConst(vec):
 
 def permutation(W, h, w, c):
     m = np.zeros((h*w*c, h*w*c))
-    
     column = 0
     for i in range(h*w):
         for j in range(c):
@@ -84,7 +83,7 @@ if is_tf_version_2:
 tf.InteractiveSession().as_default()
 tf.disable_eager_execution()
 
-def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
+def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch, is_gpupoly):
     mean = 0.0
     std = 0.0
     net = open(net_file,'r')
@@ -122,10 +121,11 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
         elif 'SkipCat' in curr_line:
             print("skip concatenation ",x.shape[0],x.shape[1],y.shape[0],y.shape[1])
             x = tf.concat([y,x],1)
-        elif curr_line in ["ReLU", "Sigmoid", "Tanh", "Affine"]:
+        elif curr_line in ["ReLU", "Sigmoid", "Tanh", "Sign", "Affine"]:
             print(curr_line)
             W = None
-            if (last_layer in ["Conv2D", "ParSumComplete", "ParSumReLU"]) and is_trained_with_pytorch:
+            
+            if (last_layer in ["Conv2D", "ParSumComplete", "ParSumReLU"]) and is_trained_with_pytorch and not is_gpupoly:
                 W = myConst(permutation(parseVec(net), h, w, c).transpose())
             else:
                 W = myConst(parseVec(net).transpose())
@@ -138,6 +138,8 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
                 x = tf.nn.relu(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
             elif(curr_line=="Sigmoid"):
                 x = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
+            elif(curr_line=="Sign"):
+                x = tf.math.sign(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
             else:
                 x = tf.nn.tanh(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
             print("\tOutShape: ", x.shape)
@@ -174,6 +176,8 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
             elif("Sigmoid" in line):
                 start = 8
             elif("Tanh" in line):
+                start = 5
+            elif("Sign" in line):
                 start = 5
             elif("Affine" in line):
                 start = 7
@@ -213,6 +217,8 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch):
                 x = tf.nn.tanh(tf.nn.bias_add(x, b))
             elif("Affine" in line):
                 x = tf.nn.bias_add(x, b)
+            elif("Sign" in line):
+                x = tf.math.sign(tf.nn.bias_add(x, b))
             else:
                 raise Exception("Unsupported activation: ", curr_line)
         elif curr_line == "":

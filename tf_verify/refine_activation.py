@@ -86,9 +86,9 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
-                handle_sigmoid_layer(*self.get_arguments(man, element))
+                handle_sigmoid_layer(*self.get_arguments(man, element), use_default_heuristic)
             else:
-                handle_tanh_layer(*self.get_arguments(man, element))
+                handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
 
     else:
         if predecessor_index==first_FC:
@@ -135,6 +135,6 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
-                handle_sigmoid_layer(*self.get_arguments(man, element))
+                handle_sigmoid_layer(*self.get_arguments(man, element), use_default_heuristic)
             else:
-                handle_tanh_layer(*self.get_arguments(man, element))
+                handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
