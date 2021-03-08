@@ -20,6 +20,7 @@ import os
 cpu_affinity = os.sched_getaffinity(0)
 sys.path.insert(0, '../ELINA/python_interface/')
 sys.path.insert(0, '../deepg/code/')
+import torch
 import numpy as np
 from eran import ERAN
 from read_net_file import *
@@ -37,7 +38,6 @@ import itertools
 from multiprocessing import Pool, Value
 import onnxruntime.backend as rt
 import logging
-import torch
 import spatial
 from copy import deepcopy
 from tensorflow_translator import *

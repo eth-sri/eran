@@ -84,6 +84,7 @@ Install cddlib:
 ```
 git clone https://github.com/cddlib/cddlib.git
 cd cddlib
+./bootstrap
 ./configure
 make
 make install
@@ -299,7 +300,7 @@ Publications
 
    Anian Ruoss, Maximilian Baader, Mislav Balunovic, Martin Vechev
    
-   arXiv 2020.
+   AAAI 2021.
 
 
 *  [Certifying Geometric Robustness of Neural Networks](https://www.sri.inf.ethz.ch/publications/balunovic2019geometric)
