@@ -289,6 +289,12 @@ Certification of vector field deformations is compatible with the "deeppoly" and
 
 Publications
 -------------
+*  [Precise Multi-Neuron Abstractions for Neural Network Certification](https://arxiv.org/abs/2103.03638)
+
+   Mark Niklas Müller, Gleb Makarchuk, Gagandeep Singh, Markus Püschel, Martin Vechev
+   
+   arXiv 2021.
+   
 *  [Efficient Certification of Spatial Robustness](https://arxiv.org/abs/2009.09318)
 
    Anian Ruoss, Maximilian Baader, Mislav Balunovic, Martin Vechev
@@ -604,6 +610,8 @@ Contributors
 * Christoph Müller - christoph.mueller@inf.ethz.ch
 
 * [François Serre](https://fserre.github.io/) (contact for GPUPoly) - serref@inf.ethz.ch
+
+* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) - mark.mueller@inf.ethz.ch
 
 * Gleb Makarchuk (contact for FConv library for relaxation computation) -  hlebm@ethz.ch gleb.makarchuk@gmail.com 
 
