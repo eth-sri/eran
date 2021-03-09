@@ -300,7 +300,7 @@ Publications
    
 *  [Scaling Polyhedral Neural Network Verification on GPUs](https://www.sri.inf.ethz.ch/publications/mller2021neural)
 
-   Christoph Müller, Fran&ccedilois Serre, Gagandeep Singh, Markus Puschel, Martin Vechev
+   Christoph Müller, Francois Serre, Gagandeep Singh, Markus Puschel, Martin Vechev
    
    MLSys 2021.
    
