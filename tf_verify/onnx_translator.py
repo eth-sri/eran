@@ -368,7 +368,16 @@ class ONNXTranslator:
 			self.shape_map, self.constants_map, self.output_node_map, self.input_node_map, self.placeholdernames = prepare_model(model)
 		else:
 			assert 0, 'not onnx model'
-	
+
+	def find_input(self):
+		inputs_dir = {x.name: x for x in self.model.graph.input}
+		all_inputs = [x for y in self.nodes for x in y.input]
+		[all_inputs.remove(x) for y in self.nodes for x in y.output if x in all_inputs]
+		[all_inputs.remove(x.name) for x in self.model.graph.initializer if x.name in all_inputs]
+
+		assert all_inputs[0] in inputs_dir
+
+		return inputs_dir[all_inputs[0]]
 	
 		
 	def translate(self):
@@ -384,7 +393,8 @@ class ONNXTranslator:
 		    operation_types[i] when analyzed with domain (domain is currently either 'deepzono' or 'deeppoly', as of 8/30/18)
 		"""
 		operation_types     = ["Placeholder"]
-		placeholder = self.model.graph.input[0]
+		# placeholder = self.model.graph.input[0]
+		placeholder = self.find_input()
 		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
