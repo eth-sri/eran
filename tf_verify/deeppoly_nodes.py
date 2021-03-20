@@ -404,6 +404,36 @@ class DeeppolyTanhNode(DeeppolyNonlinearity):
         return element
 
 
+class DeeppolyLeakyReluNode(DeeppolyNonlinearity):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+        """
+        transforms element with handle_tanh_layer
+        
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            man to which element belongs
+        element : ElinaAbstract0Ptr
+            abstract element onto which the transformer gets applied
+        
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            abstract element after the transformer
+        """
+        length = self.output_length
+        
+        if False:
+            refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
+        else:
+            handle_leakyrelu_layer(*self.get_arguments(man, element), use_default_heuristic)
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
+        nn.activation_counter+=1
+        if testing:
+            return element, nlb[-1], nub[-1]
+
+        return element
+
 class DeeppolyConv2dNode:
     def __init__(self, filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape):
         """
