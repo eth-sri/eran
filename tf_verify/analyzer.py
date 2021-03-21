@@ -284,7 +284,7 @@ class Analyzer:
                 
                 for is_greater_tuple in or_list:
                     if is_greater_tuple[1] == -1:
-                        if nub[-1][is_greater_tuple[0]] <= float(is_greater_tuple[2]):
+                        if nub[-1][is_greater_tuple[0]] < float(is_greater_tuple[2]):
                             or_result = True
                             break
                     else: 
