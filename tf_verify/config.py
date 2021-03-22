@@ -49,6 +49,7 @@ class config:
     subset = None
     target = None # 
     epsfile = None
+    vnn_lib_spec = None # Use inputs and constraints defined in a file respecting the vnn_lib standard
 
     # refine options
     use_milp = True # Whether to use MILP

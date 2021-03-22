@@ -101,11 +101,11 @@ Install cddlib:
 ```
 git clone https://github.com/cddlib/cddlib.git
 cd cddlib
+./bootstrap
 ./configure
 make
 make install
 cd ..
-
 ```
 
 Install Gurobi:
@@ -120,16 +120,14 @@ cd ../../
 cp lib/libgurobi90.so /usr/lib
 python3 setup.py install
 cd ../../
-
 ```
 
 Update environment variables:
 ```
-export GUROBI_HOME="Current_directory/gurobi900/linux64"
-export PATH="${PATH}:${GUROBI_HOME}/bin"
-export CPATH="${CPATH}:${GUROBI_HOME}/include"
+export GUROBI_HOME="$PWD/gurobi900/linux64"
+export PATH="$PATH:${GUROBI_HOME}/bin"
+export CPATH="$CPATH:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
-
 ```
 
 Install ELINA:
@@ -157,7 +155,6 @@ We also provide scripts that will install ELINA and all the necessary dependenci
 ```
 sudo ./install.sh
 source gurobi_setup_path.sh
-
 ```
 
 

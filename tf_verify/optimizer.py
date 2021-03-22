@@ -21,7 +21,7 @@ from deeppoly_nodes import *
 try:
     from gpupoly import Network
 except:
-    print("gpupoly not available.")
+    raise Warning("gpupoly not available.")
 from functools import reduce
 import numpy as np
 from read_net_file import *
