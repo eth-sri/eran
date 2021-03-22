@@ -77,7 +77,7 @@ class TFTranslator:
 		This constructor takes a reference to a TensorFlow Operation or Tensor or Keras model and then applies the two TensorFlow functions
 		graph_util.convert_variables_to_constants and graph_util.remove_training_nodes to cleanse the graph of any nodes that are linked to training. This leaves us with 
 		the nodes you need for inference. 
-		In the resulting graph there should only be tf.Operations left that have one of the following types [Const, MatMul, Add, BiasAdd, Conv2D, Reshape, MaxPool, AveragePool, Placeholder, Relu, Sigmoid, Tanh]
+		In the resulting graph there should only be tf.Operations left that have one of the following types [Const, MatMul, Add, BiasAdd, Conv2D, Reshape, MaxPool, AveragePool, Placeholder, Relu, Sigmoid, Tanh, LeakyRelu]
 		If the input should be a Keras model we will ignore operations with type Pack, Shape, StridedSlice, and Prod such that the Flatten layer can be used.
 		
 		Arguments
@@ -210,7 +210,7 @@ class TFTranslator:
 						deeppoly_res = in_out_info
 						deepzono_res = in_out_info
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
-					elif op.type in ["Relu", "Sigmoid", "Tanh", "Sign", "Softmax"]:
+					elif op.type in ["Relu", "Sigmoid", "Tanh", "Sign", "Softmax", "LeakyRelu"]:
 						deeppoly_res = self.nonlinearity_resources(op) + in_out_info
 						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})

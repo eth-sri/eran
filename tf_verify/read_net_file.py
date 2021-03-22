@@ -94,6 +94,7 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch, is_gpupoly):
     last_layer = None
     h,w,c = None, None, None
     is_conv = False
+    
     while True:
         curr_line = net.readline()[:-1]
         if 'Normalize' in curr_line:
@@ -121,7 +122,7 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch, is_gpupoly):
         elif 'SkipCat' in curr_line:
             print("skip concatenation ",x.shape[0],x.shape[1],y.shape[0],y.shape[1])
             x = tf.concat([y,x],1)
-        elif curr_line in ["ReLU", "Sigmoid", "Tanh", "Sign", "Affine"]:
+        elif curr_line in ["ReLU", "Sigmoid", "Tanh", "Sign", "Affine", "LeakyRelu"]:
             print(curr_line)
             W = None
             
@@ -138,6 +139,8 @@ def read_tensorflow_net(net_file, in_len, is_trained_with_pytorch, is_gpupoly):
                 x = tf.nn.relu(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
             elif(curr_line=="Sigmoid"):
                 x = tf.nn.sigmoid(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
+            elif(curr_line=="LeakyRelu"):
+                x = tf.nn.leaky_relu(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
             elif(curr_line=="Sign"):
                 x = tf.math.sign(tf.nn.bias_add(tf.matmul(tf.reshape(x, [1, numel(x)]),W), b))
             else:
