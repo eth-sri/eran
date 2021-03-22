@@ -100,9 +100,10 @@ rm mpfr-4.1.0.tar.xz
 
 Install cddlib:
 ```
-git clone https://github.com/cddlib/cddlib.git
-cd cddlib
-./bootstrap
+wget https://github.com/cddlib/cddlib/releases/download/0.94m/cddlib-0.94m.tar.gz
+tar zxf cddlib-0.94m.tar.gz
+rm cddlib-0.94m.tar.gz
+cd cddlib-0.94m
 ./configure
 make
 make install
@@ -118,7 +119,7 @@ sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
 cd ../../
-cp lib/libgurobi90.so /usr/lib
+cp lib/libgurobi90.so /usr/local/lib
 python3 setup.py install
 cd ../../
 ```

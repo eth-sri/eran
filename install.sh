@@ -50,10 +50,9 @@ make install
 cd ..
 rm mpfr-4.1.0.tar.xz
 
-
-git clone https://github.com/cddlib/cddlib.git
-cd cddlib
-./bootstrap
+wget https://github.com/cddlib/cddlib/releases/download/0.94m/cddlib-0.94m.tar.gz
+tar zxf cddlib-*.tar.gz
+cd cddlib-*
 ./configure
 make
 make install
@@ -65,7 +64,7 @@ cd gurobi903/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
-cp ../../lib/libgurobi90.so /usr/lib
+cp ../../lib/libgurobi90.so /usr/local/lib
 cd ../..
 python3 setup.py install
 cd ../..
@@ -84,11 +83,11 @@ then
 else
     ./configure -use-deeppoly -use-gurobi -use-fconv
 fi
-#cd ./fppoly/
-#ln -s ../../gurobi903/linux64/include/gurobi_c.h
-#cd ..
+cd ./fppoly/
+ln -s ../../gurobi903/linux64/include/gurobi_c.h
+cd ..
 cd ./gpupoly/
-cmake
+cmake .
 cd ..
 make
 make install
