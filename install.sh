@@ -84,8 +84,11 @@ then
 else
     ./configure -use-deeppoly -use-gurobi -use-fconv
 fi
-cd ./fppoly/
-ln -s ../../gurobi903/linux64/include/gurobi_c.h
+#cd ./fppoly/
+#ln -s ../../gurobi903/linux64/include/gurobi_c.h
+#cd ..
+cd ./gpupoly/
+cmake
 cd ..
 make
 make install

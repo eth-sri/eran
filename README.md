@@ -48,13 +48,12 @@ Note that it might be required to use `sudo -E` to for the right environment var
 
 Ensure that the following tools are available:
 python-distutils,
-cmake,
+cmake (>=3.17.1),
 autoconf,
 libtool,
 pdftex.  
 On Ubuntu systems they can be installed using (setting the python version in use):
 ```
-sudo apt-get install python3.X-distutils
 sudo apt-get install build-essential
 sudo apt-get install cmake
 sudo apt-get install autoconf
@@ -136,7 +135,10 @@ Install ELINA:
 ```
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure -use-deeppoly -use-gurobi -use-fconv
+./configure -use-deeppoly -use-gurobi -use-fconv -use-cuda
+cd ./gpupoly/
+cmake
+cd ..
 make
 make install
 cd ..
