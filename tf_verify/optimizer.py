@@ -27,7 +27,7 @@ import numpy as np
 from read_net_file import *
 
 
-operations_for_neuron_count = ["Relu", "Sigmoid", "Tanh", "MaxPool"]
+operations_for_neuron_count = ["Relu", "Sigmoid", "Tanh", "MaxPool", "LeakyRelu"]
 
 
 class Optimizer:
@@ -198,6 +198,12 @@ class Optimizer:
                 nn.layertypes.append('Sign')
                 if domain == 'deeppoly':
                    execute_list.append(DeeppolySignNode(*self.resources[i][domain]))
+                nn.numlayer += 1
+                i += 1
+            elif self.operations[i] == "LeakyRelu":
+                nn.layertypes.append('LeakyRelu')
+                if domain == 'deeppoly':
+                   execute_list.append(DeeppolyLeakyReluNode(*self.resources[i][domain]))
                 nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Sigmoid":
