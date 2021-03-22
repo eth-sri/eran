@@ -89,8 +89,8 @@ def get_ineqs_zono(varsid):
             continue
 
         linexpr0 = generate_linexpr0(KAct.offset, varsid, coeffs)
-        element = elina_abstract0_assign_linexpr_array(KAct.man, True, Krelu.element,
-                                                       Krelu.tdim, linexpr0, 1, None)
+        element = elina_abstract0_assign_linexpr_array(KAct.man, True, KAct.element,
+                                                       KAct.tdim, linexpr0, 1, None)
         bound_linexpr = elina_abstract0_bound_dimension(KAct.man, KAct.element,
                                                         KAct.offset + KAct.length)
         upper_bound = bound_linexpr.contents.sup.contents.val.dbl
@@ -98,16 +98,13 @@ def get_ineqs_zono(varsid):
     return input_hrep
 
 
-def sparse_heuristic_with_cutoff(length, lb, ub):
+def sparse_heuristic_with_cutoff(length, lb, ub, K=3, s=-2):
     assert length == len(lb) == len(ub)
 
     all_vars = [i for i in range(length) if lb[i] < 0 < ub[i]]
     areas = {var: -lb[var] * ub[var] for var in all_vars}
-    # Sort vars by descending area
-    all_vars = sorted(all_vars, key=lambda var: -areas[var])
 
     assert len(all_vars) == len(areas)
-    K = 3
     sparse_n = config.sparse_n
     cutoff = 0.05
     # Sort vars by descending area
@@ -123,10 +120,12 @@ def sparse_heuristic_with_cutoff(length, lb, ub):
         vars_above_cutoff = vars_above_cutoff[grouplen:]
         if grouplen <= K:
             kact_args.append(group)
-        else:
-            sparsed_combs = generate_sparse_cover(grouplen, K)
+        elif K>2:
+            sparsed_combs = generate_sparse_cover(grouplen, K, s=s)
             for comb in sparsed_combs:
                 kact_args.append(tuple([group[i] for i in comb]))
+        elif K==2:
+            raise RuntimeError("K=2 is not supported")
 
     # Also just apply 1-relu for every var.
     for var in all_vars:
@@ -140,7 +139,7 @@ def sparse_heuristic_with_cutoff(length, lb, ub):
     return kact_args
 
 
-def sparse_heuristic_curve(length, lb, ub, is_sigm):
+def sparse_heuristic_curve(length, lb, ub, is_sigm, s=-2):
     assert length == len(lb) == len(ub)
     all_vars = [i for i in range(length)]
     K = 3
@@ -161,7 +160,7 @@ def sparse_heuristic_curve(length, lb, ub, is_sigm):
         if grouplen <= K:
             kact_args.append(group)
         else:
-            sparsed_combs = generate_sparse_cover(grouplen, K)
+            sparsed_combs = generate_sparse_cover(grouplen, K, s=s)
             for comb in sparsed_combs:
                 kact_args.append(tuple([group[i] for i in comb]))
 
@@ -179,8 +178,7 @@ def sparse_heuristic_curve(length, lb, ub, is_sigm):
     return kact_args
 
 
-def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain,
-                            activation_type, approx=True):
+def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi, constraint_groups, need_pop, domain, activation_type, K=3, s=-2, approx=True):
     import deepzono_nodes as dn
     if need_pop:
         constraint_groups.pop()
@@ -189,9 +187,9 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     ubi = np.asarray(ubi, dtype=np.double)
 
     if activation_type == "ReLU":
-        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi)
+        kact_args = sparse_heuristic_with_cutoff(length, lbi, ubi, K=K, s=s)
     else:
-        kact_args = sparse_heuristic_curve(length, lbi, ubi, activation_type == "Sigmoid")
+        kact_args = sparse_heuristic_curve(length, lbi, ubi, activation_type == "Sigmoid", s=s)
 
     kact_cons = []
     tdim = ElinaDim(offset+length)
@@ -238,10 +236,20 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
                 input_hrep.append([upper_bound[i]] + [-c for c in coeffs])
                 i = i + 1
             input_hrep_array.append(input_hrep)
+    end_input = time.time()
+
+    # kact_results = list(map(make_kactivation_obj, input_hrep_array))
+
+    # end1 = time.time()
 
     with multiprocessing.Pool(config.numproc) as pool:
         # kact_results = pool.map(make_kactivation_obj, input_hrep_array)
         kact_results = pool.starmap(make_kactivation_obj, zip(input_hrep_array, len(input_hrep_array) * [approx]))
+
+    # end2 = time.time()
+
+    # if end2-end_input>10:
+    #     print(f"list(map()) time: {end1-end_input:.3f}, multiprocessing time: {end2-end1:.3f}")
 
     gid = 0
     for inst in kact_results:
@@ -252,7 +260,7 @@ def encode_kactivation_cons(nn, man, element, offset, layerno, length, lbi, ubi,
     end = time.time()
 
     if config.debug:
-        print('kactivation time spent: ' + str(end-start))
+        print(f'total k-activation time: {end-start:.3f}. Time for input: {end_input-start:.3f}. Time for k-activation constraints {end-end_input:.3f}.')
     if domain == 'refinezono':
         element = dn.remove_dimensions(man, element, offset+length, 1)
 

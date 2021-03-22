@@ -43,7 +43,23 @@ git clone https://github.com/eth-sri/ERAN.git
 cd ERAN
 ```
 
-The dependencies for ERAN can be installed step by step as follows (sudo rights might be required):
+The dependencies for ERAN can be installed step by step as follows (sudo rights might be required):  
+Note that it might be required to use `sudo -E` to for the right environment variables to be set.
+
+Ensure that the following tools are available:
+python-distutils,
+cmake (>=3.17.1),
+autoconf,
+libtool,
+pdftex.  
+On Ubuntu systems they can be installed using (setting the python version in use):
+```
+sudo apt-get install build-essential
+sudo apt-get install cmake
+sudo apt-get install autoconf
+sudo apt-get install libtool
+sudo apt-get install texlive-latex-base
+```
 
 Install m4:
 ```
@@ -84,14 +100,14 @@ rm mpfr-4.1.0.tar.xz
 
 Install cddlib:
 ```
-git clone https://github.com/cddlib/cddlib.git
-cd cddlib
-./bootstrap
+wget https://github.com/cddlib/cddlib/releases/download/0.94m/cddlib-0.94m.tar.gz
+tar zxf cddlib-0.94m.tar.gz
+rm cddlib-0.94m.tar.gz
+cd cddlib-0.94m
 ./configure
 make
 make install
 cd ..
-
 ```
 
 Install Gurobi:
@@ -103,26 +119,27 @@ sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
 cd ../../
-cp lib/libgurobi90.so /usr/lib
+cp lib/libgurobi90.so /usr/local/lib
 python3 setup.py install
 cd ../../
-
 ```
 
 Update environment variables:
 ```
-export GUROBI_HOME="Current_directory/gurobi900/linux64"
-export PATH="${PATH}:${GUROBI_HOME}/bin"
-export CPATH="${CPATH}:${GUROBI_HOME}/include"
+export GUROBI_HOME="$PWD/gurobi900/linux64"
+export PATH="$PATH:${GUROBI_HOME}/bin"
+export CPATH="$CPATH:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
-
 ```
 
 Install ELINA:
 ```
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
-./configure -use-deeppoly -use-gurobi -use-fconv
+./configure -use-deeppoly -use-gurobi -use-fconv -use-cuda
+cd ./gpupoly/
+cmake
+cd ..
 make
 make install
 cd ..
@@ -136,7 +153,6 @@ mkdir build
 make shared_object
 cp ./build/libgeometric.so /usr/lib
 cd ../..
-
 ```
 
 We also provide scripts that will install ELINA and all the necessary dependencies. One can run it as follows:
@@ -144,7 +160,6 @@ We also provide scripts that will install ELINA and all the necessary dependenci
 ```
 sudo ./install.sh
 source gurobi_setup_path.sh
-
 ```
 
 
@@ -613,6 +628,8 @@ Contributors
 * [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
 
 * [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
+
+* [Mark Müller](https://www.sri.inf.ethz.ch/people/mark) mark.mueller@inf.ethz.ch
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 

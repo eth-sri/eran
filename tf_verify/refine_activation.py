@@ -29,10 +29,10 @@ if config.device == Device.CPU:
     from fppoly import *
 else:
     from fppoly_gpu import *
+import time
 
 
-def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp,
-                                         use_default_heuristic, domain, approx=True):
+def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, domain, K=3, s=-2, use_milp=False, approx=True):
     """
     refines the relu transformer
 
@@ -63,17 +63,24 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
         length = get_num_neurons_in_layer(man, element, predecessor_index)
     lbi = nlb[predecessor_index]
     ubi = nub[predecessor_index]
-    first_FC = -1
+    second_FC = -2
     timeout = timeout_milp
+    affine_layers = np.array([x=="Conv" or x=="FC" for x in nn.layertypes]).nonzero()[0]
     for i in range(nn.numlayer):
+        if nn.layertypes[i] == 'Conv':
+            if second_FC == -2:
+                second_FC = -1
         if nn.layertypes[i] == 'FC':
-            first_FC = i
-            break
+            if second_FC == -2:
+                second_FC = -1
+            else:
+                second_FC = i
+                break
 
     if nn.activation_counter==0:
         if domain=='deepzono':
             encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
-                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], approx)
+                                    relu_groups, False, 'refinezono', nn.layertypes[layerno], K=K, s=s, approx=approx)
             if nn.layertypes[layerno] == 'ReLU':
                 element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
@@ -83,7 +90,7 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
             return element
         else:
             encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
-                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], approx)
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], K=K, s=s, approx=approx)
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':
@@ -92,19 +99,25 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 handle_tanh_layer(*self.get_arguments(man, element), use_default_heuristic)
 
     else:
-        if predecessor_index==first_FC:
-            use_milp = 1
+        if 0<sum((affine_layers>=second_FC).__and__(predecessor_index>=affine_layers))<=config.n_milp_refine: #predecessor_index >= second_FC :#and domain=="deepzono" and predecessor_index>second_FC:
+            use_milp_temp = use_milp
         else:
-            use_milp = 0
+            use_milp_temp = 0
             timeout = timeout_lp
-        use_milp = use_milp and config.use_milp
+        # use_milp = use_milp and config.use_milp
         candidate_vars = []
         for i in range(length):
             if((lbi[i]<0 and ubi[i]>0) or (lbi[i]>0)):
                  candidate_vars.append(i)
         #TODO handle residual layers here
-        if config.refine_neurons==True:
-            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index, predecessor_index, length, nlb, nub, relu_groups, use_milp,  candidate_vars, timeout)
+        if config.refine_neurons==True and nn.layertypes[predecessor_index]=="FC":
+            start = time.time()
+            resl, resu, indices = get_bounds_for_layer_with_milp(nn, nn.specLB, nn.specUB, predecessor_index,
+                                                                 predecessor_index, length, nlb, nub, relu_groups,
+                                                                 use_milp_temp,  candidate_vars, timeout)
+            end = time.time()
+            if config.debug:
+                print(f"Refinement of bounds time: {end-start:.3f}. MILP used: {use_milp_temp}. {len(indices)} bounds refined.")
             nlb[predecessor_index] = resl
             nub[predecessor_index] = resu
 
@@ -112,8 +125,8 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
         ubi = nub[predecessor_index]
 
         if domain == 'deepzono':
-            encode_activation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinezono', nn.layertypes[layerno])
-            if config.refine_neurons==True:
+            encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi, relu_groups, False, 'refinezono', nn.layertypes[layerno])
+            if config.refine_neurons==True and nn.layertypes[predecessor_index]=="FC":
                 j = 0
                 for i in range(length):
                     if((j < len(indices)) and (i==indices[j])):
@@ -128,11 +141,11 @@ def refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_
                 element = relu_zono_layerwise(man,True,element,offset, length, use_default_heuristic)
                 return element
         else:
-            if config.refine_neurons:
+            if config.refine_neurons and nn.layertypes[predecessor_index]=="FC":
                 for j in indices:
                     update_bounds_for_neuron(man,element,predecessor_index,j,resl[j],resu[j])
             encode_kactivation_cons(nn, man, element, offset, predecessor_index, length, lbi, ubi,
-                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], approx)
+                                    relu_groups, False, 'refinepoly', nn.layertypes[layerno], K=K, s=s, approx=approx)
             if nn.layertypes[layerno] == 'ReLU':
                 handle_relu_layer(*self.get_arguments(man, element), use_default_heuristic)
             elif nn.layertypes[layerno] == 'Sigmoid':

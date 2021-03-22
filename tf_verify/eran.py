@@ -58,7 +58,8 @@ class ERAN:
     def analyze_box(self, specLB, specUB, domain, timeout_lp, timeout_milp, use_default_heuristic,
                     output_constraints=None, lexpr_weights= None, lexpr_cst=None, lexpr_dim=None, uexpr_weights=None,
                     uexpr_cst=None, uexpr_dim=None, expr_size=0, testing = False,label=-1, prop = -1,
-                    spatial_constraints=None, approx_k=True):
+                    spatial_constraints=None, K=3, s=-2, timeout_final_lp=100, timeout_final_milp=100, use_milp=False,
+                    complete=False, terminate_on_failure=True, partial_milp=False, max_milp_neurons=30, approx_k=True):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
         
@@ -85,12 +86,22 @@ class ERAN:
         nn.specUB = specUB
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list, output_info = self.optimizer.get_deepzono(nn,specLB, specUB)
-            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic,label, prop, testing)
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints,
+                                use_default_heuristic, label, prop, testing, K=K, s=s,
+                                timeout_final_lp=timeout_final_lp, timeout_final_milp=timeout_final_milp,
+                                use_milp=use_milp, complete=complete,
+                                partial_milp=partial_milp, max_milp_neurons=max_milp_neurons)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             execute_list, output_info = self.optimizer.get_deeppoly(nn, specLB, specUB, lexpr_weights, lexpr_cst, lexpr_dim, uexpr_weights, uexpr_cst, uexpr_dim, expr_size, spatial_constraints)
-            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, label, prop, testing, approx_k)
-        dominant_class, nlb, nub, failed_labels, x = analyzer.analyze()
-
+            analyzer = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints,
+                                use_default_heuristic, label, prop, testing, K=K, s=s,
+                                timeout_final_lp=timeout_final_lp, timeout_final_milp=timeout_final_milp,
+                                use_milp=use_milp, complete=complete,
+                                partial_milp=partial_milp, max_milp_neurons=max_milp_neurons,
+                                approx_k=approx_k)
+        dominant_class, nlb, nub, failed_labels, x = analyzer.analyze(terminate_on_failure=terminate_on_failure)
+        if terminate_on_failure:
+            failed_labels = None # rather return nothing than an incomplete list
             
         if testing:
             return dominant_class, nn, nlb, nub, output_info

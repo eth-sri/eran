@@ -28,11 +28,26 @@ def milp_callback(model, where):
     if where == GRB.Callback.MIP:
         obj_best = model.cbGet(GRB.Callback.MIP_OBJBST)
         obj_bound = model.cbGet(GRB.Callback.MIP_OBJBND)
-        if obj_bound > 0:
+        if obj_bound > 0.01:
+            model.terminate()
+        if obj_best < -0.01:
             model.terminate()
 
+def lp_callback(model, where):
+    # pass
+    if where == GRB.Callback.SIMPLEX:
+        obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
+        if model.cbGet(GRB.Callback.SPX_PRIMINF) == 0 and obj_best < -0.01: # and model.cbGet(GRB.Callback.SPX_DUALINF) == 0:
+            print("Used simplex terminate")
+            model.terminate()
+    if where == GRB.Callback.BARRIER:
+        obj_best = model.cbGet(GRB.Callback.SPX_OBJVAL)
+        if model.cbGet(GRB.Callback.BARRIER_PRIMINF) == 0  and obj_best < -0.01: # and model.cbGet(GRB.Callback.BARRIER_DUALINF) == 0
+            model.terminate()
+            print("Used barrier terminate")
 
-def handle_conv(model, var_list,start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp, is_nchw=False):
+
+def handle_conv(model, var_list, start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp, is_nchw=False):
 
     num_out_neurons = np.prod(out_shape)
     num_in_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
@@ -108,25 +123,27 @@ def handle_conv(model, var_list,start_counter, filters,biases,filter_size,input_
 
 
 def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, strides, output_shape, pad_top, pad_left, lbi, ubi, lbi_prev, ubi_prev, use_milp):
-
     use_milp = use_milp and config.use_milp
+
     start = len(var_list)
     num_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
     binary_counter = start
     maxpool_counter = start
+
     if(use_milp==1):
         maxpool_counter = start + num_neurons
         for j in range(num_neurons):
             var_name = "x" + str(start+j)
             var = model.addVar(vtype=GRB.BINARY, name=var_name)
-
             var_list.append(var)
+
     o1 = output_shape[1]
     o2 = output_shape[2]
     o3 = output_shape[3]
     output_size = o1*o2*o3
     i12 = input_shape[1]*input_shape[2]
     o12 = output_shape[2]*output_shape[3]
+
     #print("strides ", strides, pad_top, pad_left)
     for j in range(output_size):
         var_name = "x" + str(maxpool_counter+j)
@@ -148,28 +165,27 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
         l = 0
         for x_shift in range(pool_size[0]):
             for y_shift in range(pool_size[1]):
-                x_val = out_x*strides[0] + x_shift - pad_top
+                x_val = out_x*strides[0] + x_shift - pad_left
                 if(x_val<0 or x_val>=input_shape[0]):
                     continue
-                y_val = out_y*strides[1] + y_shift - pad_left
+                y_val = out_y*strides[1] + y_shift - pad_top
                 if(y_val < 0 or y_val>=input_shape[1]):
                     continue
                 pool_cur_dim = x_val*i12 + y_val*input_shape[2] + inp_z
                 if pool_cur_dim >= num_neurons:
-                    
                     continue    
                 pool_map.append(pool_cur_dim)
                 lb = lbi_prev[pool_cur_dim] 
                 ub = ubi_prev[pool_cur_dim]
                 sum_l = sum_l + lb       
-                if ub>max_u:
+                if ub > max_u:
                     max_u = ub
                     max_u_var = pool_cur_dim
                 if lb > max_l:   
                     max_l = lb
                     max_l_var = pool_cur_dim
                 l = l + 1     
-        dst_index = maxpool_counter+out_pos
+        dst_index = maxpool_counter + out_pos
                 
         if use_milp==1:
             binary_expr = LinExpr()
@@ -181,7 +197,6 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
                     continue
 
                 # y >= x
-
                 expr = var_list[dst_index] -  var_list[src_var]
                 model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
@@ -190,19 +205,18 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
                 for j in range(len(pool_map)):
                     if j==l:
                         continue
-                    if(sup[j]>max_u_rest):
-                        max_u_rest = sup[j]
+                    if(ubi_prev[j]>max_u_rest):
+                        max_u_rest = ubi_prev[j]
 
-                cst = max_u_rest-inf[l]
-
+                cst = max_u_rest-lbi_prev[l]
                 expr = var_list[dst_index] - var_list[src_var] + cst*var_list[binary_var]
                 model.addConstr(expr, GRB.LESS_EQUAL, cst)
 
-	        # indicator constraints
+	            # indicator constraints
                 model.addGenConstrIndicator(var_list[binary_var], True, var_list[dst_index]-var_list[src_var], GRB.EQUAL, 0.0)
+                binary_expr += var_list[binary_var]
 
-                binary_expr+=var_list[binary_var]
-
+            # only one indicator can be true
             model.addConstr(binary_expr, GRB.EQUAL, 1)
 
         else:
@@ -212,16 +226,17 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
                     continue
                 ub = ubi_prev[pool_map[l]]
                 if ub >= max_l:
-                   
                    flag = False
                    break
-            if flag==True:
+            if flag:
+                # one variable dominates all others
                 src_var = max_l_var + src_counter
                 expr = var_list[dst_index] - var_list[src_var]
                 model.addConstr(expr, GRB.EQUAL, 0)
             else:
+                # No one variable dominates all other
                 add_expr = LinExpr()
-                add_expr+=-1*var_list[dst_index]
+                add_expr += -var_list[dst_index]
                 for l in range(len(pool_map)):
                     src_index = pool_map[l]
                     src_var = src_index + src_counter
@@ -229,9 +244,8 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
                     expr = var_list[dst_index] - var_list[src_var]
                     model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
-                    add_expr+=var_list[src_var]
+                    add_expr += var_list[src_var]
                 model.addConstr(add_expr, GRB.GREATER_EQUAL, sum_l - max_l)
-
 
     return maxpool_counter
 
@@ -297,34 +311,44 @@ def _add_kactivation_constraints(model, var_list, constraint_groups, x_counter, 
             model.addConstr(expr >= 0)
 
 
-def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_groupsi, use_milp):
+def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_groupsi, use_milp, partial_milp_neurons):
     use_milp = use_milp and config.use_milp
     #print("relu groups ")
-    start= len(var_list)
-    binary_counter = start
-    relu_counter = start
-    #print("neurons ", num_neurons)
-    if(use_milp==1):
-    #if num_neurons <= 1000:
-        #indicator variables
-        relu_counter = start + num_neurons
-        for j in range(num_neurons):
-           var_name = "x" + str(start+j)
-           var = model.addVar(vtype=GRB.BINARY, name=var_name)
-           var_list.append(var)
 
-    # relu variables
+    start = len(var_list)
+    relu_counter = start
+
+    cross_over_idx = list(np.nonzero(np.array(lbi)*np.array(ubi)<0)[0])
+    width = np.array(ubi) - np.array(lbi)
+    cross_over_idx = sorted(cross_over_idx, key= lambda x: -width[x])
+
+    milp_encode_idx = cross_over_idx if use_milp else cross_over_idx[:partial_milp_neurons]
+    temp_idx = np.ones(num_neurons, dtype=bool)
+    temp_idx[milp_encode_idx] = False
+    relax_encode_idx = np.arange(num_neurons)[temp_idx]
+
+    assert len(relax_encode_idx) + len(milp_encode_idx) == num_neurons
+
+    # #print("neurons ", num_neurons)
+    if len(milp_encode_idx)>0:
+        for i, j in enumerate(milp_encode_idx):
+            var_name = "x_bin_" + str(start + i)
+            var_bin = model.addVar(vtype=GRB.BINARY, name=var_name)
+            var_list.append(var_bin)
+            relu_counter += 1
+
+    # relu output variables
     for j in range(num_neurons):
         var_name = "x" + str(relu_counter+j)
-        upper_bound = max(0,ubi[j])
+        upper_bound = max(0.0, ubi[j])
         var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
         var_list.append(var)
 
 
-    if(use_milp==1):
-        #print("MILP here")
-    #if num_neurons <= 1000:
-        for j in range(num_neurons):
+    if len(milp_encode_idx)>0:
+        for i, j in enumerate(milp_encode_idx):
+            var_bin = var_list[start+i]
+
             if(ubi[j]<=0):
                expr = var_list[relu_counter+j]
                model.addConstr(expr, GRB.EQUAL, 0)
@@ -333,7 +357,7 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
                model.addConstr(expr, GRB.EQUAL, 0)
             else:
                # y <= x - l(1-a)
-               expr = var_list[relu_counter+j] - var_list[affine_counter+j] - lbi[j]*var_list[binary_counter+j]
+               expr = var_list[relu_counter+j] - var_list[affine_counter+j] - lbi[j] * var_bin
                model.addConstr(expr, GRB.LESS_EQUAL, -lbi[j])
 
                # y >= x
@@ -341,7 +365,7 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
                model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
                # y <= u.a
-               expr = var_list[relu_counter+j] - ubi[j]*var_list[binary_counter+j]
+               expr = var_list[relu_counter+j] - ubi[j] * var_bin
                model.addConstr(expr, GRB.LESS_EQUAL, 0)
 
                # y >= 0
@@ -349,16 +373,16 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
                model.addConstr(expr, GRB.GREATER_EQUAL, 0)
 
                # indicator constraint
-               model.addGenConstrIndicator(var_list[binary_counter+j], True, var_list[affine_counter+j], GRB.GREATER_EQUAL, 0.0)
+               model.addGenConstrIndicator(var_bin, True, var_list[affine_counter+j], GRB.GREATER_EQUAL, 0.0)
+
     if len(relu_groupsi)>0:
-        if use_milp==0:
-            for j in range(num_neurons):
-                if ubi[j] <= 0:
-                    expr = var_list[relu_counter+j]
-                    model.addConstr(expr, GRB.EQUAL, 0)
-                elif lbi[j] >= 0:
-                    expr = var_list[relu_counter+j] - var_list[affine_counter+j]
-                    model.addConstr(expr, GRB.EQUAL, 0)
+        for j in relax_encode_idx:
+            if ubi[j] <= 0:
+                expr = var_list[relu_counter+j]
+                model.addConstr(expr, GRB.EQUAL, 0)
+            elif lbi[j] >= 0:
+                expr = var_list[relu_counter+j] - var_list[affine_counter+j]
+                model.addConstr(expr, GRB.EQUAL, 0)
         _add_kactivation_constraints(model, var_list, relu_groupsi, affine_counter, relu_counter)
 
     return relu_counter
@@ -431,13 +455,18 @@ def handle_tanh_sigmoid(model, var_list, affine_counter, num_neurons, lbi, ubi,
     return y_counter
 
 
-def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is_nchw=False):
-    use_milp = use_milp and config.use_milp
-
+def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is_nchw=False, partial_milp=0, max_milp_neurons=30):
     model = Model("milp")
 
     model.setParam("OutputFlag",0)
     model.setParam(GRB.Param.FeasibilityTol, 1e-5)
+
+    milp_activation_layers = np.nonzero([l in ["ReLU", "Maxpool"] for l in nn.layertypes])[0]
+
+    if partial_milp < 0:
+        partial_milp = sum(milp_activation_layers)
+
+    first_milp_layer = len(nn.layertypes) if partial_milp == 0 else milp_activation_layers[-min(partial_milp,len(milp_activation_layers))]
 
     num_pixels = len(LB_N0)
     #output_counter = num_pixels
@@ -452,6 +481,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
     nn.residual_couter = 0
     nn.pool_counter = 0
     nn.activation_counter = 0
+
     var_list = []
     counter = 0
     # TODO zonotope
@@ -481,32 +511,17 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
             model.addConstr(expr, GRB.EQUAL, 0)
 
     else:
+        # Encode inputs
         for i in range(num_pixels):
             var_name = "x" + str(i)
             var = model.addVar(vtype=GRB.CONTINUOUS, lb = LB_N0[i], ub=UB_N0[i], name=var_name)
             var_list.append(var)
 
-    #for i in range(numlayer):
-    #    if(nn.layertypes[i]=='SkipNet1'):
-    #        start = i+1
-            #break
-    #    elif(nn.layertypes[i]=='SkipNet2'):
-    #        start = i+1
-            #break
-
-    #for i in range(start):
-    #    if(nn.layertypes[i] in ['ReLU','Affine']):
-    #        nn.ffn_counter+=1
-    #    elif(nn.layertypes[i]=='Conv2D'):
-    #        nn.conv_counter+=1
-    #    elif(nn.layertypes[i]=='MaxPooling2D'):
-    #        nn.maxpool_counter+=1
-
     start_counter = []
     start_counter.append(counter)
     for i in range(numlayer):
         #count = nn.ffn_counter + nn.conv_counter
-        if(nn.layertypes[i] in ['SkipCat']):
+        if nn.layertypes[i] in ['SkipCat']:
             continue
         elif nn.layertypes[i] in ['FC']:
             weights = nn.weights[nn.ffn_counter]
@@ -520,10 +535,13 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
 
         elif(nn.layertypes[i]=='ReLU'):
             index = nn.predecessors[i+1][0]
+
+            partial_milp_neurons = max_milp_neurons * (first_milp_layer <= i)
+
             if relu_groups is None:
-                counter = handle_relu(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1], [], use_milp)
+                counter = handle_relu(model, var_list, counter, len(nlb[i]), nlb[index-1], nub[index-1], [], use_milp, partial_milp_neurons)
             else:
-                counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp)
+                counter = handle_relu(model,var_list, counter,len(nlb[i]),nlb[index-1],nub[index-1], relu_groups[nn.activation_counter], use_milp, partial_milp_neurons)
             nn.activation_counter += 1
             start_counter.append(counter)
 
@@ -566,6 +584,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
 
 
         elif(nn.layertypes[i]=='Maxpool'):
+            partial_milp_neurons = max_milp_neurons * (first_milp_layer <= i)
+
             pool_size = nn.pool_size[nn.pool_counter]
             input_shape = nn.input_shape[nn.conv_counter + nn.pool_counter]
             out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter]
@@ -620,7 +640,7 @@ def solver_call(ind):
     model.optimize()
     runtime += model.RunTime
     soll = Cache.lbi[ind] if model.SolCount==0 else model.objbound
-    #print (f"{ind} {model.status} lb ({Cache.lbi[ind]}, {soll}) {model.RunTime}s")
+    # print (f"{ind} {model.status} lb ({Cache.lbi[ind]}, {soll}) {model.RunTime}s")
     sys.stdout.flush()
 
     model.setObjective(obj, GRB.MAXIMIZE)
@@ -628,7 +648,7 @@ def solver_call(ind):
     model.optimize()
     runtime += model.RunTime
     solu = Cache.ubi[ind] if model.SolCount==0 else model.objbound
-    #print (f"{ind} {model.status} ub ({Cache.ubi[ind]}, {solu}) {model.RunTime}s")
+    # print (f"{ind} {model.status} ub ({Cache.ubi[ind]}, {solu}) {model.RunTime}s")
     sys.stdout.flush()
 
     soll = max(soll, Cache.lbi[ind])
@@ -642,41 +662,14 @@ def solver_call(ind):
 def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, output_size, nlb, nub, relu_groups, use_milp, candidate_vars, timeout):
     lbi = nlb[abs_layer_count]
     ubi = nub[abs_layer_count]
-    #numlayer = nn.numlayer
 
-    candidate_length = len(candidate_vars)
-    widths = np.zeros(candidate_length)
-    #avg_weight = np.zeros(candidate_length)
-    #next_layer = nn.calc_layerno() + 1
-
-    # HEURISTIC 2
-    # in case of relu, the gradients are wrt to neurons after relu
-    #logits_diff = np.asarray([nn.logits[config.label]-l for l in nn.logits])
-    # subtract c-th column from each column, where c is correct class label
-    #grad_diff = nn.grads[layerno][:,config.label][:, np.newaxis] - nn.grads[layerno]
-    #deltas = np.nanmin(np.abs(logits_diff[np.newaxis, :] / grad_diff), axis=1)
-    widths = [ubi[j]-lbi[j] for j in range(len(lbi))]
+    widths = [u-l for u, l in zip(ubi,lbi)]
 
     candidate_vars = sorted(candidate_vars, key=lambda k: widths[k])
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, layerno+1, use_milp)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, layerno+1, use_milp, partial_milp=-1)
     resl = [0]*len(lbi)
     resu = [0]*len(ubi)
     indices = []
-
-    num_candidates = len(candidate_vars)
-    if nn.layertypes[layerno] == 'Conv2D':
-        num_candidates = num_candidates
-    else:
-        if(abs_layer_count<=3):
-            #num_candidates = int(len(candidate_vars)/math.pow(5,abs_layer_count-1))
-            num_candidates = len(candidate_vars)
-        else:
-            #int(len(candidate_vars)/math.pow(2,abs_layer_count-4))
-            num_candidates = len(candidate_vars)
-            #num_candidates = num_candidates
-
-    #print("Refine layer ", abs_layer_count, nn.layertypes[abs_layer_count])
-    neuron_map = [0]*len(lbi)
 
     model.setParam(GRB.Param.TimeLimit, timeout)
     model.setParam(GRB.Param.Threads, 2)
@@ -693,62 +686,31 @@ def get_bounds_for_layer_with_milp(nn, LB_N0, UB_N0, layerno, abs_layer_count, o
 
     refined = [False]*len(lbi)
 
-    var_idxs = candidate_vars[:num_candidates]
-    for v in var_idxs:
+    for v in candidate_vars:
         refined[v] = True
         #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
     with multiprocessing.Pool(NUMPROCESSES) as pool:
-       solver_result = pool.map(solver_call, var_idxs)
-    solvetime = 0
-    for (l, u, addtoindices, runtime), ind in zip(solver_result, var_idxs):
+        solver_result = pool.map(solver_call, candidate_vars)
+
+    for (l, u, addtoindices, runtime), ind in zip(solver_result, candidate_vars):
         resl[ind] = l
         resu[ind] = u
+
+        if (l > u):
+            print(f"unsound {ind}")
+
         if addtoindices:
             indices.append(ind)
-        solvetime += runtime
-
-    avg_solvetime = (solvetime+1)/(2*num_candidates+1)
-
-    model.setParam('TimeLimit', avg_solvetime/2)
-    model.update()
-    model.reset()
-
-    var_idxs = candidate_vars[num_candidates:]
-    if nn.layertypes[layerno] == 'Conv2D':
-        if len(var_idxs) >= num_candidates//3:
-            var_idxs = var_idxs[:(num_candidates//3)]
-    else:
-        if len(var_idxs) >= 50:
-            var_idxs = var_idxs[:50]
-    for v in var_idxs:
-        refined[v] = True
-        #print (f"{v} {deltas[v]} {widths[v]} {deltas[v]/widths[v]}")
-
-    with multiprocessing.Pool(NUMPROCESSES) as pool:
-       solver_result = pool.map(solver_call, var_idxs)
-    solvetime = 0
-    for (l, u, addtoindices, runtime), ind in zip(solver_result, var_idxs):
-        resl[ind] = l
-        resu[ind] = u
-        if addtoindices:
-            indices.append(ind)
-        solvetime += runtime
 
     for i, flag in enumerate(refined):
         if not flag:
             resl[i] = lbi[i]
             resu[i] = ubi[i]
 
-    avg_solvetime = solvetime/(2*len(var_idxs)) if len(var_idxs) else 0.0
-
     for i in range(abs_layer_count):
         for j in range(len(nlb[i])):
             if(nlb[i][j]>nub[i][j]):
                 print("fp unsoundness detected ", nlb[i][j],nub[i][j],i,j)
-    for j in range(len(resl)):
-        if (resl[j]>resu[j]):
-            print (f"unsound {j}")
-            resl[j], resu[j] = lbi[j], ubi[j]
 
     return resl, resu, sorted(indices)
 
@@ -809,6 +771,7 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
                 vector_field[nbr]['vy'] - vector_field[idx]['vy'] <= gamma
             )
 
+
 def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
     nn.ffn_counter = 0
     nn.conv_counter = 0
@@ -816,7 +779,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True, partial_milp=-1, max_milp_neurons=1e5)
     #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.TimeLimit, config.timeout_complete)
     

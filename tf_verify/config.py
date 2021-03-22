@@ -35,23 +35,31 @@ class config:
     complete = False # flag specifying where to use complete verification or not
     timeout_lp = 1 # timeout for the LP solver
     timeout_milp = 1 # timeout for the MILP solver
+    timeout_final_lp = 100
+    timeout_final_milp = 100
+    partial_milp = 0 # number of activation layers to encode with milp: 0 none, -1
+    max_milp_neurons = 30 # maximum number of neurons per layer to encode using MILP for partial MILP attempt
     timeout_complete = 60 # timeout for the complete verifier
     use_default_heuristic = True # whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation
     mean = None # the mean used to normalize the data with
     std = None # the standard deviation used to normalize the data with
     num_tests = None # Number of images to test
     from_test = 0 # From which number to start testing
-    debug = False # Whether to display debug info
+    debug = True # Whether to display debug info
     subset = None
     target = None # 
     epsfile = None
+    vnn_lib_spec = None # Use inputs and constraints defined in a file respecting the vnn_lib standard
 
     # refine options
     use_milp = True # Whether to use MILP
     refine_neurons = False # refine neurons
+    n_milp_refine = 1
     sparse_n = 70
     numproc = multiprocessing.cpu_count() # number of processes for milp/lp/krelu
     normalized_region = True
+    k = 3 # group size for k-activation relaxations
+    s = -2 # sparsity parameter for k-activation relaxatin. Maximum overlap. Negative numbers compute s<-K+s. -2 is the default
     # Geometric options
     geometric = False # Whether to do geometric analysis
     attack = False # Whether to attack in geometric analysis

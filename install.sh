@@ -18,15 +18,15 @@ while : ; do
 done
 
 
-wget ftp://ftp.gnu.org/gnu/m4/m4-1.4.1.tar.gz
-tar -xvzf m4-1.4.1.tar.gz
-cd m4-1.4.1
+wget ftp://ftp.gnu.org/pub/gnu/m4/m4-1.4.18.tar.gz
+tar -xvzf m4-1.4.18.tar.gz
+cd m4-1.4.18
 ./configure
 make
 make install
 cp src/m4 /usr/bin
 cd ..
-rm m4-1.4.1.tar.gz
+rm m4-1.4.18.tar.gz
 
 
 
@@ -50,9 +50,9 @@ make install
 cd ..
 rm mpfr-4.1.0.tar.xz
 
-git clone https://github.com/cddlib/cddlib.git
-cd cddlib
-./bootstrap
+wget https://github.com/cddlib/cddlib/releases/download/0.94m/cddlib-0.94m.tar.gz
+tar zxf cddlib-*.tar.gz
+cd cddlib-*
 ./configure
 make
 make install
@@ -64,16 +64,16 @@ cd gurobi903/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
-cp ../../lib/libgurobi90.so /usr/lib
+cp ../../lib/libgurobi90.so /usr/local/lib
 cd ../..
 python3 setup.py install
 cd ../..
 rm gurobi9.0.3_linux64.tar.gz
 
 export GUROBI_HOME="$(pwd)/gurobi903/linux64"
-export PATH="${PATH}:${GUROBI_HOME}/bin"
+export PATH="${PATH}:/usr/lib:${GUROBI_HOME}/bin"
 export CPATH="${CPATH}:${GUROBI_HOME}/include"
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib:/usr/local/lib:${GUROBI_HOME}/lib
 
 git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
@@ -83,7 +83,12 @@ then
 else
     ./configure -use-deeppoly -use-gurobi -use-fconv
 fi
-
+cd ./fppoly/
+ln -s ../../gurobi903/linux64/include/gurobi_c.h
+cd ..
+cd ./gpupoly/
+cmake .
+cd ..
 make
 make install
 cd ..

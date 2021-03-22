@@ -678,7 +678,7 @@ class DeepzonoNonlinearity:
 
 
 class DeepzonoRelu(DeepzonoNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, K=3, s=-2, use_milp=False, approx=True):
         """
         transforms element with relu_zono_layerwise
         
@@ -696,7 +696,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
         """
         offset, length = self.abstract_information
         if refine:
-            element = refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deepzono')
+            element = refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deepzono', use_milp=use_milp)
         else:
             element = relu_zono_layerwise(*self.get_arguments(man, element), use_default_heuristic)
 
@@ -714,7 +714,7 @@ class DeepzonoRelu(DeepzonoNonlinearity):
 
 
 class DeepzonoSigmoid(DeepzonoNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, K=3, s=-2, use_milp=False, approx=True):
         """
         transforms element with sigmoid_zono_layerwise
         
@@ -743,7 +743,7 @@ class DeepzonoSigmoid(DeepzonoNonlinearity):
 
 
 class DeepzonoTanh(DeepzonoNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, approx=True):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, K=3, s=-2, use_milp=False, approx=True):
         """
         transforms element with tanh_zono_layerwise
         
