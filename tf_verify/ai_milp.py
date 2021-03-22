@@ -165,10 +165,10 @@ def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape
         l = 0
         for x_shift in range(pool_size[0]):
             for y_shift in range(pool_size[1]):
-                x_val = out_x*strides[0] + x_shift - pad_left
+                x_val = out_x*strides[0] + x_shift - pad_top
                 if(x_val<0 or x_val>=input_shape[0]):
                     continue
-                y_val = out_y*strides[1] + y_shift - pad_top
+                y_val = out_y*strides[1] + y_shift - pad_left
                 if(y_val < 0 or y_val>=input_shape[1]):
                     continue
                 pool_cur_dim = x_val*i12 + y_val*input_shape[2] + inp_z
