@@ -83,9 +83,9 @@ then
 else
     ./configure -use-deeppoly -use-gurobi -use-fconv
 fi
-cd ./fppoly/
-ln -s ../../gurobi903/linux64/include/gurobi_c.h
-cd ..
+#cd ./fppoly/
+#ln -s ../../gurobi903/linux64/include/gurobi_c.h # Dirty fix when there are issues with CPATH
+#cd ..
 cd ./gpupoly/
 cmake .
 cd ..

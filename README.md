@@ -155,10 +155,10 @@ cp ./build/libgeometric.so /usr/lib
 cd ../..
 ```
 
-We also provide scripts that will install ELINA and all the necessary dependencies. One can run it as follows:
+We also provide scripts that will install ELINA and all the necessary dependencies. One can run it as follows (remove the `-use-cuda` argument on machines without GPU):
 
 ```
-sudo ./install.sh
+sudo ./install.sh -use-cuda
 source gurobi_setup_path.sh
 ```
 
