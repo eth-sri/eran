@@ -143,7 +143,8 @@ def prepare_model(model):
 		for node_input in node.input:
 			input_node_map[node_input] = node
 		if node.op_type == "Flatten":
-			shape_map[node.output[0]] = shape_map[node.input[0]]
+			#shape_map[node.output[0]] = shape_map[node.input[0]]
+			shape_map[node.output[0]] = [1,] + [np.prod(shape_map[node.input[0]][1:]),]
 		elif node.op_type == "Constant":
 			const = node.attribute
 			const = nchw_to_nhwc(numpy_helper.to_array(const[0].t)).copy()
@@ -519,7 +520,6 @@ class ONNXTranslator:
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
 			elif node.op_type == "Reshape":
-				      
 				if node.output[0] in self.input_node_map and self.input_node_map[node.output[0]].op_type in ["MatMul", "Gemm"]:
 					
 					self.ignore_node(node, operation_types, reshape_map)
@@ -614,7 +614,7 @@ class ONNXTranslator:
 		return matrix,
 
 	def reshape_adjust(self, element, matrix, is_right=False):
-		if self.get_kind(element) == 'Reshape' and not self.is_gpupoly:
+		if self.get_kind(element) in ['Reshape', 'Flatten'] and not self.is_gpupoly: #TODO check whether it should be triggered for Flatten layers to
 			shape_in = self.get_shape(self.output_node_map[element].input[0])
 			shape_out = self.get_shape(self.output_node_map[element].output[0])
 			if config.debug:
