@@ -438,7 +438,7 @@ class DeeppolyLeakyReluNode(DeeppolyNonlinearity):
         return element
 
 class DeeppolyConv2dNode:
-    def __init__(self, filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape):
+    def __init__(self, filters, strides, pad_top, pad_left, pad_bottom, pad_right, bias, image_shape, input_names, output_name, output_shape):
         """
         collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
         
@@ -460,6 +460,8 @@ class DeeppolyConv2dNode:
         self.out_size    = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3]) 
         self.pad_top     = pad_top
         self.pad_left    = pad_left
+        self.pad_bottom = pad_bottom
+        self.pad_right = pad_right
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def get_arguments(self):
@@ -479,7 +481,7 @@ class DeeppolyConv2dNode:
         filter_size = (c_size_t * 2) (self.filters.shape[0], self.filters.shape[1])
         numfilters  = self.filters.shape[3]
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
-        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, True, self.predecessors, len(self.predecessors)
+        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, self.pad_bottom, self.pad_right, True, self.predecessors, len(self.predecessors)
 
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):

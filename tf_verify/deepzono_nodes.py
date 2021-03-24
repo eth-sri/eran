@@ -496,7 +496,7 @@ class DeepzonoAffine(DeepzonoMatmul):
 
 
 class DeepzonoConv:
-    def __init__(self, image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape):
+    def __init__(self, image_shape, filters, strides, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -522,6 +522,8 @@ class DeepzonoConv:
         self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3])
         self.pad_top    = pad_top
         self.pad_left   = pad_left
+        self.pad_bottom = pad_bottom
+        self.pad_right  = pad_right
     
     
     def get_arguments(self, man, element):
@@ -582,7 +584,7 @@ class DeepzonoConv:
 
 
 class DeepzonoConvbias(DeepzonoConv):
-    def __init__(self, image_shape, filters, bias, strides, pad_top, pad_left, input_names, output_name, output_shape):
+    def __init__(self, image_shape, filters, bias, strides, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape):
         """
         Arguments
         ---------
@@ -603,7 +605,7 @@ class DeepzonoConvbias(DeepzonoConv):
         output_shape : iterable
             iterable of ints with the shape of the output of this node
         """
-        DeepzonoConv.__init__(self, image_shape, filters, strides, pad_top, pad_left, input_names, output_name, output_shape)
+        DeepzonoConv.__init__(self, image_shape, filters, strides, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape)
         self.bias = np.ascontiguousarray(bias, dtype=np.double)
     
     

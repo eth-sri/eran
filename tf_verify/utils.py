@@ -226,3 +226,4 @@ def translate_input_to_box(C_lb, C_ub, x_0=None, eps=None, domain_bounds=None):
         lb = np.maximum(lb, d_lb)
         ub = np.minimum(lb, d_ub)
     return [[(lb[i], ub[i]) for i in range(n_x)]]
+
