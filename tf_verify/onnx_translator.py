@@ -339,6 +339,21 @@ def prepare_model(model):
 
 				result = np.zeros(shape_map[node.output[0]]) + constants_map[node.input[0]]
 				constants_map[node.output[0]] = result
+		elif node.op_type == "Pad":
+			input_shape = np.array(shape_map[node.input[0]])
+			for attribute in node.attribute:
+				if attribute.name == "pads":
+					padding = np.array(attribute.ints)
+				if attribute.name == "mode":
+					assert attribute.s == bytes(b'constant'), "only zero padding supported"
+				if attribute.name == "value":
+					assert attribute.f == 0, "only zero padding supported"
+			output_shape = np.copy(input_shape)
+			input_dim = len(input_shape)
+			assert len(padding) == 2* input_dim
+			for i in range(2,input_dim): # only pad spatial dimensions
+				output_shape[i-1] += padding[i]+padding[i+input_dim]
+			shape_map[node.output[0]] = list(output_shape)
 		else:
 			assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
@@ -481,8 +496,13 @@ class ONNXTranslator:
 					operation_types[-1] = "Ressub"
 					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
 			elif node.op_type == "Conv":
-				filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape = self.conv_resources(node)
-				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left) + in_out_info
+				filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, kernel_shape = self.conv_resources(node)
+				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
+				deepzono_res = deeppoly_res
+				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+			elif node.op_type == "Pad":
+				pad_top, pad_left, pad_bottom, pad_right = self.pad_resources(node)
+				deeppoly_res = (pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
@@ -761,9 +781,36 @@ class ONNXTranslator:
 		pad_left = pads[1]
 		pad_bottom = pads[2]
 		pad_right = pads[3]
-		assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
-		assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
-		return filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape
+		# assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
+		# assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
+		return filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, kernel_shape
+
+	def pad_resources(self, node):
+		"""
+		Extracts the padding from node as well as the shape of the input coming into node
+
+		Arguments
+		---------
+		node : ONNX.Node
+		    must have op_type "Pad"
+
+		Return
+		------
+		output : tuple
+		    has 4 entries (numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray)
+		"""
+		inputs = node.input
+		image = inputs[0]
+		pads = [0, 0, 0, 0]
+		for attribute in node.attribute:
+			if attribute.name == 'pads':
+				pads = attribute.ints
+
+		pad_top = pads[2]
+		pad_left = pads[3]
+		pad_bottom = pads[6]
+		pad_right = pads[7]
+		return pad_top, pad_left, pad_bottom, pad_right
 	
 	
 	def pool_resources(self, node):

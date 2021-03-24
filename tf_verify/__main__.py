@@ -362,7 +362,7 @@ parser.add_argument('--gamma', type=float, default=config.gamma, help='vector fi
 parser.add_argument('--k', type=int, default=config.k, help='refine group size')
 parser.add_argument('--s', type=int, default=config.s, help='refine group sparsity parameter')
 parser.add_argument('--quant_step', type=float, default=config.quant_step, help='Quantization step for quantized networks')
-parser.add_argument("--approx_k",type=str2bool, default=config.approx_k, help="Use approximate fast k neuron constraints")
+parser.add_argument("--approx_k", type=str2bool, default=config.approx_k, help="Use approximate fast k neuron constraints")
 
 
 # Logging options
@@ -472,7 +472,7 @@ else:
         else:
             translator = TFTranslator(model)
         operations, resources = translator.translate()
-        optimizer  = Optimizer(operations, resources)
+        optimizer = Optimizer(operations, resources)
         nn = layers()
         network, relu_layers, num_gpu_layers = optimizer.get_gpupoly(nn) 
     else:    
