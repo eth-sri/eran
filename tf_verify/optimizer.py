@@ -20,7 +20,9 @@ from deeppoly_nodes import *
 # if config.domain=='gpupoly' or config.domain=='refinegpupoly':
 try:
     from gpupoly import Network
+    GPU_FLAG = True
 except:
+    GPU_FLAG = False
     warnings.warn("gpupoly not available.")
 from functools import reduce
 import numpy as np
@@ -430,6 +432,7 @@ class Optimizer:
         return execute_list, output_info
 
     def get_gpupoly(self, nn):
+        assert GPU_FLAG, "GPUPoly is not available"
         domain = 'deeppoly'
         input_names, output_name, output_shape = self.resources[0][domain]
         #print("output ", np.prod(output_shape))
