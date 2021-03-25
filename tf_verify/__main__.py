@@ -1496,7 +1496,10 @@ else:
                                     # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", label)
                                     print("img", i, "Verified unsafe against label ", cex_label, "correct label ", label)
                                     unsafe_images+=1
-                            print("img", i, "Failed")
+                                else:
+                                    print("img", i, "Failed with MILP, without a adeversarial example")
+                            else:
+                                print("img", i, "Failed with MILP, without a feasible solution")
                     else:
                     
                         if x != None:
