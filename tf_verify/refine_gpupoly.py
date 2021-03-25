@@ -131,13 +131,18 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
             kact_cons.append(inst)
             gid = gid+1
         relu_groups.append(kact_cons)
-    counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer,
-                                            complete, is_nchw=True)
+
     if complete:
+        counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer,
+                                                use_milp=True, is_nchw=True, partial_milp=-1, max_milp_neurons=1e6)
         model.setParam(GRB.Param.TimeLimit, timeout_final_milp)
+
     else:
+        counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer,
+                                                use_milp=False, is_nchw=True)
         model.setParam(GRB.Param.TimeLimit, timeout_final_lp)
-        model.setParam(GRB.Param.Cutoff, 0.01)
+
+    model.setParam(GRB.Param.Cutoff, 0.01)
 
     if partial_milp != 0 and not complete:
         nn.ffn_counter = 0
@@ -153,6 +158,7 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
                                                                                        partial_milp=partial_milp,
                                                                                        max_milp_neurons=max_milp_neurons)
         model_partial_milp.setParam(GRB.Param.TimeLimit, timeout_final_milp)
+        model_partial_milp.setParam(GRB.Param.Cutoff, 0.01)
 
         # a1=time.time()
         # model_partial_milp.optimize()
@@ -182,12 +188,12 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         #model.write("model_refinegpupo.ilp")
         try:
             print(
-                f"Model status: {model.Status}, Objval against label {label}: {model.objval:.4f}, Final solve time: {model.Runtime:.3f}")
+                f"Model status: {model.Status}, Obj val/bound against label {label}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
         except:
             print(
                 f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
 
-        if model.Status == 6 or (model.Status == 2 and model.objval > 0):
+        if model.Status == 6 or (model.Status in [2,11] and model.objval > 0):
             # Cutoff active, or optimal with positive objective => sound against adv_label
             pass
         elif partial_milp != 0 and not complete:
@@ -212,20 +218,20 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
                     model_partial_milp.optimize(milp_callback)
                 try:
                     print(
-                        f"Partial MILP model status: {model_partial_milp.Status}, Obj bound against label {label}: {model_partial_milp.ObjBound:.4f}, Final solve time: {model_partial_milp.Runtime:.3f}")
+                        f"Partial MILP model status: {model_partial_milp.Status}, Obj val/bound against label {label}: {model_partial_milp.ObjVal:.4f}/{model_partial_milp.ObjBound:.4f}, Final solve time: {model_partial_milp.Runtime:.3f}")
                 except:
                     print(
-                        f"Partial MILP model status: {model_partial_milp.Status}, Objbound retrival failed, Final solve time: {model_partial_milp.Runtime:.3f}")
+                        f"Partial MILP model status: {model_partial_milp.Status}, Obj bound retrival failed, Final solve time: {model_partial_milp.Runtime:.3f}")
 
-                if model_partial_milp.Status in [2, 9, 11] and model_partial_milp.ObjBound > 0:
+                if model_partial_milp.Status in [2, 9, 6, 11] and model_partial_milp.ObjBound > 0:
                     pass
-                elif model_partial_milp.Status not in [2, 9, 11]:
+                elif model_partial_milp.Status not in [2, 9, 6, 11]:
                     print("Partial milp model was not successful status is", model_partial_milp.Status)
                     model_partial_milp.write("final.mps")
                     flag = False
                 else:
                     flag = False
-        elif model.Status != 2:
+        elif model.Status not in [2, 11, 6]:
             print("Model was not successful status is",
                   model.Status)
             model.write("final.mps")

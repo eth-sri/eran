@@ -257,7 +257,7 @@ def handle_affine(model,var_list,counter,weights,biases, lbi, ubi):
     # output of matmult
     for j in range(num_neurons_affine):
         var_name = "x" + str(start+j)
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub =ubi[j], name=var_name)
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub=ubi[j], name=var_name)
         var_list.append(var)
 
     for j in range(num_neurons_affine):
@@ -267,7 +267,7 @@ def handle_affine(model,var_list,counter,weights,biases, lbi, ubi):
         expr += -1*var_list[start+j]
         # matmult constraints
         for k in range(num_in_neurons):
-            expr.addTerms(weights[j][k],var_list[counter+k])
+            expr.addTerms(weights[j][k], var_list[counter+k])
         expr.addConstant(biases[j])
         model.addConstr(expr, GRB.EQUAL, 0)
     return start
@@ -341,7 +341,7 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
     for j in range(num_neurons):
         var_name = "x" + str(relu_counter+j)
         upper_bound = max(0.0, ubi[j])
-        var = model.addVar(vtype=GRB.CONTINUOUS, lb = 0.0, ub=upper_bound,  name=var_name)
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb=0.0, ub=upper_bound,  name=var_name)
         var_list.append(var)
 
 
@@ -375,7 +375,7 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
                # indicator constraint
                model.addGenConstrIndicator(var_bin, True, var_list[affine_counter+j], GRB.GREATER_EQUAL, 0.0)
 
-    if len(relu_groupsi)>0:
+    if len(relax_encode_idx) > 0:
         for j in relax_encode_idx:
             if ubi[j] <= 0:
                 expr = var_list[relu_counter+j]
@@ -383,6 +383,7 @@ def handle_relu(model,var_list, affine_counter, num_neurons, lbi, ubi, relu_grou
             elif lbi[j] >= 0:
                 expr = var_list[relu_counter+j] - var_list[affine_counter+j]
                 model.addConstr(expr, GRB.EQUAL, 0)
+    if len(relu_groupsi) > 0:
         _add_kactivation_constraints(model, var_list, relu_groupsi, affine_counter, relu_counter)
 
     return relu_counter
@@ -464,9 +465,9 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
     milp_activation_layers = np.nonzero([l in ["ReLU", "Maxpool"] for l in nn.layertypes])[0]
 
     if partial_milp < 0:
-        partial_milp = sum(milp_activation_layers)
+        partial_milp = len(milp_activation_layers)
 
-    first_milp_layer = len(nn.layertypes) if partial_milp == 0 else milp_activation_layers[-min(partial_milp,len(milp_activation_layers))]
+    first_milp_layer = len(nn.layertypes) if partial_milp == 0 else milp_activation_layers[-min(partial_milp, len(milp_activation_layers))]
 
     num_pixels = len(LB_N0)
     #output_counter = num_pixels
@@ -529,8 +530,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
             index = nn.predecessors[i+1][0]
             #print("index ", index, start_counter,i, len(relu_groups))
             counter = start_counter[index]
-            counter = handle_affine(model,var_list,counter,weights,biases,nlb[i],nub[i])
-            nn.ffn_counter+=1
+            counter = handle_affine(model, var_list, counter, weights, biases, nlb[i], nub[i])
+            nn.ffn_counter += 1
             start_counter.append(counter)
 
         elif(nn.layertypes[i]=='ReLU'):
@@ -772,17 +773,19 @@ def add_spatial_constraints(model, spatial_constraints, var_list, input_size):
             )
 
 
-def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None):
+def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_constraints=None, is_nchw=False):
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_counter = 0
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
-    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, True, partial_milp=-1, max_milp_neurons=1e5)
+    counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp=True, is_nchw=is_nchw,
+                                            partial_milp=-1, max_milp_neurons=int(1e6))
     #print("timeout ", config.timeout_milp)
-    model.setParam(GRB.Param.TimeLimit, config.timeout_complete)
-    
+    model.setParam(GRB.Param.TimeLimit, config.timeout_final_milp)
+    model.setParam(GRB.Param.Cutoff, 0.01)
+
     if spatial_constraints is not None:
         add_spatial_constraints(
             model, spatial_constraints, var_list, input_size
@@ -790,47 +793,60 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
                 
     adv_examples = []
     non_adv_examples = []
+    adv_val = []
+    non_adv_val = []
     for or_list in constraints:
         or_result = False
         for (i, j, k) in or_list:
             obj = LinExpr()
             if j== -1:
-                obj += float(k)- 1*var_list[counter + i]
+                obj += float(k) - 1 * var_list[counter + i]
                 model.setObjective(obj,GRB.MINIMIZE)
                 model.optimize(milp_callback)
+                assert model.status not in [3, 4], f"Infeasible model encountered. Model status {model.status}"
                 #status.append(model.SolCount>0)
                 if model.objbound > 0:
                     or_result = True
                     #print("objbound ", model.objbound)
                     if model.solcount > 0:
                         non_adv_examples.append(model.x[0:input_size])
+                        non_adv_val.append(model.objval)
                     break
                 elif model.solcount > 0:
                     adv_examples.append(model.x[0:input_size])
+                    adv_val.append(model.objval)
 
             else:
                 if i!=j:
                     obj += 1*var_list[counter + i]
                     obj += -1*var_list[counter + j]
-                    model.setObjective(obj,GRB.MINIMIZE)
+                    model.setObjective(obj, GRB.MINIMIZE)
                     model.optimize(milp_callback)
+                    assert model.status not in [3,4], f"Infeasible model encountered. Model status {model.status}"
                     #status.append(model.solcount>0)
                     #print("status ", model.status, model.objbound)                    
+                    # if model.solcount > 0:
+                    #     _, _, y_prop , _, _, _ = eran.analyze_box(model.x[0:input_size], model.x[0:input_size], 'deepzono', 10, 10, True)
+                    #     print(f"diff between milp objective and propagation: {model.objval - (y_prop[-1][i] - y_prop[-1][j])}")
+
                     if model.objbound > 0:
                         or_result = True
                         #print("objbound ", model.objbound)
                         if model.solcount > 0:
                             non_adv_examples.append(model.x[0:input_size])
+                            non_adv_val.append(model.objval)
                         break
                     elif model.solcount > 0:
                         adv_examples.append(model.x[0:input_size])
+                        adv_val.append(model.objval)
+
         if not or_result:
             if len(adv_examples) > 0:
-                return False, adv_examples
+                return False, adv_examples, adv_val
             else:
-                return False, None
+                return False, None, None
     if len(non_adv_examples) > 0:
-        return True, non_adv_examples
+        return True, non_adv_examples, non_adv_val
     else:
-        return True, None
+        return True, None, None
 

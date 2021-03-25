@@ -257,7 +257,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
         return hold
     elif depth >= max_depth:
         if failed_already.value and config.complete:
-            verified_flag, adv_examples = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+            verified_flag, adv_examples, _ = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
             print_progress(depth)
             if verified_flag == False:
                 if adv_examples!=None:
@@ -332,7 +332,7 @@ parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help
 parser.add_argument('--timeout_final_lp', type=float, default=config.timeout_final_lp,  help='timeout for the final LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
 parser.add_argument('--timeout_final_milp', type=float, default=config.timeout_final_lp,  help='timeout for the final MILP solver')
-parser.add_argument('--timeout_complete', type=float, default=config.timeout_milp,  help='timeout for the complete verifier')
+parser.add_argument('--timeout_complete', type=float, default=None,  help='timeout for the complete verifier')# depreciated use timout_final_milp
 parser.add_argument('--max_milp_neurons', type=int, default=config.max_milp_neurons,  help='number of layers to encode using MILP.')
 parser.add_argument('--partial_milp', type=int, default=config.partial_milp,  help='Maximum number of neurons to use for partial MILP encoding')
 
@@ -373,6 +373,8 @@ parser.add_argument('--logname', type=str, default=None, help='Directory of log 
 args = parser.parse_args()
 for k, v in vars(args).items():
     setattr(config, k, v)
+if args.timeout_complete is not None:
+    raise DeprecationWarning("'--timeout_complete' is depreciated. Use '--timeout_final_milp' instead")
 config.json = vars(args)
 pprint(config.json)
 
@@ -614,7 +616,7 @@ if dataset=='acasxu':
                                                 verified_flag = False
                                                 break
                                         if complete:
-                                            holds, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+                                            holds, adv_image, adv_val = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                                             #complete_list.append((i,j,k,l,m))
                                             if not holds:
                                                 verified_flag = False
@@ -660,7 +662,7 @@ elif zonotope_bool:
         print("Verified")
     elif(complete==True):
         constraints = get_constraints_for_dominant_label(perturbed_label, 10)
-        verified_flag, adv_image = verify_network_with_milp(nn, zonotope, [], nlb, nub, constraints)
+        verified_flag, adv_image, _ = verify_network_with_milp(nn, zonotope, [], nlb, nub, constraints)
         if(verified_flag==True):
             print("Verified")
         else:
@@ -1276,7 +1278,7 @@ elif config.spatial:
             print(end - start, "seconds")
             continue
 
-        verified_flag, adv_image = verify_network_with_milp(
+        verified_flag, adv_image, _ = verify_network_with_milp(
             nn=nn, LB_N0=LB_N0, UB_N0=UB_N0, nlb=nlb, nub=nub,
             constraints=get_constraints_for_dominant_label(
                 predicted_label, failed_labels=failed_labels
@@ -1475,16 +1477,16 @@ else:
                                                                                       max_milp_neurons=config.max_milp_neurons,
                                                                                       approx_k=config.approx_k)
                     print("nlb ", nlb[-1], " nub ", nub[-1], "adv labels ", failed_labels)
-                if(perturbed_label==label):
+                if (perturbed_label==label):
                     print("img", i, "Verified", label)
                     verified_images += 1
                 else:
                     if complete==True and failed_labels is not None:
                         failed_labels = list(set(failed_labels))
                         constraints = get_constraints_for_dominant_label(label, failed_labels)
-                        verified_flag, adv_image = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+                        verified_flag, adv_image, adv_val = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                         if(verified_flag==True):
-                            print("img", i, "Verified as Safe", label)
+                            print("img", i, "Verified as Safe using MILP", label)
                             verified_images += 1
                         else:
                             if adv_image != None:
