@@ -533,7 +533,7 @@ class Optimizer:
                 nn.numlayer+=1
             elif self.operations[i] == "Conv":
                 last_layer = "Conv"
-                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[2],image_shape[0],image_shape[1]])
