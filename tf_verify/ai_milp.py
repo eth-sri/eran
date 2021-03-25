@@ -475,6 +475,7 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
     conv_counter = nn.conv_counter
     residual_counter = nn.residual_counter
     pool_counter = nn.pool_counter
+    pad_counter = nn.pad_counter
     activation_counter = nn.activation_counter
     
     nn.ffn_counter = 0
@@ -606,8 +607,8 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
             counter = handle_residual(model,var_list,counter1,counter2,nlb[i],nub[i])
             start_counter.append(counter)
             nn.residual_counter +=1
-
-
+        elif nn.layertypes[i] in ['Pad']:
+            raise NotImplementedError
         else:
             assert 0, 'layertype:' + nn.layertypes[i] + 'not supported for refine'
     nn.ffn_counter = ffn_counter

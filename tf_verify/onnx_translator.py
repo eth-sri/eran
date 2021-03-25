@@ -502,8 +502,8 @@ class ONNXTranslator:
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "Pad":
-				pad_top, pad_left, pad_bottom, pad_right = self.pad_resources(node)
-				deeppoly_res = (pad_top, pad_left, pad_bottom, pad_right) + in_out_info
+				image_shape, pad_top, pad_left, pad_bottom, pad_right = self.pad_resources(node)
+				deeppoly_res = (image_shape, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
@@ -801,6 +801,8 @@ class ONNXTranslator:
 		"""
 		inputs = node.input
 		image = inputs[0]
+		image_shape = self.get_shape(image)[1:]
+
 		pads = [0, 0, 0, 0]
 		for attribute in node.attribute:
 			if attribute.name == 'pads':
@@ -810,7 +812,7 @@ class ONNXTranslator:
 		pad_left = pads[3]
 		pad_bottom = pads[6]
 		pad_right = pads[7]
-		return pad_top, pad_left, pad_bottom, pad_right
+		return image_shape, pad_top, pad_left, pad_bottom, pad_right
 	
 	
 	def pool_resources(self, node):

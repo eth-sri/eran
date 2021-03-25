@@ -187,6 +187,19 @@ class Optimizer:
                 else:
                     execute_list.append(DeeppolyPoolNode(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape, is_maxpool))
                 i += 1
+            elif self.operations[i] == "Pad":
+                image_shape, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape = self.resources[i][domain]
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
+                nn.out_shapes.append(output_shape)
+                nn.layertypes.append('Pad')
+                if domain == 'deepzono':
+                    #execute_list.append(DeepzonoPad(image_shape, filters, bias, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, b_output_name, b_output_shape))
+                    raise NotImplementedError
+                else:
+                    execute_list.append(DeeppolyPaddingNode(pad_top, pad_left, pad_bottom, pad_right, image_shape, input_names, output_name, output_shape))
+                nn.numlayer += 1
+                i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
                 nn.layertypes.append('ReLU')
