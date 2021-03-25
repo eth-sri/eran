@@ -1499,7 +1499,7 @@ else:
                                 else:
                                     print("img", i, "Failed with MILP, without a adeversarial example")
                             else:
-                                print("img", i, "Failed with MILP, without a feasible solution")
+                                print("img", i, "Failed with MILP")
                     else:
                     
                         if x != None:
@@ -1511,7 +1511,7 @@ else:
                                 print("img", i, "Verified unsafe against label ", cex_label, "correct label ", label)
                                 unsafe_images += 1
                             else:
-                                print("img", i, "Failed, x returned")
+                                print("img", i, "Failed, without a adversarial example")
                         else:
                             print("img", i, "Failed")
 

@@ -802,43 +802,44 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
             if j== -1:
                 obj += float(k) - 1 * var_list[counter + i]
                 model.setObjective(obj,GRB.MINIMIZE)
-                model.optimize(milp_callback)
-                assert model.status not in [3, 4], f"Infeasible model encountered. Model status {model.status}"
-                #status.append(model.SolCount>0)
-                if model.objbound > 0:
-                    or_result = True
-                    #print("objbound ", model.objbound)
-                    if model.solcount > 0:
-                        non_adv_examples.append(model.x[0:input_size])
-                        non_adv_val.append(model.objval)
-                    break
-                elif model.solcount > 0:
-                    adv_examples.append(model.x[0:input_size])
-                    adv_val.append(model.objval)
+                # model.optimize(milp_callback)
+                # assert model.status not in [3, 4], f"Infeasible model encountered. Model status {model.status}"
+                # #status.append(model.SolCount>0)
+                # if model.objbound > 0:
+                #     or_result = True
+                #     #print("objbound ", model.objbound)
+                #     if model.solcount > 0:
+                #         non_adv_examples.append(model.x[0:input_size])
+                #         non_adv_val.append(model.objval)
+                #     break
+                # elif model.solcount > 0:
+                #     adv_examples.append(model.x[0:input_size])
+                #     adv_val.append(model.objval)
 
             else:
                 if i!=j:
                     obj += 1*var_list[counter + i]
                     obj += -1*var_list[counter + j]
                     model.setObjective(obj, GRB.MINIMIZE)
-                    model.optimize(milp_callback)
-                    assert model.status not in [3,4], f"Infeasible model encountered. Model status {model.status}"
-                    #status.append(model.solcount>0)
-                    #print("status ", model.status, model.objbound)                    
-                    # if model.solcount > 0:
-                    #     _, _, y_prop , _, _, _ = eran.analyze_box(model.x[0:input_size], model.x[0:input_size], 'deepzono', 10, 10, True)
-                    #     print(f"diff between milp objective and propagation: {model.objval - (y_prop[-1][i] - y_prop[-1][j])}")
+            model.optimize(milp_callback)
+            assert model.status not in [3,4], f"Infeasible model encountered. Model status {model.status}"
+            try:
+                print(
+                    f"Model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
+            except:
+                print(
+                    f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
 
-                    if model.objbound > 0:
-                        or_result = True
-                        #print("objbound ", model.objbound)
-                        if model.solcount > 0:
-                            non_adv_examples.append(model.x[0:input_size])
-                            non_adv_val.append(model.objval)
-                        break
-                    elif model.solcount > 0:
-                        adv_examples.append(model.x[0:input_size])
-                        adv_val.append(model.objval)
+            if model.objbound > 0:
+                or_result = True
+                #print("objbound ", model.objbound)
+                if model.solcount > 0:
+                    non_adv_examples.append(model.x[0:input_size])
+                    non_adv_val.append(model.objval)
+                break
+            elif model.solcount > 0:
+                adv_examples.append(model.x[0:input_size])
+                adv_val.append(model.objval)
 
         if not or_result:
             if len(adv_examples) > 0:
