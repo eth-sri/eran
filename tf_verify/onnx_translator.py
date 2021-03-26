@@ -420,8 +420,10 @@ class ONNXTranslator:
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
 		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Unsqueeze", "Softmax", "Flatten", "Concat", "BatchNormalization"]
+		padding_merger_dict = {}
 		#print("nodes ", self.nodes)
 		for node in self.nodes:
+			ignore_operation = False
 			if node.op_type == "Constant":
 				continue
 			elif node.op_type in operations_to_be_ignored:
@@ -498,6 +500,13 @@ class ONNXTranslator:
 					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
 			elif node.op_type == "Conv":
 				filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, kernel_shape = self.conv_resources(node)
+				if node.name in padding_merger_dict:
+					image_shape, m_pad_top, m_pad_left, m_pad_bottom, m_pad_right, input_node, _, _ = padding_merger_dict[node.name]
+					in_out_info = (input_node, in_out_info[1], in_out_info[2])
+					pad_top += m_pad_top
+					pad_left += m_pad_left
+					pad_bottom += m_pad_bottom
+					pad_right += m_pad_right
 				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
@@ -505,7 +514,13 @@ class ONNXTranslator:
 				image_shape, pad_top, pad_left, pad_bottom, pad_right = self.pad_resources(node)
 				deeppoly_res = (image_shape, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
-				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+				consequent_nodes = [node_i for node_i in self.nodes if node.output[0] in node_i.input]
+				can_be_merged = all([node_i.op_type=="Conv" for node_i in consequent_nodes])
+				if can_be_merged:
+					padding_merger_dict.update({node_i.name: deeppoly_res for node_i in consequent_nodes})
+					self.ignore_node(node, operation_types, reshape_map)
+				else:
+					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
 				image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, ceil_mode, storage_order = self.pool_resources(node)
 				deeppoly_res =  (image_shape, kernel_shape, strides, pad_top, pad_left) + in_out_info
