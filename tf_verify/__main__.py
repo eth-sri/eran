@@ -332,7 +332,7 @@ parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help
 parser.add_argument('--timeout_final_lp', type=float, default=config.timeout_final_lp,  help='timeout for the final LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
 parser.add_argument('--timeout_final_milp', type=float, default=config.timeout_final_lp,  help='timeout for the final MILP solver')
-parser.add_argument('--timeout_complete', type=float, default=None,  help='timeout for the complete verifier')# depreciated use timout_final_milp
+parser.add_argument('--timeout_complete', type=float, default=None,  help='Cumulative timeout for the complete verifier, superseeds timeout_final_milp if set')
 parser.add_argument('--max_milp_neurons', type=int, default=config.max_milp_neurons,  help='number of layers to encode using MILP.')
 parser.add_argument('--partial_milp', type=int, default=config.partial_milp,  help='Maximum number of neurons to use for partial MILP encoding')
 
@@ -373,8 +373,8 @@ parser.add_argument('--logname', type=str, default=None, help='Directory of log 
 args = parser.parse_args()
 for k, v in vars(args).items():
     setattr(config, k, v)
-if args.timeout_complete is not None:
-    raise DeprecationWarning("'--timeout_complete' is depreciated. Use '--timeout_final_milp' instead")
+# if args.timeout_complete is not None:
+#     raise DeprecationWarning("'--timeout_complete' is depreciated. Use '--timeout_final_milp' instead")
 config.json = vars(args)
 pprint(config.json)
 

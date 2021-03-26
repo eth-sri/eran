@@ -22,6 +22,7 @@ from config import config
 import multiprocessing
 import math
 import sys
+import time
 
 
 def milp_callback(model, where):
@@ -851,10 +852,10 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
+    start_milp = time.time()
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp=True, is_nchw=is_nchw,
                                             partial_milp=-1, max_milp_neurons=int(1e6))
     #print("timeout ", config.timeout_milp)
-    model.setParam(GRB.Param.TimeLimit, config.timeout_final_milp)
     model.setParam(GRB.Param.Cutoff, 0.01)
 
     if spatial_constraints is not None:
@@ -869,6 +870,8 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     for or_list in constraints:
         or_result = False
         for (i, j, k) in or_list:
+            milp_timeout = config.timeout_final_milp if config.timeout_complete is None else (config.timeout_complete + start_milp - time.time())
+            model.setParam(GRB.Param.TimeLimit, milp_timeout)
             obj = LinExpr()
             if j== -1:
                 obj += float(k) - 1 * var_list[counter + i]
