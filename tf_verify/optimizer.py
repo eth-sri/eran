@@ -456,9 +456,8 @@ class Optimizer:
         relu_layers = []
         last_layer = None
         while i < nbr_op:
-            
+            #TODO support Maxpool
             if self.operations[i] == "MatMul":
-                
                 nn.layertypes.append('FC')
                 
                 if i < nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
@@ -533,7 +532,7 @@ class Optimizer:
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[2],image_shape[0],image_shape[1]])
                 nn.strides.append([strides[0],strides[1]])
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.out_shapes.append([b_output_shape[0], b_output_shape[3], b_output_shape[1], b_output_shape[2]])
                 nn.filters.append(np.transpose(filters,[3,2,0, 1]))
                 nn.biases.append(bias)
@@ -552,7 +551,7 @@ class Optimizer:
                 nn.input_shape.append([image_shape[2],image_shape[0],image_shape[1]])
                 nn.strides.append([strides[0],strides[1]])
                 nn.out_shapes.append([b_output_shape[0], b_output_shape[3], b_output_shape[1], b_output_shape[2]])
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.filters.append(np.transpose(filters,[3,2,0, 1]))
 
                 nn.biases.append(bias)
