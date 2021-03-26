@@ -1393,7 +1393,7 @@ else:
                     diffMatrix = diffMatrix.astype(np.float64)
                     
                     # gets the values from GPUPoly.
-                    res=network.evalAffineExpr(diffMatrix, back_substitute=network.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO)
+                    res = network.evalAffineExpr(diffMatrix, back_substitute=network.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO)
                     
                     
                     labels_to_be_verified = []

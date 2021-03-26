@@ -773,7 +773,7 @@ class DeepzonoTanh(DeepzonoNonlinearity):
 
 
 class DeepzonoPool:
-    def __init__(self, image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape, is_maxpool):
+    def __init__(self, image_shape, window_size, strides, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape, is_maxpool):
         """
         Arguments
         ---------
@@ -798,6 +798,8 @@ class DeepzonoPool:
         self.stride      = np.ascontiguousarray(strides, dtype=np.uintp)
         self.pad_top     = pad_top
         self.pad_left    = pad_left
+        self.pad_bottom = pad_bottom
+        self.pad_right = pad_right
         self.output_shape = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3])
         self.is_maxpool = is_maxpool
         
@@ -822,7 +824,7 @@ class DeepzonoPool:
         offset, old_length = self.abstract_information
         h, w    = self.window_size
         H, W, C = self.input_shape
-        element = pool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.output_shape, self.is_maxpool)
+        element = pool_zono(man, True, element, (c_size_t * 3)(h,w,1), (c_size_t * 3)(H, W, C), 0, (c_size_t * 2)(self.stride[0], self.stride[1]), 3, offset+old_length, self.pad_top, self.pad_left, self.pad_bottom, self.pad_right, self.output_shape, self.is_maxpool)
 
         #if refine or testing:
         add_bounds(man, element, nlb, nub, self.output_length, offset + old_length, is_refine_layer=True)

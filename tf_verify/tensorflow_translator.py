@@ -206,7 +206,7 @@ class TFTranslator:
 						deepzono_res = deeppoly_res 
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 					elif op.type == "MaxPool" or op.type == "AvgPool":
-						image_shape, window_size, strides, pad_top, pad_left = self.pool_resources(op)
+						image_shape, window_size, strides, pad_top, pad_left, pad_bottom, pad_right = self.pool_resources(op)
 						deeppoly_res =  (image_shape, window_size, strides, pad_top, pad_left) + in_out_info
 						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
@@ -329,9 +329,9 @@ class TFTranslator:
 		window_size = op.get_attr('ksize')[1:3]
 		strides     = op.get_attr('strides')[1:3]
 		padding_str = op.get_attr('padding').decode('utf-8')
-		pad_top, pad_left = calculate_padding(padding_str, image_shape, window_size, strides)
+		pad_top, pad_left, pad_bottom, pad_right = calculate_padding(padding_str, image_shape, window_size, strides)
 
-		return image_shape, window_size, strides, pad_top, pad_left
+		return image_shape, window_size, strides, pad_top, pad_left, pad_bottom, pad_right
 	
 	
 	def nonlinearity_resources(self, op):
