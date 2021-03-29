@@ -199,23 +199,24 @@ def model_predict(base, input):
     if is_onnx:
         pred = base.run(input)
     else:
-        pred = base.run(base.graph.get_operation_by_name(model.op.name), {base.graph.get_operations()[0].name + ':0': input})
+        pred = base.run(base.graph.get_operation_by_name(model.op.name).outputs[0], {base.graph.get_operations()[0].name + ':0': input})
     return pred
 
 
-def estimate_grads(specLB, specUB, dim_samples=3):
+def estimate_grads(specLB, specUB, dim_samples=3, input_shape=[1]):
     # Estimate gradients using central difference quotient and average over dim_samples+1 in the range of the input bounds
     # Very computationally costly
     specLB = np.array(specLB, dtype=np.float32)
     specUB = np.array(specUB, dtype=np.float32)
-    inputs = [((dim_samples - i) * specLB + i * specUB) / dim_samples for i in range(dim_samples + 1)]
+    inputs = [(((dim_samples - i) * specLB + i * specUB) / dim_samples).reshape(*input_shape) for i in range(dim_samples + 1)]
     diffs = np.zeros(len(specLB))
 
     # refactor this out of this method
     if is_onnx:
         runnable = rt.prepare(model, 'CPU')
     elif sess is None:
-        runnable = tf.Session()
+        config = tf.ConfigProto(device_count={'GPU': 0})
+        runnable = tf.Session(config=config)
     else:
         runnable = sess
 
@@ -273,7 +274,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
         else:
             return False
     else:
-        grads = estimate_grads(specLB, specUB)
+        grads = estimate_grads(specLB, specUB, input_shape=eran.input_shape)
         # grads + small epsilon so if gradient estimation becomes 0 it will divide the biggest interval.
         smears = np.multiply(grads + 0.00001, [u-l for u, l in zip(specUB, specLB)])
 
@@ -578,7 +579,6 @@ if dataset=='acasxu':
             # _,nn,_,_,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
             #complete_list = []
             multi_bounds = []
-
             for i in range(num_splits[0]):
                 if not holds: break
                 specLB[0] = start_val[0] + i*step_size[0]
@@ -625,7 +625,7 @@ if dataset=='acasxu':
                                             verified_flag = False
                                             break
                                     if config.debug:
-                                       sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec' % (i, j, k, l, m, time.time()-rec_start))
+                                       sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec\n' % (i, j, k, l, m, time.time()-rec_start))
 
             #print(time.time() - rec_start, "seconds")
             #print("LENGTH ", len(multi_bounds))

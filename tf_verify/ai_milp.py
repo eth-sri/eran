@@ -882,13 +882,13 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
                     obj += -1*var_list[counter + j]
                     model.setObjective(obj, GRB.MINIMIZE)
             model.optimize(milp_callback)
-            assert model.status not in [3,4], f"Infeasible model encountered. Model status {model.status}"
+            assert model.status not in [3,4], f"\nInfeasible model encountered. Model status {model.status}\n"
             try:
                 print(
-                    f"Model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
+                    f"MILP model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
             except:
                 print(
-                    f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+                    f"MILP model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
 
             if model.objbound > 0:
                 or_result = True
