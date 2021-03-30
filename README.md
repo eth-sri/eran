@@ -46,38 +46,53 @@ cd ERAN
 The dependencies for ERAN can be installed step by step as follows (sudo rights might be required):  
 Note that it might be required to use `sudo -E` to for the right environment variables to be set.
 
-Ensure that the following tools are available:
-python-distutils,
-cmake (>=3.17.1),
-m4 (1.4.18)
-autoconf,
-libtool,
-pdftex.  
-See https://cmake.org/cmake/help/latest/command/install.html for the install of cmake. \
+Ensure that the following tools are available before using the install script:
+* cmake (>=3.17.1),
+* m4 (>=1.4.18)
+* autoconf,
+* libtool,
+* pdftex.  
+
 On Ubuntu systems they can be installed using:
 ```
+sudo apt-get install m4
 sudo apt-get install build-essential
 sudo apt-get install autoconf
 sudo apt-get install libtool
 sudo apt-get install texlive-latex-base
 ```
+Consult https://cmake.org/cmake/help/latest/command/install.html for the install of cmake or use:
+```
+wget https://github.com/Kitware/CMake/releases/download/v3.19.7/cmake-3.19.7-Linux-x86_64.sh
+sudo bash ./cmake-3.19.7-Linux-x86_64.sh
+sudo cp ./cmake-3.19.7-Linux-x86_64/bin/cmake /usr/bin/.
+```
 
-Install m4 either using (recommended for Ubuntu 20.04):
-```
-sudo apt-get install m4
-```
-or
-```
-wget ftp://ftp.gnu.org/gnu/m4/m4-1.4.1.tar.gz
-tar -xvzf m4-1.4.1.tar.gz
-cd m4-1.4.1
-./configure
-make
-make install
-cp src/m4 /usr/bin
-cd ..
-rm m4-1.4.1.tar.gz
-```
+[comment]: <> (Alternatively install m4 using &#40;not recommended for Ubuntu 20.04&#41;:)
+
+[comment]: <> (```)
+
+[comment]: <> (wget ftp://ftp.gnu.org/gnu/m4/m4-1.4.1.tar.gz)
+
+[comment]: <> (tar -xvzf m4-1.4.1.tar.gz)
+
+[comment]: <> (cd m4-1.4.1)
+
+[comment]: <> (./configure)
+
+[comment]: <> (make)
+
+[comment]: <> (make install)
+
+[comment]: <> (cp src/m4 /usr/bin)
+
+[comment]: <> (cd ..)
+
+[comment]: <> (rm m4-1.4.1.tar.gz)
+
+[comment]: <> (```)
+
+The steps following from here can be done automatically using `sudo bash ./install.sh`
 
 Install gmp:
 ```
@@ -177,6 +192,13 @@ pip3 install -r requirements.txt
 ```
 
 ERAN may not be compatible with older versions of tensorflow (we have tested ERAN with versions >= 1.11.0), so if you have an older version and want to keep it, then we recommend using the python virtual environment for installing tensorflow.
+
+If gurobipy is not found despite executing `python setup.py install` in the corresponding gurobi directory, 
+gurobipy can alternatively be installed using conda with:
+```
+conda config --add channels http://conda.anaconda.org/gurobi
+conda install gurobi
+```
 
 
 Usage

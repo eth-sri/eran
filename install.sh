@@ -18,15 +18,15 @@ while : ; do
 done
 
 
-wget ftp://ftp.gnu.org/pub/gnu/m4/m4-1.4.18.tar.gz
-tar -xvzf m4-1.4.18.tar.gz
-cd m4-1.4.18
-./configure
-make
-make install
-cp src/m4 /usr/bin
-cd ..
-rm m4-1.4.18.tar.gz
+#wget ftp://ftp.gnu.org/pub/gnu/m4/m4-1.4.18.tar.gz
+#tar -xvzf m4-1.4.18.tar.gz
+#cd m4-1.4.18
+#./configure
+#make
+#make install
+#cp src/m4 /usr/bin
+#cd ..
+#rm m4-1.4.18.tar.gz
 
 
 
