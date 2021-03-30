@@ -65,7 +65,8 @@ Consult https://cmake.org/cmake/help/latest/command/install.html for the install
 ```
 wget https://github.com/Kitware/CMake/releases/download/v3.19.7/cmake-3.19.7-Linux-x86_64.sh
 sudo bash ./cmake-3.19.7-Linux-x86_64.sh
-sudo cp ./cmake-3.19.7-Linux-x86_64/bin/cmake /usr/bin/.
+sudo rm /usr/bin/cmake
+sudo ln -s ./cmake-3.19.7-Linux-x86_64/bin/cmake /usr/bin/cmake
 ```
 
 [comment]: <> (Alternatively install m4 using &#40;not recommended for Ubuntu 20.04&#41;:)
