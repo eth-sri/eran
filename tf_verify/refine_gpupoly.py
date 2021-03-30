@@ -133,10 +133,10 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         relu_groups.append(kact_cons)
 
     if complete:
+        start_milp = time.time()
         counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer,
                                                 use_milp=True, is_nchw=True, partial_milp=-1, max_milp_neurons=1e6)
-        model.setParam(GRB.Param.TimeLimit, timeout_final_milp)
-
+        #model.setParam(GRB.Param.TimeLimit, timeout_final_milp) #set later
     else:
         counter, var_list, model = create_model(nn, nn.specLB, nn.specUB, nlb, nub, relu_groups, nn.numlayer,
                                                 use_milp=False, is_nchw=True)
@@ -181,6 +181,8 @@ def refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, true_label,
         model.setObjective(obj,GRB.MINIMIZE)
         # model.optimize()
         if complete:
+            milp_timeout = config.timeout_final_milp if config.timeout_complete is None else (config.timeout_complete + start_milp - time.time())
+            model.setParam(GRB.Param.TimeLimit, milp_timeout)
             model.optimize(milp_callback)
         else:
             model.optimize(lp_callback)

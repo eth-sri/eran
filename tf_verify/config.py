@@ -39,7 +39,7 @@ class config:
     timeout_final_milp = 100
     partial_milp = 0 # number of activation layers to encode with milp: 0 none, -1
     max_milp_neurons = 30 # maximum number of neurons per layer to encode using MILP for partial MILP attempt
-    #timeout_complete = None # timeout for the complete verifier
+    timeout_complete = None # cumulative timeout for the complete verifier
     use_default_heuristic = True # whether to use the area heuristic for the DeepPoly ReLU approximation or to always create new noise symbols per relu for the DeepZono ReLU approximation
     mean = None # the mean used to normalize the data with
     std = None # the standard deviation used to normalize the data with

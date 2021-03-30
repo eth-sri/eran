@@ -22,6 +22,7 @@ from config import config
 import multiprocessing
 import math
 import sys
+import time
 
 
 def milp_callback(model, where):
@@ -47,7 +48,8 @@ def lp_callback(model, where):
             print("Used barrier terminate")
 
 
-def handle_conv(model, var_list, start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top, pad_left, lbi, ubi, use_milp, is_nchw=False):
+def handle_conv(model, var_list, start_counter, filters,biases,filter_size,input_shape, strides, out_shape, pad_top,
+                pad_left, pad_bottom, pad_right, lbi, ubi, use_milp, is_nchw=False):
 
     num_out_neurons = np.prod(out_shape)
     num_in_neurons = np.prod(input_shape)#input_shape[0]*input_shape[1]*input_shape[2]
@@ -121,6 +123,63 @@ def handle_conv(model, var_list, start_counter, filters,biases,filter_size,input
                     model.addConstr(expr, GRB.EQUAL, 0)
     return start
 
+
+def handle_padding(model, var_list, start_counter, input_shape, out_shape, pad_top, pad_left, pad_bottom, pad_right, lbi, ubi, is_nchw=False):
+    num_out_neurons = np.prod(out_shape)
+    num_in_neurons = np.prod(input_shape)  # input_shape[0]*input_shape[1]*input_shape[2]
+    # print("filters", filters.shape, filter_size, input_shape, strides, out_shape, pad_top, pad_left)
+    start = len(var_list)
+    for j in range(num_out_neurons):
+        var_name = "x" + str(start + j)
+        var = model.addVar(vtype=GRB.CONTINUOUS, lb=lbi[j], ub=ubi[j], name=var_name)
+        var_list.append(var)
+
+    # print("OUT SHAPE ", out_shape, input_shape, filter_size, filters.shape, biases.shape)
+    if is_nchw:
+        for out_z in range(out_shape[1]):
+            for out_x in range(out_shape[2]):
+                for out_y in range(out_shape[3]):
+
+                    dst_ind = out_z * out_shape[2] * out_shape[3] + out_x * out_shape[3] + out_y
+                    expr = LinExpr()
+                    expr += -1 * var_list[start + dst_ind]
+
+                    x_val = out_x  - pad_top
+                    y_val = out_y  - pad_left
+                    mat_offset = out_z * input_shape[1] * input_shape[2] + x_val * input_shape[2] + y_val
+
+                    if (y_val < 0 or y_val >= input_shape[2]):
+                        pass
+                    elif (x_val < 0 or x_val >= input_shape[1]):
+                        pass
+                    elif (mat_offset >= num_in_neurons):
+                        pass
+                    else:
+                        expr += 1 * var_list[start_counter + mat_offset]
+                    model.addConstr(expr, GRB.EQUAL, 0)
+
+    else:
+        for out_x in range(out_shape[1]):
+            for out_y in range(out_shape[2]):
+                for out_z in range(out_shape[3]):
+                    dst_ind = out_x * out_shape[2] * out_shape[3] + out_y * out_shape[3] + out_z
+                    expr = LinExpr()
+                    expr += -1 * var_list[start + dst_ind]
+                    x_val = out_x - pad_top
+                    y_val = out_y - pad_left
+                    mat_offset = x_val * input_shape[1] * input_shape[2] + y_val * input_shape[2] + out_z
+
+                    if (y_val < 0 or y_val >= input_shape[1]):
+                        pass
+                    elif (x_val < 0 or x_val >= input_shape[0]):
+                        pass
+                    elif (mat_offset >= num_in_neurons):
+                        pass
+                    else:
+                        expr += 1 * var_list[start_counter + mat_offset]
+
+                    model.addConstr(expr, GRB.EQUAL, 0)
+    return start
 
 def handle_maxpool(model, var_list, layerno, src_counter, pool_size, input_shape, strides, output_shape, pad_top, pad_left, lbi, ubi, lbi_prev, ubi_prev, use_milp):
     use_milp = use_milp and config.use_milp
@@ -475,12 +534,14 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
     conv_counter = nn.conv_counter
     residual_counter = nn.residual_counter
     pool_counter = nn.pool_counter
+    pad_counter = nn.pad_counter
     activation_counter = nn.activation_counter
     
     nn.ffn_counter = 0
     nn.conv_counter = 0
     nn.residual_couter = 0
     nn.pool_counter = 0
+    nn.pad_counter = 0
     nn.activation_counter = 0
 
     var_list = []
@@ -566,19 +627,19 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
 
         elif nn.layertypes[i] in ['Conv']:
             filters = nn.filters[nn.conv_counter]
-            biases = nn.biases[nn.ffn_counter+nn.conv_counter]
+            biases = nn.biases[nn.ffn_counter + nn.conv_counter]
             filter_size = nn.filter_size[nn.conv_counter]
             numfilters = nn.numfilters[nn.conv_counter]
-            out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter]
-            padding = nn.padding[nn.conv_counter + nn.pool_counter]
+            out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter + nn.pad_counter]
+            padding = nn.padding[nn.conv_counter + nn.pool_counter + nn.pad_counter]
             strides = nn.strides[nn.conv_counter + nn.pool_counter]
-            input_shape = nn.input_shape[nn.conv_counter +nn.pool_counter]
+            input_shape = nn.input_shape[nn.conv_counter + nn.pool_counter + nn.pad_counter]
             num_neurons = np.prod(out_shape)
 
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
-            counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i],use_milp, is_nchw=is_nchw)
-
+            counter = handle_conv(model, var_list, counter, filters, biases, filter_size, input_shape, strides,
+                                  out_shape, padding[0], padding[1], padding[2], padding[3], nlb[i], nub[i], use_milp, is_nchw=is_nchw)
             start_counter.append(counter)
 
             nn.conv_counter+=1
@@ -588,15 +649,25 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
             partial_milp_neurons = max_milp_neurons * (first_milp_layer <= i)
 
             pool_size = nn.pool_size[nn.pool_counter]
-            input_shape = nn.input_shape[nn.conv_counter + nn.pool_counter]
-            out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter]
-            padding = nn.padding[nn.conv_counter + nn.pool_counter]
+            input_shape = nn.input_shape[nn.conv_counter + nn.pool_counter + nn.pad_counter]
+            out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter + nn.pad_counter]
+            padding = nn.padding[nn.conv_counter + nn.pool_counter + nn.pad_counter]
             strides = nn.strides[nn.conv_counter + nn.pool_counter]
             index = nn.predecessors[i+1][0]
             counter = start_counter[index]
             counter = handle_maxpool(model,var_list,i,counter,pool_size, input_shape, strides, out_shape, padding[0], padding[1], nlb[i],nub[i], nlb[i-1], nub[i-1],use_milp)
             start_counter.append(counter)
             nn.pool_counter+=1
+
+        elif(nn.layertypes[i]=='Pad'):
+            input_shape = nn.input_shape[nn.conv_counter + nn.pool_counter + nn.pad_counter]
+            out_shape = nn.out_shapes[nn.conv_counter + nn.pool_counter + nn.pad_counter]
+            padding = nn.padding[nn.conv_counter + nn.pool_counter + nn.pad_counter]
+            index = nn.predecessors[i+1][0]
+            counter = start_counter[index]
+            counter = handle_padding(model, var_list, counter, input_shape, out_shape, padding[0], padding[1], padding[2], padding[3], nlb[i], nub[i], is_nchw=is_nchw)
+            start_counter.append(counter)
+            nn.pad_counter += 1
 
         elif nn.layertypes[i] in ['Resadd']:
             index1 = nn.predecessors[i+1][0]
@@ -606,10 +677,11 @@ def create_model(nn, LB_N0, UB_N0, nlb, nub, relu_groups, numlayer, use_milp, is
             counter = handle_residual(model,var_list,counter1,counter2,nlb[i],nub[i])
             start_counter.append(counter)
             nn.residual_counter +=1
-
-
+        elif nn.layertypes[i] in ['Pad']:
+            raise NotImplementedError
         else:
             assert 0, 'layertype:' + nn.layertypes[i] + 'not supported for refine'
+
     nn.ffn_counter = ffn_counter
     nn.conv_counter = conv_counter
     nn.residual_counter = residual_counter
@@ -780,10 +852,10 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     nn.maxpool_counter = 0
     numlayer = nn.numlayer
     input_size = len(LB_N0)
+    start_milp = time.time()
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp=True, is_nchw=is_nchw,
                                             partial_milp=-1, max_milp_neurons=int(1e6))
     #print("timeout ", config.timeout_milp)
-    model.setParam(GRB.Param.TimeLimit, config.timeout_final_milp)
     model.setParam(GRB.Param.Cutoff, 0.01)
 
     if spatial_constraints is not None:
@@ -798,37 +870,25 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     for or_list in constraints:
         or_result = False
         for (i, j, k) in or_list:
+            milp_timeout = config.timeout_final_milp if config.timeout_complete is None else (config.timeout_complete + start_milp - time.time())
+            model.setParam(GRB.Param.TimeLimit, milp_timeout)
             obj = LinExpr()
             if j== -1:
                 obj += float(k) - 1 * var_list[counter + i]
-                model.setObjective(obj,GRB.MINIMIZE)
-                # model.optimize(milp_callback)
-                # assert model.status not in [3, 4], f"Infeasible model encountered. Model status {model.status}"
-                # #status.append(model.SolCount>0)
-                # if model.objbound > 0:
-                #     or_result = True
-                #     #print("objbound ", model.objbound)
-                #     if model.solcount > 0:
-                #         non_adv_examples.append(model.x[0:input_size])
-                #         non_adv_val.append(model.objval)
-                #     break
-                # elif model.solcount > 0:
-                #     adv_examples.append(model.x[0:input_size])
-                #     adv_val.append(model.objval)
-
+                model.setObjective(obj, GRB.MINIMIZE)
             else:
                 if i!=j:
                     obj += 1*var_list[counter + i]
                     obj += -1*var_list[counter + j]
                     model.setObjective(obj, GRB.MINIMIZE)
             model.optimize(milp_callback)
-            assert model.status not in [3,4], f"Infeasible model encountered. Model status {model.status}"
+            assert model.status not in [3,4], f"\nInfeasible model encountered. Model status {model.status}\n"
             try:
                 print(
-                    f"Model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
+                    f"MILP model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
             except:
                 print(
-                    f"Model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+                    f"MILP model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
 
             if model.objbound > 0:
                 or_result = True

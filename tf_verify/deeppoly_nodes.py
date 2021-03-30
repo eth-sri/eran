@@ -438,7 +438,7 @@ class DeeppolyLeakyReluNode(DeeppolyNonlinearity):
         return element
 
 class DeeppolyConv2dNode:
-    def __init__(self, filters, strides, pad_top, pad_left, bias, image_shape, input_names, output_name, output_shape):
+    def __init__(self, filters, strides, pad_top, pad_left, pad_bottom, pad_right, bias, image_shape, input_names, output_name, output_shape):
         """
         collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
         
@@ -460,6 +460,8 @@ class DeeppolyConv2dNode:
         self.out_size    = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3]) 
         self.pad_top     = pad_top
         self.pad_left    = pad_left
+        self.pad_bottom = pad_bottom
+        self.pad_right = pad_right
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
 
     def get_arguments(self):
@@ -479,7 +481,7 @@ class DeeppolyConv2dNode:
         filter_size = (c_size_t * 2) (self.filters.shape[0], self.filters.shape[1])
         numfilters  = self.filters.shape[3]
         strides     = (c_size_t * 2)(self.strides[0], self.strides[1])
-        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, True, self.predecessors, len(self.predecessors)
+        return self.filters, self.bias, self.image_shape, filter_size, numfilters, strides, self.out_size, self.pad_top, self.pad_left, self.pad_bottom, self.pad_right, True, self.predecessors, len(self.predecessors)
 
 
     def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
@@ -506,6 +508,67 @@ class DeeppolyConv2dNode:
         return element
 
 
+class DeeppolyPaddingNode:
+    def __init__(self, pad_top, pad_left, pad_bottom, pad_right, image_shape, input_names,
+                 output_name, output_shape):
+        """
+        collects the information needed for the conv_handle_intermediate_relu_layer transformer and brings it into the required shape
+
+        Arguments
+        ---------
+        filters : numpy.ndarray
+            the actual 4D filter of the convolutional layer
+        strides : numpy.ndarray
+            1D with to elements, stride in height and width direction
+        bias : numpy.ndarray
+            the bias of the layer
+        image_shape : numpy.ndarray
+            1D array of ints with 3 entries [height, width, channels] representing the shape of the of the image that is passed to the conv-layer
+        """
+        self.image_shape =  np.ascontiguousarray(image_shape, dtype=np.uintp)
+        self.out_size = (c_size_t * 3)(output_shape[1], output_shape[2], output_shape[3])
+        self.pad_top = pad_top
+        self.pad_left = pad_left
+        self.pad_bottom = pad_bottom
+        self.pad_right = pad_right
+        add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
+
+    def get_arguments(self):
+        """
+        facilitates putting together all the arguments for the transformers in the child classes
+
+        Return
+        ------
+        output : tuple
+            the 5 entries are:
+                3. the image_shape (numpy.ndarray)
+        """
+        return self.image_shape, self.out_size, self.pad_top, self.pad_left, self.pad_bottom, self.pad_right, \
+               self.predecessors, len(self.predecessors)
+
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp,
+                    use_default_heuristic, testing):
+        """
+        transformer for a convolutional layer, if that layer is an intermediate of the network
+
+        Arguments
+        ---------
+        man : ElinaManagerPtr
+            man to which element belongs
+        element : ElinaAbstract0Ptr
+            abstract element onto which the transformer gets applied
+
+        Return
+        ------
+        output : ElinaAbstract0Ptr
+            abstract element after the transformer
+        """
+        handle_padding_layer(man, element, *self.get_arguments())
+        calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True)
+        nn.pad_counter += 1
+        if testing:
+            return element, nlb[-1], nub[-1]
+        return element
 
 class DeeppolyPoolNode:
     def __init__(self, input_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape,is_maxpool):

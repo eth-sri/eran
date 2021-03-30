@@ -199,23 +199,24 @@ def model_predict(base, input):
     if is_onnx:
         pred = base.run(input)
     else:
-        pred = base.run(base.graph.get_operation_by_name(model.op.name), {base.graph.get_operations()[0].name + ':0': input})
+        pred = base.run(base.graph.get_operation_by_name(model.op.name).outputs[0], {base.graph.get_operations()[0].name + ':0': input})
     return pred
 
 
-def estimate_grads(specLB, specUB, dim_samples=3):
+def estimate_grads(specLB, specUB, dim_samples=3, input_shape=[1]):
     # Estimate gradients using central difference quotient and average over dim_samples+1 in the range of the input bounds
     # Very computationally costly
     specLB = np.array(specLB, dtype=np.float32)
     specUB = np.array(specUB, dtype=np.float32)
-    inputs = [((dim_samples - i) * specLB + i * specUB) / dim_samples for i in range(dim_samples + 1)]
+    inputs = [(((dim_samples - i) * specLB + i * specUB) / dim_samples).reshape(*input_shape) for i in range(dim_samples + 1)]
     diffs = np.zeros(len(specLB))
 
     # refactor this out of this method
     if is_onnx:
         runnable = rt.prepare(model, 'CPU')
     elif sess is None:
-        runnable = tf.Session()
+        config = tf.ConfigProto(device_count={'GPU': 0})
+        runnable = tf.Session(config=config)
     else:
         runnable = sess
 
@@ -273,7 +274,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
         else:
             return False
     else:
-        grads = estimate_grads(specLB, specUB)
+        grads = estimate_grads(specLB, specUB, input_shape=eran.input_shape)
         # grads + small epsilon so if gradient estimation becomes 0 it will divide the biggest interval.
         smears = np.multiply(grads + 0.00001, [u-l for u, l in zip(specUB, specLB)])
 
@@ -332,7 +333,7 @@ parser.add_argument('--timeout_lp', type=float, default=config.timeout_lp,  help
 parser.add_argument('--timeout_final_lp', type=float, default=config.timeout_final_lp,  help='timeout for the final LP solver')
 parser.add_argument('--timeout_milp', type=float, default=config.timeout_milp,  help='timeout for the MILP solver')
 parser.add_argument('--timeout_final_milp', type=float, default=config.timeout_final_lp,  help='timeout for the final MILP solver')
-parser.add_argument('--timeout_complete', type=float, default=None,  help='timeout for the complete verifier')# depreciated use timout_final_milp
+parser.add_argument('--timeout_complete', type=float, default=None,  help='Cumulative timeout for the complete verifier, superseeds timeout_final_milp if set')
 parser.add_argument('--max_milp_neurons', type=int, default=config.max_milp_neurons,  help='number of layers to encode using MILP.')
 parser.add_argument('--partial_milp', type=int, default=config.partial_milp,  help='Maximum number of neurons to use for partial MILP encoding')
 
@@ -362,7 +363,7 @@ parser.add_argument('--gamma', type=float, default=config.gamma, help='vector fi
 parser.add_argument('--k', type=int, default=config.k, help='refine group size')
 parser.add_argument('--s', type=int, default=config.s, help='refine group sparsity parameter')
 parser.add_argument('--quant_step', type=float, default=config.quant_step, help='Quantization step for quantized networks')
-parser.add_argument("--approx_k",type=str2bool, default=config.approx_k, help="Use approximate fast k neuron constraints")
+parser.add_argument("--approx_k", type=str2bool, default=config.approx_k, help="Use approximate fast k neuron constraints")
 
 
 # Logging options
@@ -373,8 +374,8 @@ parser.add_argument('--logname', type=str, default=None, help='Directory of log 
 args = parser.parse_args()
 for k, v in vars(args).items():
     setattr(config, k, v)
-if args.timeout_complete is not None:
-    raise DeprecationWarning("'--timeout_complete' is depreciated. Use '--timeout_final_milp' instead")
+# if args.timeout_complete is not None:
+#     raise DeprecationWarning("'--timeout_complete' is depreciated. Use '--timeout_final_milp' instead")
 config.json = vars(args)
 pprint(config.json)
 
@@ -474,7 +475,7 @@ else:
         else:
             translator = TFTranslator(model)
         operations, resources = translator.translate()
-        optimizer  = Optimizer(operations, resources)
+        optimizer = Optimizer(operations, resources)
         nn = layers()
         network, relu_layers, num_gpu_layers = optimizer.get_gpupoly(nn) 
     else:    
@@ -578,7 +579,6 @@ if dataset=='acasxu':
             # _,nn,_,_,_,_ = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
             #complete_list = []
             multi_bounds = []
-
             for i in range(num_splits[0]):
                 if not holds: break
                 specLB[0] = start_val[0] + i*step_size[0]
@@ -625,7 +625,7 @@ if dataset=='acasxu':
                                             verified_flag = False
                                             break
                                     if config.debug:
-                                       sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec' % (i, j, k, l, m, time.time()-rec_start))
+                                       sys.stdout.write('\rsplit %i, %i, %i, %i, %i %.02f sec\n' % (i, j, k, l, m, time.time()-rec_start))
 
             #print(time.time() - rec_start, "seconds")
             #print("LENGTH ", len(multi_bounds))
@@ -1393,7 +1393,7 @@ else:
                     diffMatrix = diffMatrix.astype(np.float64)
                     
                     # gets the values from GPUPoly.
-                    res=network.evalAffineExpr(diffMatrix, back_substitute=network.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO)
+                    res = network.evalAffineExpr(diffMatrix, back_substitute=network.BACKSUBSTITUTION_WHILE_CONTAINS_ZERO)
                     
                     
                     labels_to_be_verified = []

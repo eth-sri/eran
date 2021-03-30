@@ -226,3 +226,23 @@ def translate_input_to_box(C_lb, C_ub, x_0=None, eps=None, domain_bounds=None):
         lb = np.maximum(lb, d_lb)
         ub = np.minimum(lb, d_ub)
     return [[(lb[i], ub[i]) for i in range(n_x)]]
+
+def translate_gurobi_status(status_id):
+    gurobi_status_dict = {
+        1: "LOADED",
+        2: "Optimal",
+        3: "INFEASIBLE",
+        4: "INF_OR_UNBD",
+        5: "UNBOUNDED",
+        6: "CUTOFF",
+        7: "ITERATION_LIMIT",
+        8: "NODE_LIMIT",
+        9: "TIME_LIMIT",
+        10: "SOLUTION_LIMIT",
+        11: "INTERRUPTED",
+        12: "NUMERIC",
+        13: "SUBOPTIMAL",
+        14: "INPROGRESS",
+        15: "USER_OBJ_LIMIT",
+        }
+    return gurobi_status_dict[status_id]

@@ -96,11 +96,11 @@ class Optimizer:
             
             elif self.operations[i] == "Conv2D":
                 if i < nbr_op-1 and self.operations[i+1] == "BiasAdd":
-                    filters, image_shape, strides, pad_top, pad_left, c_input_names, _, _ = self.resources[i][domain]
+                    filters, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, _, _ = self.resources[i][domain]
                     bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
                     i += 2
                 else:
-                    filters, image_shape, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                    filters, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
                     bias_length = reduce((lambda x, y: x*y), output_shape)
                     bias = nn.zeros(bias_length)
                     i += 1
@@ -108,33 +108,33 @@ class Optimizer:
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.out_shapes.append(b_output_shape)
                 nn.filters.append(filters)
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
                 if domain == 'deepzono':
-                    execute_list.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape))
+                    execute_list.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, b_output_name, b_output_shape))
                 else:
-                    execute_list.append(DeeppolyConv2dNode(filters, strides, pad_top, pad_left, bias, image_shape, c_input_names, b_output_name, b_output_shape))
+                    execute_list.append(DeeppolyConv2dNode(filters, strides, pad_top, pad_left, pad_bottom, pad_right, bias, image_shape, c_input_names, b_output_name, b_output_shape))
                 nn.numlayer+=1
             elif self.operations[i] == "Conv":
-                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
                 nn.out_shapes.append(b_output_shape)
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.filters.append(filters)
 
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
                 nn.numlayer+=1
                 if domain == 'deepzono':
-                    execute_list.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape))
+                    execute_list.append(DeepzonoConvbias(image_shape, filters, bias, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, output_name, b_output_shape))
                 else:
-                    execute_list.append(DeeppolyConv2dNode(filters, strides, pad_top, pad_left, bias, image_shape, c_input_names, output_name, b_output_shape))
+                    execute_list.append(DeeppolyConv2dNode(filters, strides, pad_top, pad_left, pad_bottom, pad_right, bias, image_shape, c_input_names, output_name, b_output_shape))
                 i += 1    
             elif self.operations[i] == "Resadd":
                 #self.resources[i][domain].append(refine)
@@ -170,7 +170,7 @@ class Optimizer:
                 nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "MaxPool" or self.operations[i] == "AveragePool" or self.operations[i] == "AvgPool":
-                image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape = self.resources[i][domain]
+                image_shape, window_size, strides, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape = self.resources[i][domain]
                 nn.pool_size.append(window_size)
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
@@ -183,9 +183,22 @@ class Optimizer:
                 else:
                     nn.layertypes.append('Avgpool')
                 if domain == 'deepzono':
-                    execute_list.append(DeepzonoPool(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape, is_maxpool))
+                    execute_list.append(DeepzonoPool(image_shape, window_size, strides, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape, is_maxpool))
                 else:
-                    execute_list.append(DeeppolyPoolNode(image_shape, window_size, strides, pad_top, pad_left, input_names, output_name, output_shape, is_maxpool))
+                    execute_list.append(DeeppolyPoolNode(image_shape, window_size, strides,pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape, is_maxpool))
+                i += 1
+            elif self.operations[i] == "Pad":
+                image_shape, pad_top, pad_left, pad_bottom, pad_right, input_names, output_name, output_shape = self.resources[i][domain]
+                nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
+                nn.out_shapes.append(output_shape)
+                nn.layertypes.append('Pad')
+                if domain == 'deepzono':
+                    #execute_list.append(DeepzonoPad(image_shape, filters, bias, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, b_output_name, b_output_shape))
+                    raise NotImplementedError
+                else:
+                    execute_list.append(DeeppolyPaddingNode(pad_top, pad_left, pad_bottom, pad_right, image_shape, input_names, output_name, output_shape))
+                nn.numlayer += 1
                 i += 1
             elif self.operations[i] == "Relu":
                 #self.resources[i][domain].append(refine)
@@ -443,9 +456,8 @@ class Optimizer:
         relu_layers = []
         last_layer = None
         while i < nbr_op:
-            
+            #TODO support Maxpool
             if self.operations[i] == "MatMul":
-                
                 nn.layertypes.append('FC')
                 
                 if i < nbr_op-1 and self.operations[i+1] in ["Add", "BiasAdd"]:
@@ -495,7 +507,7 @@ class Optimizer:
                 nn.weights.append(matrix)
                 nn.biases.append(bias)
                 nn.layertypes.append('FC')
-                nn.numlayer += 1
+                nn.numlayer+= 1
                 #matrix = np.ascontiguousarray(matrix, dtype=np.double)
                 #bias = np.ascontiguousarray(bias, dtype=np.double)
                 #print("Gemm Matrix ", matrix)
@@ -508,11 +520,11 @@ class Optimizer:
             elif self.operations[i] == "Conv2D":
                 last_layer = "Conv"
                 if i < nbr_op-1 and self.operations[i+1] == "BiasAdd":
-                    filters, image_shape, strides, pad_top, pad_left, c_input_names, _, _ = self.resources[i][domain]
+                    filters, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, _, _ = self.resources[i][domain]
                     bias, _, b_output_name, b_output_shape = self.resources[i+1][domain]
                     i += 2
                 else:
-                    filters, image_shape, strides, pad_top, pad_left, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
+                    filters, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, b_output_name, b_output_shape = self.resources[i][domain]
                     bias_length = reduce((lambda x, y: x*y), output_shape)
                     bias = nn.zeros(bias_length)
                     i += 1
@@ -520,33 +532,33 @@ class Optimizer:
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[2],image_shape[0],image_shape[1]])
                 nn.strides.append([strides[0],strides[1]])
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.out_shapes.append([b_output_shape[0], b_output_shape[3], b_output_shape[1], b_output_shape[2]])
-                nn.filters.append(np.transpose(filters, [3, 2, 0, 1]))
+                nn.filters.append(np.transpose(filters,[3,2,0, 1]))
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
                 #print("filter shape ", nn.out_shapes[-1])
-                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), strides[0], pad_top)
+                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), strides[0], [pad_top, pad_left, pad_bottom, pad_right])
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 network.add_bias(bias)
                 num_gpu_layers +=2
                 nn.numlayer+=1
             elif self.operations[i] == "Conv":
                 last_layer = "Conv"
-                filters, bias, image_shape, strides, pad_top, pad_left, c_input_names, output_name, b_output_shape = self.resources[i][domain]
+                filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, c_input_names, output_name, b_output_shape = self.resources[i][domain]
                 nn.numfilters.append(filters.shape[3])
                 nn.filter_size.append([filters.shape[0], filters.shape[1]])
                 nn.input_shape.append([image_shape[2],image_shape[0],image_shape[1]])
                 nn.strides.append([strides[0],strides[1]])
                 nn.out_shapes.append([b_output_shape[0], b_output_shape[3], b_output_shape[1], b_output_shape[2]])
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.filters.append(np.transpose(filters,[3,2,0, 1]))
 
                 nn.biases.append(bias)
                 nn.layertypes.append('Conv')
                 nn.numlayer+=1
                 #print("Filter Matrix ", filters)
-                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), strides[0], pad_top)
+                network.add_conv_2d(image_shape[0], image_shape[1], filters.astype("float64"), strides[0], [pad_top, pad_left, pad_bottom, pad_right])
                 bias=bias.repeat(b_output_shape[1]*b_output_shape[2])
                 #print("Filter Bias ", bias)
                 network.add_bias(bias.astype("float64"))

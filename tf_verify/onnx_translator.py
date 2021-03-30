@@ -340,6 +340,21 @@ def prepare_model(model):
 
 				result = np.zeros(shape_map[node.output[0]]) + constants_map[node.input[0]]
 				constants_map[node.output[0]] = result
+		elif node.op_type == "Pad":
+			input_shape = np.array(shape_map[node.input[0]])
+			for attribute in node.attribute:
+				if attribute.name == "pads":
+					padding = np.array(attribute.ints)
+				if attribute.name == "mode":
+					assert attribute.s == bytes(b'constant'), "only zero padding supported"
+				if attribute.name == "value":
+					assert attribute.f == 0, "only zero padding supported"
+			output_shape = np.copy(input_shape)
+			input_dim = len(input_shape)
+			assert len(padding) == 2* input_dim
+			for i in range(2,input_dim): # only pad spatial dimensions
+				output_shape[i-1] += padding[i]+padding[i+input_dim]
+			shape_map[node.output[0]] = list(output_shape)
 		else:
 			assert 0, "Operations of type " + node.op_type + " are not yet supported."
 
@@ -405,8 +420,10 @@ class ONNXTranslator:
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
 		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Unsqueeze", "Softmax", "Flatten", "Concat", "BatchNormalization"]
+		padding_merger_dict = {}
 		#print("nodes ", self.nodes)
 		for node in self.nodes:
+			ignore_operation = False
 			if node.op_type == "Constant":
 				continue
 			elif node.op_type in operations_to_be_ignored:
@@ -482,10 +499,28 @@ class ONNXTranslator:
 					operation_types[-1] = "Ressub"
 					operation_resources.append({'deepzono':in_out_info, 'deeppoly':in_out_info})
 			elif node.op_type == "Conv":
-				filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape = self.conv_resources(node)
-				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left) + in_out_info
+				filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, kernel_shape = self.conv_resources(node)
+				if node.name in padding_merger_dict:
+					image_shape, m_pad_top, m_pad_left, m_pad_bottom, m_pad_right, input_node, _, _ = padding_merger_dict[node.name]
+					in_out_info = (input_node, in_out_info[1], in_out_info[2])
+					pad_top += m_pad_top
+					pad_left += m_pad_left
+					pad_bottom += m_pad_bottom
+					pad_right += m_pad_right
+				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
+			elif node.op_type == "Pad":
+				image_shape, pad_top, pad_left, pad_bottom, pad_right = self.pad_resources(node)
+				deeppoly_res = (image_shape, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
+				deepzono_res = deeppoly_res
+				consequent_nodes = [node_i for node_i in self.nodes if node.output[0] in node_i.input]
+				can_be_merged = all([node_i.op_type=="Conv" for node_i in consequent_nodes])
+				if can_be_merged:
+					padding_merger_dict.update({node_i.name: deeppoly_res for node_i in consequent_nodes})
+					self.ignore_node(node, operation_types, reshape_map)
+				else:
+					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
 				image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, ceil_mode, storage_order = self.pool_resources(node)
 				deeppoly_res =  (image_shape, kernel_shape, strides, pad_top, pad_left) + in_out_info
@@ -761,9 +796,38 @@ class ONNXTranslator:
 		pad_left = pads[1]
 		pad_bottom = pads[2]
 		pad_right = pads[3]
-		assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
-		assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
-		return filters, bias, image_shape, strides, pad_top, pad_left, kernel_shape
+		# assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
+		# assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
+		return filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, kernel_shape
+
+	def pad_resources(self, node):
+		"""
+		Extracts the padding from node as well as the shape of the input coming into node
+
+		Arguments
+		---------
+		node : ONNX.Node
+		    must have op_type "Pad"
+
+		Return
+		------
+		output : tuple
+		    has 4 entries (numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray)
+		"""
+		inputs = node.input
+		image = inputs[0]
+		image_shape = self.get_shape(image)[1:]
+
+		pads = [0, 0, 0, 0]
+		for attribute in node.attribute:
+			if attribute.name == 'pads':
+				pads = attribute.ints
+
+		pad_top = pads[2]
+		pad_left = pads[3]
+		pad_bottom = pads[6]
+		pad_right = pads[7]
+		return image_shape, pad_top, pad_left, pad_bottom, pad_right
 	
 	
 	def pool_resources(self, node):
