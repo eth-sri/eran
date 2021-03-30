@@ -49,19 +49,24 @@ Note that it might be required to use `sudo -E` to for the right environment var
 Ensure that the following tools are available:
 python-distutils,
 cmake (>=3.17.1),
+m4 (1.4.18)
 autoconf,
 libtool,
 pdftex.  
-On Ubuntu systems they can be installed using (setting the python version in use):
+See https://cmake.org/cmake/help/latest/command/install.html for the install of cmake. \
+On Ubuntu systems they can be installed using:
 ```
 sudo apt-get install build-essential
-sudo apt-get install cmake
 sudo apt-get install autoconf
 sudo apt-get install libtool
 sudo apt-get install texlive-latex-base
 ```
 
-Install m4:
+Install m4 either using (recommended for Ubuntu 20.04):
+```
+sudo apt-get install m4
+```
+or
 ```
 wget ftp://ftp.gnu.org/gnu/m4/m4-1.4.1.tar.gz
 tar -xvzf m4-1.4.1.tar.gz
