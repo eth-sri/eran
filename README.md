@@ -310,11 +310,20 @@ Use the "deeppoly" or "deepzono" domain with "--complete True" option
 
 Recommended Configuration for More Precise but relatively expensive Incomplete Verification
 ----------------------------------------------------------------------------------------------
-Use the "refinepoly" domain with "--use_milp True", "--sparse_n 12", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10" options
+Use the "refinepoly" or if a gpu is available "refinegpupoly" domain with , "--sparse_n 100", and "--timeout_final_lp 100".\
+For MLPs use "--refine_neurons", "--use_milp True", "--timeout_milp 10", "--timeout_lp 10" to do a neuronweise bound refinement.\
+For Conv networks use "--partial_milp {1,2}" (choose at most number of linear layers), "--max_milp_neurons 100", and "--timeout_final_milp 250" to use a MILP encoding for the last layers. 
+
+Examples:\
+To certify e.g. [CNN-B-ADV](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/CNN_B_CIFAR_ADV.onnx) introduced as a benchmark for SDP-FO in [[1]](https://arxiv.org/abs/2010.11645) on the [100 random samples](https://files.sri.inf.ethz.ch/eran/data/cifar10_test_b_adv.csv) from [[2]](https://arxiv.org/abs/2103.06624) against L-inf perturbations of magnitude 2/255 use:
+```
+python3 . --netname ../nets/CNN_B_CIFAR_ADV.onnx --dataset cifar10  --subset b_adv --domain refinegpupoly --epsilon 0.00784313725 --sparse_n 100 --partial_milp 1 --max_milp_neurons 250 --timeout_final_milp 500 --mean 0.49137255 0.48235294 0.44666667 --std 0.24705882 0.24352941 0.26156863
+```
+to certify 43 of the 100 samples as correct with an average runtime of around 260s per sample (including timed out attempts). 
 
 Recommended Configuration for Faster but relatively imprecise Incomplete Verification
 -----------------------------------------------------------------------------------------------
-Use the "deeppoly" domain
+Use the "deeppoly" or if a gpu is available "gpupoly" domain
 
 Certification of Vector Field Deformations
 ------------------------------------------
