@@ -15,7 +15,7 @@ ERAN combines abstract domains with custom multi-neuron relaxations from PRIMA t
 
 * RefineZono [ICLR'19]: combines DeepZ analysis with MILP and LP solvers for more precision. 
 
-* RefinePoly [NeurIPS'19]: combines DeepPoly/GPUPoly analysis with (MI)LP refinement and PRIMA framework [arXiv'2021] to compute group-wise joint neuron abstractions for state-of-the-art precision and scalability.
+* RefinePoly/RefineGPUPoly [NeurIPS'19]: combines DeepPoly/GPUPoly analysis with (MI)LP refinement and PRIMA framework [arXiv'2021] to compute group-wise joint neuron abstractions for state-of-the-art precision and scalability.
 
 All analysis are implemented using the [ELINA](http://elina.ethz.ch/) library for numerical abstractions. More details can be found in the publications below. 
 
