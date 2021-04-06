@@ -867,9 +867,9 @@ More experimental results can be found in our papers.
 Contributors
 --------------
 
-* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) (lead contact) - mark.mueller@inf.ethz.ch
+* [Gagandeep Singh](https://ggndpsngh.github.io/) (lead contact) - ggnds@illinois.edu gagandeepsi@vmware.com
 
-* [Gagandeep Singh](https://ggndpsngh.github.io/) (co-lead contact) - ggnds@illinis.edu gagandeepsi@vmware.com
+* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) (lead contact for PRIMA) - mark.mueller@inf.ethz.ch
 
 * [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
 
