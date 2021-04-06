@@ -524,7 +524,7 @@ The table below compares the performance and precision of DeepZ and DeepPoly on 
    <td> ConvBig</td>
    <td> 0.2</td>
    <td> 79 </td>
-   <td> 78 </td>
+   <td> 78 </td>  
    <td> 7 </td> 
    <td> 61 </td>
 </tr>
@@ -656,43 +656,246 @@ The table below compares the timings of complete verification with ERAN for all 
 
 </table>
 
+<table>
+
+The table below shows the certification performance of PRIMA (refinepoly with Precise Multi-Neuron Relacations). For MLPs we use CPU only certificaiton, while we use GPUPoly for the certification of the convolutional networks. 
+
+
+<thead>
+<tr>
+   <th>Network</th>
+   <th>Data subset</th>
+   <th>Accuracy</th>
+   <th>Epsilon</th>
+   <th>Upper Bound</th>
+   <th>PRIMA certified</th>
+   <th>PRIMA runtime [s]</th>
+   <th>N</th>
+   <th>K</th>
+   <th>Refinement</th>
+   <th>Partial MILP (layers/max_neurons)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>MNIST</td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>6x100 [NOR]</td>
+   <td>first 1000</td>
+   <td>960</td>
+   <td>0.026</td>
+   <td>842</td>
+   <td>510</td>
+   <td>159.2</td>
+   <td>100</td>
+   <td>3</td>
+   <td>y</td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>9x100 [NOR]</td>
+   <td>first 1000</td>
+   <td>947</td>
+   <td>0.026</td>
+   <td>820</td>
+   <td>428</td>
+   <td>300.63</td>
+   <td>100</td>
+   <td>3</td>
+   <td>y</td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>6x200 [NOR]</td>
+   <td>first 1000</td>
+   <td>972</td>
+   <td>0.015</td>
+   <td>901</td>
+   <td>690</td>
+   <td>223.6</td>
+   <td>50</td>
+   <td>3</td>
+   <td>y</td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>9x200 [NOR]</td>
+   <td>first 1000</td>
+   <td>950</td>
+   <td>0.015</td>
+   <td>911</td>
+   <td>624</td>
+   <td>394.6</td>
+   <td>50</td>
+   <td>3</td>
+   <td>y</td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>ConvSmall [NOR]</td>
+   <td>first 1000</td>
+   <td>980</td>
+   <td>0.12</td>
+   <td>746</td>
+   <td>598</td>
+   <td>41.7</td>
+   <td>100</td>
+   <td>3</td>
+   <td>n</td>
+   <td>1/30</td>
+</tr>
+
+<tr>
+   <td>ConvBig [DiffAI]</td>
+   <td>first 1000</td>
+   <td>929</td>
+   <td>0.3</td>
+   <td>804</td>
+   <td>775</td>
+   <td>15.3</td>
+   <td>100</td>
+   <td>3</td>
+   <td>n</td>
+   <td>2/30</td>
+</tr>
+
+<tr>
+   <td>CIFAR-10</td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>ConvSmall [PGD]</td>
+   <td>first 1000</td>
+   <td>630</td>
+   <td>2/255</td>
+   <td>482</td>
+   <td>446</td>
+   <td>13.25</td>
+   <td>100</td>
+   <td>3</td>
+   <td>n</td>
+   <td>1/100</td>
+</tr>
+
+<tr>
+   <td>ConvBig [PGD]</td>
+   <td>first 1000</td>
+   <td>631</td>
+   <td>2/255</td>
+   <td>613</td>
+   <td>483</td>
+   <td>175.9</td>
+   <td>100</td>
+   <td>3</td>
+   <td>n</td>
+   <td>2/512</td>
+</tr>
+
+<tr>
+   <td>ResNet [Wong]</td>
+   <td>first 1000</td>
+   <td>289</td>
+   <td>8/255</td>
+   <td>290</td>
+   <td>249</td>
+   <td>63.5</td>
+   <td>50</td>
+   <td>3</td>
+   <td>n</td>
+   <td></td>
+</tr>
+
+<tr>
+   <td>CNN-A [MIX]</td>
+   <td>Beta-CROWN 100</td>
+   <td>100</td>
+   <td>2/255</td>
+   <td>69</td>
+   <td>50</td>
+   <td>20.96</td>
+   <td>100</td>
+   <td>3</td>
+   <td>n</td>
+   <td>1/100</td>
+</tr>
+
+<tr>
+   <td>CNN-B [ADV]</td>
+   <td>Beta-CROWN 100</td>
+   <td>100</td>
+   <td>2/255</td>
+   <td>83</td>
+   <td>43</td>
+   <td>259.7</td>
+   <td>100</td>
+   <td>3</td>
+   <td>n</td>
+   <td>1/250</td>
+</tr>
+</tbody>
+</table>
 
 More experimental results can be found in our papers.
 
 Contributors
 --------------
 
-* [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (lead contact) - gsingh@inf.ethz.ch
+* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) (lead contact) - mark.mueller@inf.ethz.ch
 
 * [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
 
-* [Mark Müller](https://www.sri.inf.ethz.ch/people/mark) mark.mueller@inf.ethz.ch
+* Gleb Makarchuk (contact for FConv library) - hlebm@ethz.ch gleb.makarchuk@gmail.com 
 
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
-* Christoph Müller - christoph.mueller@inf.ethz.ch
-
 * [François Serre](https://fserre.github.io/) (contact for GPUPoly) - serref@inf.ethz.ch
 
-* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) - mark.mueller@inf.ethz.ch
-
-* Gleb Makarchuk (contact for FConv library for relaxation computation) -  hlebm@ethz.ch gleb.makarchuk@gmail.com 
-
-* Jonathan Maurer - maurerjo@student.ethz.ch
-
-* Adrian Hoffmann - adriahof@student.ethz.ch
+* [Gagandeep Singh](https://www.sri.inf.ethz.ch/people/gagandeep) (contact for ELINA) - gsingh@inf.ethz.ch
 
 * [Maximilian Baader](https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
 
-* [Matthew Mirman](https://www.mirman.com) - matt@mirman.com
+* [Dana Drachsler Cohen](https://www.sri.inf.ethz.ch/people/dana) - dana.drachsler@inf.ethz.ch 
 
 * [Timon Gehr](https://www.sri.inf.ethz.ch/tg.php) - timon.gehr@inf.ethz.ch
 
-* [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
+* Adrian Hoffmann - adriahof@student.ethz.ch
 
-* [Dana Drachsler Cohen](https://www.sri.inf.ethz.ch/people/dana) - dana.drachsler@inf.ethz.ch 
+* Jonathan Maurer - maurerjo@student.ethz.ch
+
+* [Matthew Mirman](https://www.mirman.com) - matt@mirman.com
+
+* Christoph Müller - christoph.mueller@inf.ethz.ch
 
 * [Markus Püschel](https://acl.inf.ethz.ch/people/markusp/) - pueschel@inf.ethz.ch
+
+* [Petar Tsankov](https://www.sri.inf.ethz.ch/people/petar) - petar.tsankov@inf.ethz.ch
 
 * [Martin Vechev](https://www.sri.inf.ethz.ch/vechev.php) - martin.vechev@inf.ethz.ch
 
