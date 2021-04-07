@@ -1456,7 +1456,7 @@ else:
                                                                                       timeout_final_milp=config.timeout_final_milp,
                                                                                       use_milp=False,
                                                                                       complete=False,
-                                                                                      terminate_on_failure = True,
+                                                                                      terminate_on_failure=not config.complete,
                                                                                       partial_milp=0,
                                                                                       max_milp_neurons=0,
                                                                                       approx_k=0)
@@ -1472,7 +1472,7 @@ else:
                                                                                       timeout_final_milp=config.timeout_final_milp,
                                                                                       use_milp=config.use_milp,
                                                                                       complete=config.complete,
-                                                                                      terminate_on_failure=not config.complete and domain == "refinepoly",
+                                                                                      terminate_on_failure=not config.complete,
                                                                                       partial_milp=config.partial_milp,
                                                                                       max_milp_neurons=config.max_milp_neurons,
                                                                                       approx_k=config.approx_k)
