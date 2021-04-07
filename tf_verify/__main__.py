@@ -274,14 +274,15 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
         else:
             return False
     else:
-        grads = estimate_grads(specLB, specUB, input_shape=eran.input_shape)
-        # grads + small epsilon so if gradient estimation becomes 0 it will divide the biggest interval.
-        smears = np.multiply(grads + 0.00001, [u-l for u, l in zip(specUB, specLB)])
+        # grads = estimate_grads(specLB, specUB, input_shape=eran.input_shape)
+        # # grads + small epsilon so if gradient estimation becomes 0 it will divide the biggest interval.
+        # smears = np.multiply(grads + 0.00001, [u-l for u, l in zip(specUB, specLB)])
 
         #start = time.time()
-        #nn.set_last_weights(constraints)
-        #grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
-        #smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
+        nn.set_last_weights(constraints)
+        grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
+        smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
+
         index = np.argmax(smears)
         m = (specLB[index]+specUB[index])/2
 
@@ -556,7 +557,6 @@ if dataset=='acasxu':
             # expensive min/max gradient calculation
             nn.set_last_weights(constraints)
             grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
-
 
             smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
             split_multiple = 20 / np.sum(smears)
