@@ -74,7 +74,7 @@ class layers:
         self.last_weights = [w/length for w in last_weights]
 
 
-    def back_propagate_gradiant(self, nlb, nub):
+    def back_propagate_gradient(self, nlb, nub):
         #assert self.is_ffn(), 'only supported for FFN'
 
         grad_lower = self.last_weights.copy()

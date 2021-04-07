@@ -158,12 +158,11 @@ def prepare_model(model):
 				if 'transA' == attribute.name:
 					transA = attribute.i
 				elif 'transB' == attribute.name:
-					transB = attribute.i	
-			M = shape_map[node.input[0]][transA]
-			if len(shape_map[node.input[1]]) == 1 and transB == 0:
-				N = 1
-			else:
-				N = shape_map[node.input[1]][1 - transB]
+					transB = attribute.i
+			input_shape_A = ([1] if len(shape_map[node.input[0]])==1 else []) + list(shape_map[node.input[0]])
+			input_shape_B =  list(shape_map[node.input[1]]) + ([1] if len(shape_map[node.input[1]])==1 else [])
+			M = input_shape_A[transA]
+			N = input_shape_B[1 - transB]
 			shape_map[node.output[0]] = [M, N]
 
 		elif node.op_type in ["Add", "Sub", "Mul"]:

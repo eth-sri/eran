@@ -280,7 +280,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
 
         #start = time.time()
         nn.set_last_weights(constraints)
-        grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
+        grads_lower, grads_upper = nn.back_propagate_gradient(nlb, nub)
         smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
 
         index = np.argmax(smears)
@@ -556,7 +556,7 @@ if dataset=='acasxu':
         if not verified_flag and adex_holds:
             # expensive min/max gradient calculation
             nn.set_last_weights(constraints)
-            grads_lower, grads_upper = nn.back_propagate_gradiant(nlb, nub)
+            grads_lower, grads_upper = nn.back_propagate_gradient(nlb, nub)
 
             smears = [max(-grad_l, grad_u) * (u-l) for grad_l, grad_u, l, u in zip(grads_lower, grads_upper, specLB, specUB)]
             split_multiple = 20 / np.sum(smears)
