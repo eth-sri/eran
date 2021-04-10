@@ -500,12 +500,7 @@ class ONNXTranslator:
 			elif node.op_type == "Conv":
 				filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right, kernel_shape = self.conv_resources(node)
 				if node.name in padding_merger_dict:
-					image_shape, m_pad_top, m_pad_left, m_pad_bottom, m_pad_right, input_node, _, _ = padding_merger_dict[node.name]
-					in_out_info = (input_node, in_out_info[1], in_out_info[2])
-					pad_top += m_pad_top
-					pad_left += m_pad_left
-					pad_bottom += m_pad_bottom
-					pad_right += m_pad_right
+					image_shape, in_out_info, pad_top, pad_left, pad_bottom, pad_right = self.merge_padding(node, padding_merger_dict, in_out_info, pad_top, pad_left, pad_bottom, pad_right)
 				deeppoly_res = (filters, bias, image_shape, strides, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
@@ -514,17 +509,19 @@ class ONNXTranslator:
 				deeppoly_res = (image_shape, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				deepzono_res = deeppoly_res
 				consequent_nodes = [node_i for node_i in self.nodes if node.output[0] in node_i.input]
-				can_be_merged = all([node_i.op_type=="Conv" for node_i in consequent_nodes])
+				can_be_merged = all([node_i.op_type in ["Conv"] for node_i in consequent_nodes])
 				if can_be_merged:
 					padding_merger_dict.update({node_i.name: deeppoly_res for node_i in consequent_nodes})
 					self.ignore_node(node, operation_types, reshape_map)
 				else:
 					operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "MaxPool" or node.op_type == "AveragePool":
-				image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, ceil_mode, storage_order = self.pool_resources(node)
-				deeppoly_res =  (image_shape, kernel_shape, strides, pad_top, pad_left) + in_out_info
+				image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, pad_bottom, pad_right, ceil_mode, storage_order = self.pool_resources(node)
+				if node.name in padding_merger_dict:
+					image_shape, in_out_info, pad_top, pad_left, pad_bottom, pad_right = self.merge_padding(node, padding_merger_dict, in_out_info, pad_top, pad_left, pad_bottom, pad_right)
+				deeppoly_res = (image_shape, kernel_shape, strides, pad_top, pad_left, pad_bottom, pad_right) + in_out_info
 				# TODO padding is expected to be string in tf. dilations, auto_pad, ceil_mode, storage_order are unused at the moment
-				deepzono_res = (image_shape, kernel_shape, strides, pad_top, pad_left) + in_out_info
+				deepzono_res = deeppoly_res
 				operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 			elif node.op_type == "Placeholder":
 				assert 0, "Placeholder is not in the ONNX graph"
@@ -603,6 +600,16 @@ class ONNXTranslator:
 			reshape_map[output_name] = reshape_map[input_name]
 		else:
 			reshape_map[output_name] = input_name
+
+	def merge_padding(self, node, padding_merger_dict, in_out_info, pad_top, pad_left, pad_bottom, pad_right):
+		image_shape, m_pad_top, m_pad_left, m_pad_bottom, m_pad_right, input_node, _, _ = padding_merger_dict[node.name]
+		in_out_info = (input_node, in_out_info[1], in_out_info[2])
+		pad_top += m_pad_top
+		pad_left += m_pad_left
+		pad_bottom += m_pad_bottom
+		pad_right += m_pad_right
+		return image_shape, in_out_info, pad_top, pad_left, pad_bottom, pad_right
+
 
 	def get_kind(self, name):
 		if name in self.constants_map:
@@ -874,7 +881,7 @@ class ONNXTranslator:
 		pad_right = pads[3]
 		assert pad_top == pad_bottom, 'different padding for top and bottom is not supported in ERAN'
 		assert pad_left == pad_right, 'different padding for left and right is not supported in ERAN'
-		return image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, ceil_mode, storage_order
+		return image_shape, kernel_shape, strides, padding, dilations, pad_top, pad_left, pad_bottom, pad_right, ceil_mode, storage_order
 	
 	
 	def nonlinearity_resources(self, op):
