@@ -175,7 +175,7 @@ class Optimizer:
                 nn.input_shape.append([image_shape[0],image_shape[1],image_shape[2]])
                 nn.strides.append([strides[0],strides[1]])
                 nn.out_shapes.append(output_shape)
-                nn.padding.append([pad_top, pad_left])
+                nn.padding.append([pad_top, pad_left, pad_bottom, pad_right])
                 nn.numlayer+=1
                 is_maxpool = (self.operations[i]=="MaxPool")
                 if is_maxpool:
