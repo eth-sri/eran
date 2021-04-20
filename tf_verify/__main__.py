@@ -655,7 +655,7 @@ if dataset=='acasxu':
     print("Total time needed:", time.time() - total_start, "seconds")
 
 elif zonotope_bool:
-    perturbed_label, nn, nlb, nub,_ = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
+    perturbed_label, nn, nlb, nub,_,_ = eran.analyze_zonotope(zonotope, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic)
     print("nlb ",nlb[-1])
     print("nub ",nub[-1])
     if(perturbed_label!=-1):

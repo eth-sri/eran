@@ -205,12 +205,19 @@ class Analyzer:
             index of the dominant class. If no class dominates then returns -1
         """
         element, nlb, nub = self.get_abstract0()
+        
+        if self.domain == "deeppoly" or self.domain == "refinepoly":
+            linexprarray = backsubstituted_expr_for_layer(self.man, element, 1, True)
+            for neuron in range(1):
+                print("******EXPR*****")
+                elina_linexpr0_print(linexprarray[neuron],None)
+                print()
         output_size = 0
         if self.domain == 'deepzono' or self.domain == 'refinezono':
             output_size = self.ir_list[-1].output_length
         else:
             output_size = self.ir_list[-1].output_length#reduce(lambda x,y: x*y, self.ir_list[-1].bias.shape, 1)
-    
+        
         dominant_class = -1
         if(self.domain=='refinepoly'):
 

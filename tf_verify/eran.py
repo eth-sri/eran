@@ -110,7 +110,7 @@ class ERAN:
             return dominant_class, nn, nlb, nub, failed_labels, x
 
 
-    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_default_heuristic, output_constraints=None, testing = False):
+    def analyze_zonotope(self, zonotope, domain, timeout_lp, timeout_milp, use_default_heuristic, output_constraints=None, testing = False, prop=-1):
         """
         This function runs the analysis with the provided model and session from the constructor, the box specified by specLB and specUB is used as input. Currently we have three domains, 'deepzono',      		'refinezono' and 'deeppoly'.
 
@@ -134,11 +134,11 @@ class ERAN:
         nn.zonotope = zonotope
         if domain == 'deepzono' or domain == 'refinezono':
             execute_list, output_info   = self.optimizer.get_deepzono(nn, zonotope)
-            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, testing)
+            analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, output_constraints, use_default_heuristic, testing, prop=prop)
         elif domain == 'deeppoly' or domain == 'refinepoly':
             assert 0
             #execute_list   = self.optimizer.get_deeppoly(original, zonotope, True)
             #analyzer       = Analyzer(execute_list, nn, domain, timeout_lp, timeout_milp, specnumber, use_default_heuristic)
-        dominant_class, nlb, nub = analyzer.analyze()
-        return dominant_class, nn, nlb, nub
+        dominant_class, nlb, nub, failed_labels, x = analyzer.analyze()
+        return dominant_class, nn, nlb, nub, failed_labels, x
 
