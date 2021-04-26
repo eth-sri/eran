@@ -208,10 +208,10 @@ class Analyzer:
         
         if self.domain == "deeppoly" or self.domain == "refinepoly":
             linexprarray = backsubstituted_expr_for_layer(self.man, element, 1, True)
-            for neuron in range(1):
-                print("******EXPR*****")
-                elina_linexpr0_print(linexprarray[neuron],None)
-                print()
+            #for neuron in range(1):
+                #print("******EXPR*****")
+                #elina_linexpr0_print(linexprarray[neuron],None)
+                #print()
         output_size = 0
         if self.domain == 'deepzono' or self.domain == 'refinezono':
             output_size = self.ir_list[-1].output_length

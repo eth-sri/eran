@@ -408,7 +408,7 @@ class DeeppolyTanhNode(DeeppolyNonlinearity):
 
 
 class DeeppolyLeakyReluNode(DeeppolyNonlinearity):
-    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing):
+    def transformer(self, nn, man, element, nlb, nub, relu_groups, refine, timeout_lp, timeout_milp, use_default_heuristic, testing, alpha=0.01):
         """
         transforms element with handle_tanh_layer
         
@@ -429,7 +429,7 @@ class DeeppolyLeakyReluNode(DeeppolyNonlinearity):
         if False:
             refine_activation_with_solver_bounds(nn, self, man, element, nlb, nub, relu_groups, timeout_lp, timeout_milp, use_default_heuristic, 'deeppoly')
         else:
-            handle_leakyrelu_layer(*self.get_arguments(man, element), use_default_heuristic)
+            handle_leakyrelu_layer(*self.get_arguments(man, element), alpha, use_default_heuristic)
         calc_bounds(man, element, nn, nlb, nub, relu_groups, is_refine_layer=True, use_krelu=refine)
         nn.activation_counter+=1
         if testing:
