@@ -344,7 +344,7 @@ Certification of vector field deformations is compatible with the "deeppoly" and
 
 Publications
 -------------
-*  [Precise Multi-Neuron Abstractions for Neural Network Certification](https://www.sri.inf.ethz.ch/publications/mueller2021precise)
+*  [PRIMA: Precise and General Neural Network Certification via Multi-Neuron Convex Relaxations](https://www.sri.inf.ethz.ch/publications/mueller2021precise)
 
    Mark Niklas Müller, Gleb Makarchuk, Gagandeep Singh, Markus Püschel, Martin Vechev
    
