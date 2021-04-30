@@ -857,6 +857,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
                                             partial_milp=-1, max_milp_neurons=int(1e6))
     #print("timeout ", config.timeout_milp)
     model.setParam(GRB.Param.Cutoff, 0.01)
+    # model.setParam(GRB.Param.Cutoff, 0.1)
 
     if spatial_constraints is not None:
         add_spatial_constraints(
@@ -870,6 +871,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     for or_list in constraints:
         or_result = False
         for (i, j, k) in or_list:
+            model.reset()
             milp_timeout = config.timeout_final_milp if config.timeout_complete is None else (config.timeout_complete + start_milp - time.time())
             model.setParam(GRB.Param.TimeLimit, milp_timeout)
             obj = LinExpr()

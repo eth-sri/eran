@@ -258,7 +258,13 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
         return hold
     elif depth >= max_depth:
         if failed_already.value and config.complete:
-            verified_flag, adv_examples, _ = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+            try:
+                verified_flag, adv_examples, _ = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+            except Exception as ex:
+                print(f"{ex}Exception occured for the following inputs:")
+                print(specLB, specUB, max_depth, depth)
+                #verified_flag, adv_examples, _ = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
+                raise ex
             print_progress(depth)
             if verified_flag == False:
                 if adv_examples!=None:
