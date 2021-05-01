@@ -889,7 +889,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
             # 0.01 is the default cutoff value
             for cutoff in [0.01, 0.1, GRB.INFINITY]:
                 model.setParam(GRB.Param.Cutoff, cutoff)
-                model.optimize(milp_callback if use_milp else lp_callback)
+                model.optimize(milp_callback)
                 if model.status not in [3, 4]:  # status 3 and 4 indicate an infeasible model
                     # no infeasibility reported.
                     break
