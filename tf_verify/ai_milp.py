@@ -856,7 +856,6 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     counter, var_list, model = create_model(nn, LB_N0, UB_N0, nlb, nub, None, numlayer, use_milp=True, is_nchw=is_nchw,
                                             partial_milp=-1, max_milp_neurons=int(1e6))
     #print("timeout ", config.timeout_milp)
-    model.setParam(GRB.Param.Cutoff, 0.01)
 
     if spatial_constraints is not None:
         add_spatial_constraints(
@@ -881,8 +880,22 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
                     obj += 1*var_list[counter + i]
                     obj += -1*var_list[counter + j]
                     model.setObjective(obj, GRB.MINIMIZE)
-            model.optimize(milp_callback)
-            assert model.status not in [3,4], f"\nInfeasible model encountered. Model status {model.status}\n"
+	    
+	    # In some cases it occurs that Gurobi reports an infeasible model
+            # probably due to numerical difficulties (c.f. https://github.com/eth-sri/eran/issues/74).
+            # These can be resolved (in the cases considered) by increasing the Cutoff parameter.
+            # The code below tries to recover from an infeasible model by increasing the default cutoff
+            # a few times.
+            # 0.01 is the default cutoff value
+            for cutoff in [0.01, 0.1, GRB.INFINITY]:
+                model.setParam(GRB.Param.Cutoff, cutoff)
+                model.optimize(milp_callback)
+                if model.status not in [3, 4]:  # status 3 and 4 indicate an infeasible model
+                    # no infeasibility reported.
+                    break
+            else:
+                # all values led to an infeasible model
+                assert model.status not in [3, 4], f"Infeasible model encountered. Model status {model.status}"
             try:
                 print(
                     f"MILP model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
