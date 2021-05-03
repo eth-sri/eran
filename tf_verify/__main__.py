@@ -247,7 +247,7 @@ def print_progress(depth):
     if config.debug:
         global progress, rec_start
         progress += np.power(2.,-depth)
-        sys.stdout.write('\r%.10f percent, %.02f s' % (100 * progress, time.time()-rec_start))
+        sys.stdout.write('\r%.10f percent, %.02f s\n' % (100 * progress, time.time()-rec_start))
 
 
 def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):

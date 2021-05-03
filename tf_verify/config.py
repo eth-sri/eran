@@ -45,7 +45,7 @@ class config:
     std = None # the standard deviation used to normalize the data with
     num_tests = None # Number of images to test
     from_test = 0 # From which number to start testing
-    debug = True # Whether to display debug info
+    debug = False # Whether to display debug info
     subset = None
     target = None # 
     epsfile = None

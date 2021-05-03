@@ -13,7 +13,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 """
-
+import warnings
 
 from gurobipy import *
 from fconv import *
@@ -868,7 +868,8 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
     non_adv_val = []
     for or_list in constraints:
         or_result = False
-        for (i, j, k) in or_list:
+        for is_greater_tuple in or_list:
+            (i, j, k) = is_greater_tuple
             obj = LinExpr()
             if j== -1:
                 obj += float(k) - 1 * var_list[counter + i]
@@ -879,7 +880,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
                     obj += -1*var_list[counter + j]
                     model.setObjective(obj, GRB.MINIMIZE)
 
-	    # In some cases it occurs that Gurobi reports an infeasible model
+	        # In some cases it occurs that Gurobi reports an infeasible model
             # probably due to numerical difficulties (c.f. https://github.com/eth-sri/eran/issues/74).
             # These can be resolved (in the cases considered) by increasing the Cutoff parameter.
             # The code below tries to recover from an infeasible model by increasing the default cutoff
@@ -894,15 +895,16 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
                 if model.status not in [3, 4]:  # status 3 and 4 indicate an infeasible model
                     # no infeasibility reported.
                     break
+                else:
+                    warnings.warn("Infeasible model encountered. Trying to increase the Cutoff parameter to recover.")
             else:
                 # all values led to an infeasible model
                 assert model.status not in [3, 4], f"Infeasible model encountered. Model status {model.status}"
-            try:
-                print(
-                    f"MILP model status: {model.Status}, Obj val/bound against label {j}: {model.objval:.4f}/{model.objbound:.4f}, Final solve time: {model.Runtime:.3f}")
-            except:
-                print(
-                    f"MILP model status: {model.Status}, Objval retrival failed, Final solve time: {model.Runtime:.3f}")
+
+            obj_bound = f"{model.objbound:.4f}" if hasattr(model, "objbound") else "failed"
+            obj_val = f"{model.objval:.4f}" if hasattr(model, "objval") else "failed"
+            print(f"MILP model status: {model.Status}, Obj val/bound for constraint {is_greater_tuple}: {obj_val}/{obj_bound}, Final solve time: {model.Runtime:.3f}")
+
 
             if model.objbound > 0:
                 or_result = True
