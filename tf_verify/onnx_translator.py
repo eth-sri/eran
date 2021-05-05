@@ -165,7 +165,7 @@ def prepare_model(model):
 			N = input_shape_B[1 - transB]
 			shape_map[node.output[0]] = [M, N]
 
-		elif node.op_type in ["Add", "Sub", "Mul"]:
+		elif node.op_type in ["Add", "Sub", "Mul", "Div"]:
 			shape_map[node.output[0]] = shape_map[node.input[0]]
 			if node.input[0] in constants_map and node.input[1] in constants_map:
 				if node.op_type == "Add":
@@ -174,6 +174,8 @@ def prepare_model(model):
 					result = np.subtract(constants_map[node.input[0]], constants_map[node.input[1]])
 				elif node.op_type == "Mul":
 					result = np.multiply(constants_map[node.input[0]], constants_map[node.input[1]])
+				elif node.op_type == "Div":
+					result = np.divide(constants_map[node.input[0]], constants_map[node.input[1]])
 				constants_map[node.output[0]] = result
 		elif node.op_type in ["Conv", "MaxPool", "AveragePool"]:
 			output_shape = []
@@ -355,7 +357,7 @@ def prepare_model(model):
 				output_shape[i-1] += padding[i]+padding[i+input_dim]
 			shape_map[node.output[0]] = list(output_shape)
 		else:
-			assert 0, "Operations of type " + node.op_type + " are not yet supported."
+			assert 0, f"Operations of type {node.op_type} are not yet supported."
 
 	#print('const_map')
 	#print(constants_map)
