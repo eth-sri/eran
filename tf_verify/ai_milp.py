@@ -938,7 +938,6 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
         return True, None, None
 
 
-
 def obj_from_is_greater_tuple_old(is_greater_tuple, var_list, counter):
     ### Define an objective for GUROBI based on an is_greater tuple
     obj = LinExpr()

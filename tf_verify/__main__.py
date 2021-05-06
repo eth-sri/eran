@@ -255,7 +255,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
     global failed_already
     if hold:
         print_progress(depth)
-        return hold
+        return hold, None
     elif depth >= max_depth:
         if failed_already.value and config.complete:
             try:
@@ -266,19 +266,20 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
                 #verified_flag, adv_examples, _ = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                 raise ex
             print_progress(depth)
+            hold_adex = True
             if verified_flag == False:
                 if adv_examples!=None:
                     #print("adv image ", adv_image)
                     for adv_image in adv_examples:
-                        hold,_,nlb,nub,_,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                        hold_adex,_,nlb,nub,_,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
                         #print("hold ", hold, "domain", domain)
-                        if hold == False:
+                        if not hold_adex:
                             print("property violated at ", adv_image, "output_score", nlb[-1])
                             failed_already.value = 0
                             break
-            return verified_flag
+            return verified_flag, None if hold_adex else adv_image
         else:
-            return False
+            return False, None
     else:
         # grads = estimate_grads(specLB, specUB, input_shape=eran.input_shape)
         # # grads + small epsilon so if gradient estimation becomes 0 it will divide the biggest interval.
@@ -292,9 +293,14 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
         index = np.argmax(smears)
         m = (specLB[index]+specUB[index])/2
 
-        result = failed_already.value and acasxu_recursive(specLB, [ub if i != index else m for i, ub in enumerate(specUB)], max_depth, depth + 1)
-        result = failed_already.value and result and acasxu_recursive([lb if i != index else m for i, lb in enumerate(specLB)], specUB, max_depth, depth + 1)
-        return result
+        result_a, adex_a = acasxu_recursive(specLB, [ub if i != index else m for i, ub in enumerate(specUB)], max_depth, depth + 1)
+        if adex_a is None:
+            result_b, adex_b = acasxu_recursive([lb if i != index else m for i, lb in enumerate(specLB)], specUB, max_depth, depth + 1)
+        else:
+            adex_b = None
+            result_b = False
+        adex = adex_a if adex_a is not None else (adex_b if adex_b is not None else None)
+        return failed_already.value and result_a and result_b, adex
 
 
 
@@ -639,7 +645,17 @@ if dataset=='acasxu':
                 failed_already = Value('i', 1)
                 try:
                     with Pool(processes=10, initializer=init, initargs=(failed_already,)) as pool:
-                        res = pool.starmap(acasxu_recursive, multi_bounds)
+                        pool_return = pool.starmap(acasxu_recursive, multi_bounds)
+                    res = [x[0] for x in pool_return]
+                    adex = [x[1] for x in pool_return if x[1] is not None]
+                    for x_adex in adex: # Should be redundant as only confirmed counterexamples should be returned.
+                        adex_holds, _, _, _, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp,
+                                                                 config.timeout_milp, config.use_default_heuristic,
+                                                                 constraints)
+                        if not adex_holds:
+                            break
+                        else:
+                            assert False, "This should not be reachable"
 
                     if all(res):
                         verified_flag = True
@@ -649,9 +665,9 @@ if dataset=='acasxu':
                     verified_flag = False
                     e = ex
 
-        ver_str = "Verified" if verified_flag else "Failed"
+        ver_str = "Verified correct" if verified_flag else "Failed"
         if not adex_holds:
-            ver_str += " with counterexample"
+            ver_str = "Verified unsound (with adex)"
         if e is None:
             print("AcasXu property", config.specnumber, f"{ver_str} for Box", box_index, "out of", len(boxes))
         else:
