@@ -1138,9 +1138,7 @@ elif config.spatial:
         if (config.num_tests is not None) and (config.from_test + config.num_tests == idx):
             break
 
-        image = torch.from_numpy(
-            np.float64(test[1:len(test)]) / np.float64(255)
-        ).reshape(1, height, width, channels).permute(0, 3, 1, 2).to(device)
+        image = torch.from_numpy(np.float64(test[1:len(test)]) / np.float64(255)).reshape(1, height, width, channels).permute(0, 3, 1, 2).to(device)
         label = np.int(test[0])
 
         specLB = image.clone().permute(0, 2, 3, 1).flatten().cpu()
@@ -1353,7 +1351,6 @@ else:
         #specUB = np.copy(specLB)
         normalize(specLB, means, stds, dataset)
         normalize(specUB, means, stds, dataset)
-
 
         #print("specLB ", len(specLB), "specUB ", specUB)
         is_correctly_classified = False

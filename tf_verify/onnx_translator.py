@@ -19,6 +19,7 @@ import numpy as np
 import onnx
 from onnx import numpy_helper
 from config import config
+import warnings
 
 def onnxshape_to_intlist(onnxshape):
 	"""
@@ -299,7 +300,11 @@ def prepare_model(model):
 
 		elif node.op_type == "Concat":
 			all_constant = True
-			axis = nchw_to_nhwc_index(node.attribute[0].i)
+			n_dim = len(shape_map[node.input[0]])
+			if n_dim > 2:
+				axis = nchw_to_nhwc_index(node.attribute[0].i)
+			else:
+				axis = node.attribute[0].i
 			for node_input in node.input:
 				if not node_input in constants_map:
 					all_constant = False
@@ -317,7 +322,7 @@ def prepare_model(model):
 				new_axis_size += shape_map[node_input][axis]
 			shape_map[node.output[0]] = [shape_map[node.input[0]][i] if i != axis else new_axis_size for i in range(len(shape_map[node.input[0]]))]
 			if not all_constant:
-				assert axis == 3, "ELINA currently only supports concatenation on the channel dimension"
+				assert axis == n_dim-1, "ELINA currently only supports concatenation on the channel dimension"
 
 		elif node.op_type == "Tile":
 			repeats = nchw_to_nhwc_shape(constants_map[node.input[1]])
@@ -400,7 +405,22 @@ class ONNXTranslator:
 		assert all_inputs[0] in inputs_dir
 
 		return inputs_dir[all_inputs[0]]
-	
+
+	@staticmethod
+	def clean_shape(shape_raw):
+		'''
+		Onnx translator expects the inputs and outputs of each node to not have 0-sized dimensions.
+		These can occur, if other formats are converted to onnx instead of directly exporting an onnx model.
+		This function handles such occurances, setting the 0-sized dimension to 1.
+
+		Arguments
+		--------
+		shape_raw : A shape in form of a list
+		'''
+		shape_cleaned = [1 if x == 0 else x for x in shape_raw]
+		if 0 in shape_raw:
+			warnings.warn(f"0-sized dimension encountered: {shape_raw} and changed to: {shape_cleaned}",RuntimeWarning)
+		return shape_cleaned
 		
 	def translate(self):
 		"""
@@ -417,14 +437,30 @@ class ONNXTranslator:
 		operation_types     = ["Placeholder"]
 		# placeholder = self.model.graph.input[0]
 		placeholder = self.find_input()
-		in_out_placeholder = ([], placeholder.name, onnxshape_to_intlist(placeholder.type.tensor_type.shape))
+		in_out_placeholder = ([], placeholder.name, self.clean_shape(onnxshape_to_intlist(placeholder.type.tensor_type.shape)))
 		operation_resources = [{'deepzono':in_out_placeholder, 'deeppoly':in_out_placeholder}]
 		reshape_map = {}
-		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Unsqueeze", "Softmax", "Flatten", "Concat", "BatchNormalization"]
+		operations_to_be_ignored = ["Pack", "Shape", "StridedSlice", "Prod", "Unsqueeze", "Softmax", "Concat", "Flatten", "BatchNormalization"]
 		padding_merger_dict = {}
-		#print("nodes ", self.nodes)
-		for node in self.nodes:
-			ignore_operation = False
+
+
+		### Check if there Are Add/Sub and Div/Mul layers that can be interpreted as normalization layer
+		stop_norm_layers = ["MatMul","Gemm","Conv","MaxPool","Relu","Sigmoid","Tanh","LeakyRelu"]
+		stop_norm_layer = len(self.nodes)
+		extract_mean = False
+		extract_std = False
+		for node_idx, node in enumerate(self.nodes):
+			if node.op_type in stop_norm_layers or (extract_mean and extract_std):
+				stop_norm_layer = node_idx
+				break
+			if node.op_type in ["Add","Sub"]:
+				extract_mean = True
+			elif node.op_type in ["Div", "Mult"]:
+				extract_std = True
+		extract_norm = extract_std and extract_mean
+
+		for node_idx, node in enumerate(self.nodes):
+			# print("node ", node.op_type)
 			if node.op_type == "Constant":
 				continue
 			elif node.op_type in operations_to_be_ignored:
@@ -438,16 +474,20 @@ class ONNXTranslator:
 
 			operation_types.append(node.op_type)
 			# take means and stds out of the network
-			if len(operation_types) == 2 and node.op_type in ["Add", "Sub", "Mul", "Div"] and node.output[0] not in self.constants_map:
+			if extract_norm and node_idx <= stop_norm_layer and len(operation_types) == 2 and node.op_type in ["Add", "Sub", "Mul", "Div"] and node.output[0] not in self.constants_map:
 				constant = self.add_resources(node)[0].reshape(-1)
 				if node.op_type == "Add":
 					config.mean = np.multiply(constant, -1)
+					print(f"Mean of {config.mean} extracted from network")
 				elif node.op_type == "Sub":
 					config.mean = constant
+					print(f"Mean of {config.mean} extracted from network")
 				elif node.op_type == "Mul":
 					config.std = np.divide(1, constant)
+					print(f"Std of {config.std} extracted from network")
 				elif node.op_type == "Div":
 					config.std = constant
+					print(f"Std of {config.std} extracted from network")
 
 				self.ignore_node(node, operation_types, reshape_map)
 				continue
@@ -461,6 +501,7 @@ class ONNXTranslator:
 					continue
 				input_onnx_names.append(name)
 			shape = self.get_shape(node.output[0])
+			shape = self.clean_shape(shape)
 			in_out_info = (input_onnx_names, node.output[0], shape)
 
 			if node.op_type == "MatMul":
@@ -573,15 +614,19 @@ class ONNXTranslator:
 						deepzono_res = deeppoly_res
 						operation_resources.append({'deepzono':deepzono_res, 'deeppoly':deeppoly_res})
 
-			#elif node.op_type == "Concat":
-			#	axis = nchw_to_nhwc_index(node.attribute[0].i)
-			#	assert axis == 3, "ELINA backend currently only supports concatenation on the channel dimension"
-			#	channels = []
-			#	for input in node.input:
-			#		channels.append(self.get_shape(input)[axis])
-			#	width = shape[1]
-			#	height = shape[2]
-			#	operation_resources.append({'deeppoly': (width, height, channels) + in_out_info})
+			elif node.op_type == "Concat":
+				n_dim = len(self.shape_map[node.input[0]])
+				if n_dim > 2:
+					axis = nchw_to_nhwc_index(node.attribute[0].i)
+				else:
+					axis = node.attribute[0].i
+				assert axis == n_dim - 1, "ELINA backend currently only supports concatenation on the channel dimension"
+				channels = []
+				for input_node in node.input:
+					channels.append(self.get_shape(input_node)[axis])
+				# width = shape[1]
+				# height = shape[2]
+				operation_resources.append({'deeppoly': (channels,) + in_out_info})
 
 			elif node.op_type == "Tile":
 				repeats = nchw_to_nhwc_shape(self.constants_map[node.input[1]])
@@ -590,6 +635,8 @@ class ONNXTranslator:
 
 			else:
 				assert 0, "Operations of type " + node.op_type + " are not yet supported."
+
+			assert all([0 not in y[-1] for x in operation_resources for y in x.values()]), "Ensure inputs and outpus include no dimensions of size 0"
 
 		return operation_types, operation_resources
 
