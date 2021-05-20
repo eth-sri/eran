@@ -255,7 +255,7 @@ Example
 
 L_oo Specification
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --epsilon 0.1 --domain deepzono --dataset mnist
+python3 . --netname ../nets/onnx/mnist/convBig__DiffAI.onnx --epsilon 0.1 --domain deepzono --dataset mnist
 ```
 
 will evaluate the local robustness of the MNIST convolutional network (upto 35K neurons) with ReLU activation trained using DiffAI on the 100 MNIST test images. In the above setting, epsilon=0.1 and the domain used by our analyzer is the deepzono domain. Our analyzer will print the following:
@@ -275,7 +275,7 @@ will evaluate the local robustness of the MNIST convolutional network (upto 35K 
 
 Zonotope Specification
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --zonotope some_path/zonotope_example.txt --domain deepzono 
+python3 . --netname ../nets/onnx/mnist/convBig__DiffAI.onnx --zonotope some_path/zonotope_example.txt --domain deepzono 
 ```
 
 will check if the Zonotope specification specified in "zonotope_example" holds for the network and will output "Verified safe", "Verified unsafe" or "Failed" along with the timing.
@@ -292,13 +292,13 @@ will run DeepZ for analyzing property 9 of ACASXu benchmarks. The ACASXU network
 Geometric analysis
 
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --geometric_config ../deepg/code/examples/example1/config.txt --num_params 1 --dataset mnist
+python3 . --netname ../nets/onnx/mnist/convBig__DiffAI.onnx --geometric --geometric_config ../deepg/code/examples/example1/config.txt --num_params 1 --dataset mnist
 ```
 will on the fly generate geometric perturbed images and evaluate the network against them. For more information on the geometric configuration file please see [Format of the configuration file in DeepG](https://github.com/eth-sri/deepg#format-of-configuration-file).
 
 
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --geometric --data_dir ../deepg/code/examples/example1/ --num_params 1 --dataset mnist --attack
+python3 . --netname ../nets/onnx/mnist/convBig__DiffAI.onnx --geometric --data_dir ../deepg/code/examples/example1/ --num_params 1 --dataset mnist --attack
 ```
 will evaluate the generated geometric perturbed images in the given data_dir and also evaluate generated attack images.
 
@@ -333,11 +333,11 @@ Certification of Vector Field Deformations
 Vector field deformations, which displace pixels instead of directly manipulating pixel values, can be intuitively parametrized by their displacement magnitude delta, i.e., how far every pixel can move, and their smoothness gamma, i.e., how much neighboring displacement vectors can differ from each other (more details can be found in Section 3 of [our paper](https://arxiv.org/abs/2009.09318)).
 ERAN can certify both non-smooth vector fields:
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3
+python3 . --netname ../nets/onnx/mnist/convBig__DiffAI.onnx --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3
 ```
 and smooth vector fields:
 ```
-python3 . --netname ../nets/pytorch/mnist/convBig__DiffAI.pyt --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3 --gamma 0.1
+python3 . --netname ../nets/pytorch/onnx/convBig__DiffAI.onnx --dataset mnist --domain deeppoly --spatial --t-norm inf --delta 0.3 --gamma 0.1
 ```
 Certification of vector field deformations is compatible with the "deeppoly" and "refinepoly" domains, and can be made more precise with the kReLU framework (e.g., "--use_milp True", "--sparse_n 15", "--refine_neurons", "timeout_milp 10", and "timeout_lp 10") or complete certification ("--complete True").
 
@@ -414,56 +414,56 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 |         | 6x200 | fully connected | 1,010 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_6_200.onnx)|
 |         | 9x200 | fully connected | 1,610 | 9   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_9_200.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnRELU__Point_6_500.onnx)|
-|         | 6x500 | fully connected | 3,000 | 6   | ReLU  | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnRELU__PGDK_w_0.onnx1_6_500.pyt)|
-|         | 6x500 | fully connected | 3,000 |  6  | ReLU | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnRELU__PGDK_w_0.onnx3_6_500.pyt)|
+|         | 6x500 | fully connected | 3,000 | 6   | ReLU  | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnRELU__PGDK_w_0.1_6_500.onnx)|
+|         | 6x500 | fully connected | 3,000 |  6  | ReLU | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnRELU__PGDK_w_0.3_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000  | 6   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnSIGMOID__Point_6_500.onnx)|
-|         | 6x500 | fully connected | 3,000 |  6  | Sigmoid | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnSIGMOID__PGDK_w_0.onnx1_6_500.pyt)|
-|         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnSIGMOID__PGDK_w_0.onnx3_6_500.pyt)|
+|         | 6x500 | fully connected | 3,000 |  6  | Sigmoid | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnSIGMOID__PGDK_w_0.1_6_500.onnx)|
+|         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnSIGMOID__PGDK_w_0.3_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6 |    Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__Point_6_500.onnx)|
-|         | 6x500 |  fully connected| 3,000 | 6   | Tanh | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__PGDK_w_0.onnx1_6_500.pyt)|
-|         | 6x500 | fully connected | 3,000 | 6   |  Tanh | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__PGDK_w_0.onnx3_6_500.pyt)|
+|         | 6x500 |  fully connected| 3,000 | 6   | Tanh | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__PGDK_w_0.1_6_500.onnx)|
+|         | 6x500 | fully connected | 3,000 | 6   |  Tanh | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__PGDK_w_0.3_6_500.onnx)|
 |         | 4x1024 | fully connected | 3,072 | 4   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_4_1024.onnx)|
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSmallRELU__Point.onnx)|
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSmallRELU__PGDK.onnx) |
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSmallRELU__DiffAI.onnx) |
 |         | ConvMed | convolutional | 5,704 | 3  | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGRELU__Point.onnx) |
-|         | ConvMed | convolutional | 5,704 | 3   | ReLU | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGRELU__PGDK_w_0.onnx1.pyt) |
-|         | ConvMed | convolutional | 5,704 | 3   | ReLU | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGRELU__PGDK_w_0.onnx3.pyt) |
+|         | ConvMed | convolutional | 5,704 | 3   | ReLU | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGRELU__PGDK_w_0.1_6_500.onnx) |
+|         | ConvMed | convolutional | 5,704 | 3   | ReLU | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGRELU__PGDK_w_0.3_6_500.onnx) |
 |         | ConvMed | convolutional | 5,704 | 3   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGSIGMOID__Point.onnx) |
-|         | ConvMed | convolutional | 5,704 | 3   | Sigmoid | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGSIGMOID__PGDK_w_0.onnx1.pyt) | 
-|         | ConvMed | convolutional | 5,704 | 3   | Sigmoid | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGSIGMOID__PGDK_w_0.onnx3.pyt) | 
+|         | ConvMed | convolutional | 5,704 | 3   | Sigmoid | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGSIGMOID__PGDK_w_0.1_6_500.onnx) | 
+|         | ConvMed | convolutional | 5,704 | 3   | Sigmoid | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGSIGMOID__PGDK_w_0.3_6_500.onnx) | 
 |         | ConvMed | convolutional | 5,704 | 3   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGTANH__Point.onnx) |
-|         | ConvMed | convolutional | 5,704 | 3   | Tanh | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGTANH__PGDK_w_0.onnx1.pyt) | 
-|         | ConvMed | convolutional | 5,704 | 3   |  Tanh | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGTANH__PGDK_w_0.onnx3.pyt) |
+|         | ConvMed | convolutional | 5,704 | 3   | Tanh | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGTANH__PGDK_w_0.1_6_500.onnx) | 
+|         | ConvMed | convolutional | 5,704 | 3   |  Tanh | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convMedGTANH__PGDK_w_0.3_6_500.onnx) |
 |         | ConvMaxpool | convolutional | 13,798 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_conv_maxpool.onnx)|
 |         | ConvBig | convolutional | 48,064 | 6  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convBigRELU__DiffAI.onnx) |
 |         | ConvSuper | convolutional | 88,544 | 6  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSuperRELU__DiffAI.onnx) |
-|         | Skip      | Residual | 71,650 | 9 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/pytorch/mnist/skip__DiffAI.pyt) |
+|         | Skip      | Residual | 71,650 | 9 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/skip__DiffAI.onnx) |
 | CIFAR10 | 4x100 | fully connected | 410 | 4 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_4_100.onnx) |
 |         | 6x100 | fully connected | 610 | 6 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_6_100.onnx) |
 |         | 9x200 | fully connected | 1,810 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_9_200.onnx) |
 |         | 6x500 | fully connected | 3,000 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__Point_6_500.onnx)|
-|         | 6x500 | fully connected | 3,000 | 6   | ReLU | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__PGDK_w_0.onnx0078_6_500.pyt)|
-|         | 6x500 | fully connected | 3,000 | 6   | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__PGDK_w_0.onnx0313_6_500.pyt)| 
+|         | 6x500 | fully connected | 3,000 | 6   | ReLU | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__PGDK_w_0.0078_6_500.onnx)|
+|         | 6x500 | fully connected | 3,000 | 6   | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__PGDK_w_0.0313_6_500.onnx)| 
 |         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnSIGMOID__Point_6_500.onnx)|
-|         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnSIGMOID__PGDK_w_0.onnx0078_6_500.pyt)|
-|         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnSIGMOID__PGDK_w_0.onnx0313_6_500.pyt)| 
+|         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnSIGMOID__PGDK_w_0.0078_6_500.onnx)|
+|         | 6x500 | fully connected | 3,000 | 6   | Sigmoid | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnSIGMOID__PGDK_w_0.0313_6_500.onnx)| 
 |         | 6x500 | fully connected | 3,000 | 6   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__Point_6_500.onnx)|
-|         | 6x500 | fully connected | 3,000 | 6   | Tanh | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__PGDK_w_0.onnx0078_6_500.pyt)|
-|         | 6x500 | fully connected | 3,000 | 6   | Tanh | PGD &epsilon;=0.0313 |  [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__PGDK_w_0.onnx0313_6_500.pyt)| 
+|         | 6x500 | fully connected | 3,000 | 6   | Tanh | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__PGDK_w_0.0078_6_500.onnx)|
+|         | 6x500 | fully connected | 3,000 | 6   | Tanh | PGD &epsilon;=0.0313 |  [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__PGDK_w_0.0313_6_500.onnx)| 
 |         | 7x1024 | fully connected | 6,144 | 7 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_7_1024.onnx) |
 |         | ConvSmall | convolutional | 4,852 | 3 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convSmallRELU__Point.onnx)|
 |         | ConvSmall   | convolutional  | 4,852 | 3  | ReLU  | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convSmallRELU__PGDK.onnx)|
 |         | ConvSmall  | convolutional | 4,852 | 3  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convSmallRELU__DiffAI.onnx)|
 |         | ConvMed | convolutional | 7,144 | 3 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGRELU__Point.onnx) |
-|         | ConvMed | convolutional | 7,144 | 3   | ReLU | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGRELU__PGDK_w_0.onnx0078.pyt) |
-|         | ConvMed | convolutional | 7,144 | 3   | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGRELU__PGDK_w_0.onnx0313.pyt) | 
+|         | ConvMed | convolutional | 7,144 | 3   | ReLU | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGRELU__PGDK_w_0.0078.onnx) |
+|         | ConvMed | convolutional | 7,144 | 3   | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGRELU__PGDK_w_0.0313.onnx) | 
 |         | ConvMed | convolutional | 7,144 | 3   | Sigmoid | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGSIGMOID__Point.onnx) |
-|         | ConvMed | convolutional | 7,144 | 3   | Sigmoid | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGSIGMOID__PGDK_w_0.onnx0078.pyt) |
-|         | ConvMed | convolutional | 7,144 | 3   | Sigmoid | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGSIGMOID__PGDK_w_0.onnx0313.pyt) | 
+|         | ConvMed | convolutional | 7,144 | 3   | Sigmoid | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGSIGMOID__PGDK_w_0.0078.onnx) |
+|         | ConvMed | convolutional | 7,144 | 3   | Sigmoid | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGSIGMOID__PGDK_w_0.0313.onnx) | 
 |         | ConvMed | convolutional | 7,144 | 3   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGTANH__Point.onnx) |
-|         | ConvMed | convolutional | 7,144 | 3   | Tanh | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGTANH__PGDK_w_0.onnx0078.pyt) |
-|         | ConvMed | convolutional | 7,144 | 3   | Tanh | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGTANH__PGDK_w_0.onnx0313.pyt) |  
+|         | ConvMed | convolutional | 7,144 | 3   | Tanh | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGTANH__PGDK_w_0.0078.onnx) |
+|         | ConvMed | convolutional | 7,144 | 3   | Tanh | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convMedGTANH__PGDK_w_0.0313.onnx) |  
 |         | ConvMaxpool | convolutional | 53,938 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_conv_maxpool.onnx)|
 |         | ConvBig | convolutional | 62,464 | 6 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convBigRELU__DiffAI.onnx) | 
 |         | ResNetTiny | Residual | 311K | 12 | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNetTiny_PGD.onnx) | 
