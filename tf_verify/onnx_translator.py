@@ -455,7 +455,7 @@ class ONNXTranslator:
 				break
 			if node.op_type in ["Add","Sub"]:
 				extract_mean = True
-			elif node.op_type in ["Div", "Mult"]:
+			elif node.op_type in ["Div", "Mul"]:
 				extract_std = True
 		extract_norm = extract_std and extract_mean
 
