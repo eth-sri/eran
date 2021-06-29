@@ -363,7 +363,7 @@ parser.add_argument('--geometric_config', type=str, default=config.geometric_con
 parser.add_argument('--num_params', type=int, default=config.num_params, help='Number of transformation parameters')
 parser.add_argument('--num_tests', type=int, default=config.num_tests, help='Number of images to test')
 parser.add_argument('--from_test', type=int, default=config.from_test, help='Number of images to test')
-parser.add_argument('--debug', type=str2bool, default=config.debug, help='Whether to display debug info')
+parser.add_argument('--debug',action='store_true', default=config.debug, help='Whether to display debug info')
 parser.add_argument('--attack', action='store_true', default=config.attack, help='Whether to attack')
 parser.add_argument('--geometric', '-g', dest='geometric', default=config.geometric, action='store_true', help='Whether to do geometric analysis')
 parser.add_argument('--input_box', default=config.input_box,  help='input box to use')
@@ -491,8 +491,8 @@ else:
         operations, resources = translator.translate()
         optimizer = Optimizer(operations, resources)
         nn = layers()
-        network, relu_layers, num_gpu_layers = optimizer.get_gpupoly(nn) 
-    else:    
+        network, relu_layers, num_gpu_layers, _, nn = optimizer.get_gpupoly(nn)
+    else:
         eran = ERAN(model, is_onnx=is_onnx)
 
 if not is_trained_with_pytorch:
