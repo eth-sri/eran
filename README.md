@@ -133,21 +133,21 @@ cd ..
 
 Install Gurobi:
 ```
-wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
-tar -xvf gurobi9.0.0_linux64.tar.gz
-cd gurobi900/linux64/src/build
+wget https://packages.gurobi.com/9.1/gurobi9.1.2_linux64.tar.gz
+tar -xvf gurobi9.1.2_linux64.tar.gz
+cd gurobi912/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
 cd ../../
-cp lib/libgurobi90.so /usr/local/lib
+cp lib/libgurobi91.so /usr/local/lib
 python3 setup.py install
 cd ../../
 ```
 
 Update environment variables:
 ```
-export GUROBI_HOME="$PWD/gurobi900/linux64"
+export GUROBI_HOME="$PWD/gurobi912/linux64"
 export PATH="$PATH:${GUROBI_HOME}/bin"
 export CPATH="$CPATH:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
@@ -185,6 +185,7 @@ source gurobi_setup_path.sh
 
 
 Note that to run ERAN with Gurobi one needs to obtain an academic license for gurobi from https://user.gurobi.com/download/licenses/free-academic.
+If you plan on running ERAN on Windows WSL2, you might prefer requesting a cloud-based academic license at [https://license.gurobi.com](https://license.gurobi.com), in order to avoid [this issue](https://github.com/microsoft/WSL/issues/5352) with early-expiring licenses.
 
 To install the remaining python dependencies (numpy and tensorflow), type:
 
