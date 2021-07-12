@@ -882,7 +882,7 @@ def verify_network_with_milp(nn, LB_N0, UB_N0, nlb, nub, constraints, spatial_co
             obj_val = f"{model.objval:.4f}" if hasattr(model, "objval") else "failed"
             print(f"MILP model status: {model.Status}, Obj val/bound for constraint {is_greater_tuple}: {obj_val}/{obj_bound}, Final solve time: {model.Runtime:.3f}")
 
-            if model.objbound > 0:
+            if model.Status == 6 or model.objbound > 0:
                 or_result = True
                 if model.solcount > 0:
                     non_adv_examples.append(model.x[0:input_size])

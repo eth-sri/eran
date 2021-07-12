@@ -227,6 +227,21 @@ def translate_input_to_box(C_lb, C_ub, x_0=None, eps=None, domain_bounds=None):
         ub = np.minimum(lb, d_ub)
     return [[(lb[i], ub[i]) for i in range(n_x)]]
 
+def negate_cstr_or_list_old(or_list):
+    neg_and_list = []
+    for is_greater_tuple in or_list:
+        (i, j, k) = is_greater_tuple
+
+        if i == -1:  # var[j] > k
+            neg_and_list.append([(j,-1,k)])
+        elif j == -1:  # var[i] < k
+            neg_and_list.append([(-1,i,k)])
+        elif i != j:  # var[i] > var[j]
+            neg_and_list.append([(j,i,-k)])
+        else:
+            assert False, f"invalid constraint encountered {is_greater_tuple}"
+    return neg_and_list
+
 def translate_gurobi_status(status_id):
     gurobi_status_dict = {
         1: "LOADED",

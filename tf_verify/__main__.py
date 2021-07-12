@@ -47,7 +47,7 @@ from analyzer import *
 from pprint import pprint
 # if config.domain=='gpupoly' or config.domain=='refinegpupoly':
 from refine_gpupoly import *
-from utils import parse_vnn_lib_prop, translate_output_constraints, translate_input_to_box
+from utils import parse_vnn_lib_prop, translate_output_constraints, translate_input_to_box, negate_cstr_or_list_old
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -266,18 +266,22 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
                 #verified_flag, adv_examples, _ = verify_network_with_milp(nn, specLB, specUB, nlb, nub, constraints)
                 raise ex
             print_progress(depth)
-            hold_adex = True
+            found_adex = False
             if verified_flag == False:
                 if adv_examples!=None:
                     #print("adv image ", adv_image)
                     for adv_image in adv_examples:
-                        hold_adex,_,nlb,nub,_,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+                        for or_list in constraints:
+                            if found_adex: break
+                            negated_cstr = negate_cstr_or_list_old(or_list)
+                            hold_adex,_,nlb,nub,_,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, negated_cstr)
+                            found_adex = hold_adex or found_adex
                         #print("hold ", hold, "domain", domain)
-                        if not hold_adex:
+                        if found_adex:
                             print("property violated at ", adv_image, "output_score", nlb[-1])
                             failed_already.value = 0
                             break
-            return verified_flag, None if hold_adex else adv_image
+            return verified_flag, None if not found_adex else adv_image
         else:
             return False, None
     else:
@@ -558,16 +562,23 @@ if dataset=='acasxu':
         e = None
         holds = True
         x_adex = None
-        adex_holds = True
+        found_adex = False
 
         rec_start = time.time()
         # start = time.time()
 
         verified_flag, nn, nlb, nub, _ , x_adex = eran.analyze_box(specLB, specUB, init_domain(domain), config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
         if not verified_flag and x_adex is not None:
-            adex_holds, _, _, _, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
+            for or_list in constraints:
+                if found_adex: break
+                negated_cstr = negate_cstr_or_list_old(or_list)
+                hold_adex, _, nlb, nub, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp,
+                                                                config.timeout_milp, config.use_default_heuristic,
+                                                                negated_cstr)
+                found_adex = hold_adex or found_adex
+            # adex_holds, _, _, _, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp, config.timeout_milp, config.use_default_heuristic, constraints)
 
-        if not verified_flag and adex_holds:
+        if (not verified_flag) and (not found_adex):
             # expensive min/max gradient calculation
             verified_flag = True
             nn.set_last_weights(constraints)
@@ -661,10 +672,15 @@ if dataset=='acasxu':
                     res = [x[0] for x in pool_return]
                     adex = [x[1] for x in pool_return if x[1] is not None]
                     for x_adex in adex: # Should be redundant as only confirmed counterexamples should be returned.
-                        adex_holds, _, _, _, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp,
-                                                                 config.timeout_milp, config.use_default_heuristic,
-                                                                 constraints)
-                        if not adex_holds:
+                        for or_list in constraints:
+                            if found_adex: break
+                            negated_cstr = negate_cstr_or_list_old(or_list)
+                            hold_adex,_,nlb,nub,_,_ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp, config.timeout_milp, config.use_default_heuristic, negated_cstr)
+                            found_adex = hold_adex or found_adex
+                        # adex_holds, _, _, _, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp,
+                        #                                          config.timeout_milp, config.use_default_heuristic,
+                        #                                          constraints)
+                        if found_adex:
                             break
                         else:
                             assert False, "This should not be reachable"
@@ -678,7 +694,7 @@ if dataset=='acasxu':
                     e = ex
 
         ver_str = "Verified correct" if verified_flag else "Failed"
-        if not adex_holds:
+        if found_adex:
             ver_str = "Verified unsound (with adex)"
         if e is None:
             print("AcasXu property", config.specnumber, f"{ver_str} for Box", box_index, "out of", len(boxes))
