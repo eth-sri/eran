@@ -876,6 +876,8 @@ Contributors
 
 * [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) (lead contact) - mark.mueller@inf.ethz.ch
 
+* [Gagandeep Singh](https://ggndpsngh.github.io/) (contact for ELINA) - ggnds@illinois.edu gagandeepsi@vmware.com
+
 * [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
 
 * Gleb Makarchuk (contact for FConv library) - hlebm@ethz.ch gleb.makarchuk@gmail.com 
@@ -883,8 +885,6 @@ Contributors
 * Anian Ruoss (contact for spatial certification) - anruoss@ethz.ch
 
 * [François Serre](https://fserre.github.io/) (contact for GPUPoly) - serref@inf.ethz.ch
-
-* [Gagandeep Singh](https://ggndpsngh.github.io/) (contact for ELINA) - ggnds@illinois.edu gagandeepsi@vmware.com
 
 * [Maximilian Baader](https://www.sri.inf.ethz.ch/people/max) - mbaader@inf.ethz.ch
 
