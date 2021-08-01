@@ -133,21 +133,21 @@ cd ..
 
 Install Gurobi:
 ```
-wget https://packages.gurobi.com/9.0/gurobi9.0.0_linux64.tar.gz
-tar -xvf gurobi9.0.0_linux64.tar.gz
-cd gurobi900/linux64/src/build
+wget https://packages.gurobi.com/9.1/gurobi9.1.2_linux64.tar.gz
+tar -xvf gurobi9.1.2_linux64.tar.gz
+cd gurobi912/linux64/src/build
 sed -ie 's/^C++FLAGS =.*$/& -fPIC/' Makefile
 make
 cp libgurobi_c++.a ../../lib/
 cd ../../
-cp lib/libgurobi90.so /usr/local/lib
+cp lib/libgurobi91.so /usr/local/lib
 python3 setup.py install
 cd ../../
 ```
 
 Update environment variables:
 ```
-export GUROBI_HOME="$PWD/gurobi900/linux64"
+export GUROBI_HOME="$PWD/gurobi912/linux64"
 export PATH="$PATH:${GUROBI_HOME}/bin"
 export CPATH="$CPATH:${GUROBI_HOME}/include"
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:${GUROBI_HOME}/lib
@@ -185,6 +185,7 @@ source gurobi_setup_path.sh
 
 
 Note that to run ERAN with Gurobi one needs to obtain an academic license for gurobi from https://user.gurobi.com/download/licenses/free-academic.
+If you plan on running ERAN on Windows WSL2, you might prefer requesting a cloud-based academic license at [https://license.gurobi.com](https://license.gurobi.com), in order to avoid [this issue](https://github.com/microsoft/WSL/issues/5352) with early-expiring licenses.
 
 To install the remaining python dependencies (numpy and tensorflow), type:
 
@@ -402,13 +403,14 @@ Publications
 Neural Networks and Datasets
 ---------------
 
-We provide a number of pretrained MNIST and CIAFR10 defended and undefended feedforward and convolutional neural networks with ReLU, Sigmoid and Tanh activations trained with the PyTorch and TensorFlow frameworks. The adversarial training to obtain the defended networks is performed using PGD and [DiffAI](https://github.com/eth-sri/diffai). 
+We provide a number of pretrained MNIST and CIAFR10 defended and undefended feedforward and convolutional neural networks with ReLU, Sigmoid and Tanh activations trained with the PyTorch and TensorFlow frameworks. The adversarial training to obtain the defended networks is performed using PGD and [DiffAI](https://github.com/eth-sri/diffai).
+We report the (maximum) number of activation layers (including MaxPool) of any path through a network.
 
-| Dataset  |   Model  |  Type   | #units | #layers| Activation | Training Defense| Download |
+| Dataset  |   Model  |  Type   | #units | #activation layers| Activation | Training Defense| Download |
 | :-------- | :-------- | :-------- | :-------------| :-------------| :------------ | :------------- | :---------------:|
 | MNIST   | 3x50 | fully connected | 110 | 3    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_3_50.onnx)|
 |         | 3x100 | fully connected | 210 | 3    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_3_100.onnx)|
-|         | 5x100 | fully connected | 510 | 5    | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_5_100.onnx)|
+|         | 5x100 | fully connected | 510 | 6    | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_5_100.onnx)|
 |         | 6x100 | fully connected | 510 | 6    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_6_100.onnx)|
 |         | 9x100 | fully connected | 810 | 9    | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_9_100.onnx)|
 |         | 6x200 | fully connected | 1,010 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_6_200.onnx)|
@@ -422,7 +424,7 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 |         | 6x500 | fully connected | 3,000 | 6 |    Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__Point_6_500.onnx)|
 |         | 6x500 |  fully connected| 3,000 | 6   | Tanh | PGD &epsilon;=0.1 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__PGDK_w_0.1_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6   |  Tanh | PGD &epsilon;=0.3 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/ffnnTANH__PGDK_w_0.3_6_500.onnx)|
-|         | 4x1024 | fully connected | 3,072 | 4   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_4_1024.onnx)|
+|         | 4x1024 | fully connected | 3,072 | 3   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_relu_4_1024.onnx)|
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSmallRELU__Point.onnx)|
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSmallRELU__PGDK.onnx) |
 |         |  ConvSmall | convolutional | 3,604 | 3  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSmallRELU__DiffAI.onnx) |
@@ -438,10 +440,10 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 |         | ConvMaxpool | convolutional | 13,798 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/mnist_conv_maxpool.onnx)|
 |         | ConvBig | convolutional | 48,064 | 6  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convBigRELU__DiffAI.onnx) |
 |         | ConvSuper | convolutional | 88,544 | 6  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/convSuperRELU__DiffAI.onnx) |
-|         | Skip      | Residual | 71,650 | 9 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/skip__DiffAI.onnx) |
-| CIFAR10 | 4x100 | fully connected | 410 | 4 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_4_100.onnx) |
-|         | 6x100 | fully connected | 610 | 6 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_6_100.onnx) |
-|         | 9x200 | fully connected | 1,810 | 9 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_9_200.onnx) |
+|         | Skip      | Residual | 71,650 | 6 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/mnist/skip__DiffAI.onnx) |
+| CIFAR10 | 4x100 | fully connected | 410 | 5 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_4_100.onnx) |
+|         | 6x100 | fully connected | 610 | 7 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_6_100.onnx) |
+|         | 9x200 | fully connected | 1,810 | 10 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_9_200.onnx) |
 |         | 6x500 | fully connected | 3,000 | 6   | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__Point_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6   | ReLU | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__PGDK_w_0.0078_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6   | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnRELU__PGDK_w_0.0313_6_500.onnx)| 
@@ -451,7 +453,7 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 |         | 6x500 | fully connected | 3,000 | 6   | Tanh | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__Point_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6   | Tanh | PGD &epsilon;=0.0078 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__PGDK_w_0.0078_6_500.onnx)|
 |         | 6x500 | fully connected | 3,000 | 6   | Tanh | PGD &epsilon;=0.0313 |  [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ffnnTANH__PGDK_w_0.0313_6_500.onnx)| 
-|         | 7x1024 | fully connected | 6,144 | 7 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_7_1024.onnx) |
+|         | 7x1024 | fully connected | 6,144 | 6 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/cifar_relu_7_1024.onnx) |
 |         | ConvSmall | convolutional | 4,852 | 3 | ReLU | None | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convSmallRELU__Point.onnx)|
 |         | ConvSmall   | convolutional  | 4,852 | 3  | ReLU  | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convSmallRELU__PGDK.onnx)|
 |         | ConvSmall  | convolutional | 4,852 | 3  | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convSmallRELU__DiffAI.onnx)|
@@ -468,10 +470,10 @@ We provide a number of pretrained MNIST and CIAFR10 defended and undefended feed
 |         | ConvBig | convolutional | 62,464 | 6 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/convBigRELU__DiffAI.onnx) | 
 |         | ResNetTiny | Residual | 311K | 12 | ReLU | PGD &epsilon;=0.0313 | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNetTiny_PGD.onnx) | 
 |         | ResNetTiny | Residual | 311K | 12 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNetTiny_DiffAI.onnx) |
-|         | ResNet18 | Residual | 558K | 18 | ReLU | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet18_PGD.onnx) |
-|         | ResNet18 | Residual | 558K | 18 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet18_DiffAI.onnx) |
-|         | SkipNet18 | Residual | 558K | 18 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/SkipNet18_DiffAI.onnx) |
-|         | ResNet34 | Residual | 967K | 34 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet34_DiffAI.onnx) |
+|         | ResNet18 | Residual | 558K | 19 | ReLU | PGD | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet18_PGD.onnx) |
+|         | ResNet18 | Residual | 558K | 19 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet18_DiffAI.onnx) |
+|         | SkipNet18 | Residual | 558K | 19 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/SkipNet18_DiffAI.onnx) |
+|         | ResNet34 | Residual | 967K | 35 | ReLU | DiffAI | [:arrow_down:](https://files.sri.inf.ethz.ch/eran/nets/onnx/cifar/ResNet34_DiffAI.onnx) |
 
 We provide the first 100 images from the testset of both MNIST and CIFAR10 datasets in the 'data' folder. Our analyzer first verifies whether the neural network classifies an image correctly before performing robustness analysis. In the same folder, we also provide ACAS Xu networks and property specifications.
 
@@ -872,9 +874,9 @@ More experimental results can be found in our papers.
 Contributors
 --------------
 
-* [Gagandeep Singh](https://ggndpsngh.github.io/) (lead contact) - ggnds@illinois.edu gagandeepsi@vmware.com
+* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) (lead contact) - mark.mueller@inf.ethz.ch
 
-* [Mark Niklas Müller](https://www.sri.inf.ethz.ch/people/mark) (lead contact for PRIMA) - mark.mueller@inf.ethz.ch
+* [Gagandeep Singh](https://ggndpsngh.github.io/) (contact for ELINA) - ggnds@illinois.edu gagandeepsi@vmware.com
 
 * [Mislav Balunovic](https://www.sri.inf.ethz.ch/people/mislav) (contact for geometric certification) - mislav.balunovic@inf.ethz.ch
 
