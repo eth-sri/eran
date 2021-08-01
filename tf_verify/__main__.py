@@ -47,7 +47,7 @@ from analyzer import *
 from pprint import pprint
 # if config.domain=='gpupoly' or config.domain=='refinegpupoly':
 from refine_gpupoly import *
-from utils import parse_vnn_lib_prop, translate_output_constraints, translate_input_to_box, negate_cstr_or_list_old
+from utils import parse_vnn_lib_prop, negate_cstr_or_list
 
 #ZONOTOPE_EXTENSION = '.zt'
 EPS = 10**(-9)
@@ -273,7 +273,7 @@ def acasxu_recursive(specLB, specUB, max_depth=10, depth=0):
                     for adv_image in adv_examples:
                         for or_list in constraints:
                             if found_adex: break
-                            negated_cstr = negate_cstr_or_list_old(or_list)
+                            negated_cstr = negate_cstr_or_list(or_list)
                             hold_adex,_,nlb,nub,_,_ = eran.analyze_box(adv_image, adv_image, domain, config.timeout_lp, config.timeout_milp, config.use_default_heuristic, negated_cstr)
                             found_adex = hold_adex or found_adex
                         #print("hold ", hold, "domain", domain)
@@ -495,7 +495,7 @@ else:
         operations, resources = translator.translate()
         optimizer = Optimizer(operations, resources)
         nn = layers()
-        network, relu_layers, num_gpu_layers = optimizer.get_gpupoly(nn) 
+        network, relu_layers, num_gpu_layers, omitted_layers, nn = optimizer.get_gpupoly(nn)
     else:    
         eran = ERAN(model, is_onnx=is_onnx)
 
@@ -527,10 +527,7 @@ unsafe_images = 0
 cum_time = 0
 
 if config.vnn_lib_spec is not None:
-    # input and output constraints in homogenized representation x >= C_lb * [x_0, eps, 1]; C_out [y, 1] >= 0
-    C_lb, C_ub, C_out = parse_vnn_lib_prop(config.vnn_lib_spec)
-    constraints = translate_output_constraints(C_out)
-    boxes = translate_input_to_box(C_lb, C_ub, x_0=None, eps=None, domain_bounds=None)
+    boxes, constraints = parse_vnn_lib_prop(config.vnn_lib_spec, dtype=np.float64)
 else:
     if config.output_constraints:
         constraints = get_constraints_from_file(config.output_constraints)
@@ -571,7 +568,7 @@ if dataset=='acasxu':
         if not verified_flag and x_adex is not None:
             for or_list in constraints:
                 if found_adex: break
-                negated_cstr = negate_cstr_or_list_old(or_list)
+                negated_cstr = negate_cstr_or_list(or_list)
                 hold_adex, _, nlb, nub, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp,
                                                                 config.timeout_milp, config.use_default_heuristic,
                                                                 negated_cstr)
@@ -674,7 +671,7 @@ if dataset=='acasxu':
                     for x_adex in adex: # Should be redundant as only confirmed counterexamples should be returned.
                         for or_list in constraints:
                             if found_adex: break
-                            negated_cstr = negate_cstr_or_list_old(or_list)
+                            negated_cstr = negate_cstr_or_list(or_list)
                             hold_adex,_,nlb,nub,_,_ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp, config.timeout_milp, config.use_default_heuristic, negated_cstr)
                             found_adex = hold_adex or found_adex
                         # adex_holds, _, _, _, _, _ = eran.analyze_box(x_adex, x_adex, "deeppoly", config.timeout_lp,
@@ -1447,12 +1444,12 @@ else:
                     var = 0
                     nn.specLB = specLB
                     nn.specUB = specUB
-                    nn.predecessors = []
-                    
-                    for pred in range(0, nn.numlayer+1):
-                        predecessor = np.zeros(1, dtype=np.int)
-                        predecessor[0] = int(pred-1)
-                        nn.predecessors.append(predecessor)
+                    # nn.predecessors = []
+                    #
+                    # for pred in range(0, nn.numlayer+1):
+                    #     predecessor = np.zeros(1, dtype=np.int)
+                    #     predecessor[0] = int(pred-1)
+                    #     nn.predecessors.append(predecessor)
                     #print("predecessors ", nn.predecessors[0][0])
                     for labels in range(num_outputs):
                         #print("num_outputs ", num_outputs, nn.numlayer, len(nn.weights[-1]))
@@ -1462,7 +1459,7 @@ else:
                             var = var+1
                     #print("relu layers", relu_layers)
 
-                    is_verified, x = refine_gpupoly_results(nn, network, num_gpu_layers, relu_layers, int(test[0]),
+                    is_verified, nn, nlb, nub, _, x, _ = refine_gpupoly_results(nn, network, config, relu_layers, int(test[0]),
                                                             labels_to_be_verified, K=config.k, s=config.s,
                                                             complete=config.complete,
                                                             timeout_final_lp=config.timeout_final_lp,
@@ -1478,13 +1475,15 @@ else:
                         verified_images += 1
                     else:
                         if x != None:
-                            adv_image = np.array(x)
-                            res = np.argmax((network.eval(adv_image))[:,0])
-                            if res!=int(test[0]):
-                                denormalize(x,means, stds, dataset)
-                                # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
-                                print("img", i, "Verified unsafe against label ", res, "correct label ", int(test[0]))
-                                unsafe_images += 1
+                            for adex in x:
+                                adv_image = np.array(adex)
+                                res = np.argmax((network.eval(adv_image))[:,0])
+                                if res != int(test[0]):
+                                    denormalize(adex, means, stds, dataset)
+                                    # print("img", i, "Verified unsafe with adversarial image ", adv_image, "cex label", cex_label, "correct label ", int(test[0]))
+                                    print("img", i, "Verified unsafe against label ", res, "correct label ", int(test[0]))
+                                    unsafe_images += 1
+                                    break
 
                             else:
                                 print("img", i, "Failed")

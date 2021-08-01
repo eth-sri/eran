@@ -671,10 +671,10 @@ class DeeppolyGather:
 
 
 class DeeppolyConcat:
-    def __init__(self, width, height, channels, input_names, output_name, output_shape):
+    def __init__(self, channels, input_names, output_name, output_shape):
         add_input_output_information_deeppoly(self, input_names, output_name, output_shape)
-        self.width = width
-        self.height = height
+        # self.width = width
+        # self.height = height
         self.channels = (c_size_t * len(channels))()
         for i, channel in enumerate(channels):
             self.channels[i] = channel

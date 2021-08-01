@@ -50,6 +50,9 @@ class config:
     target = None # 
     epsfile = None
     vnn_lib_spec = None # Use inputs and constraints defined in a file respecting the vnn_lib standard
+    fp_sound = True
+    dtype = "float64"
+    regression = False
 
     # refine options
     use_milp = True # Whether to use MILP

@@ -131,10 +131,16 @@ def sparse_heuristic_with_cutoff(length, lb, ub, K=3, s=-2):
     for var in all_vars:
         kact_args.append([var])
 
+    for varsid in kact_args:
+        size = 3 ** len(varsid) - 1
+        total_size = total_size + size
+
     print("krelu: n", config.sparse_n,
-          "split_zero", len(all_vars),
-          "after cutoff", n_vars_above_cutoff,
-          "number of args", len(kact_args))
+          "; unstable neurons", len(all_vars),
+          "; neurons after cutoff", n_vars_above_cutoff,
+          "; groups", len(kact_args),
+          "; input constraints", total_size
+          )
 
     return kact_args
 
