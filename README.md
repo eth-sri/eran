@@ -830,7 +830,7 @@ The table below shows the certification performance of PRIMA (refinepoly with Pr
    <td>first 1000</td>
    <td>289</td>
    <td>8/255</td>
-   <td>290</td>
+   <td>253</td>
    <td>249</td>
    <td>63.5</td>
    <td>50</td>

@@ -131,6 +131,7 @@ def sparse_heuristic_with_cutoff(length, lb, ub, K=3, s=-2):
     for var in all_vars:
         kact_args.append([var])
 
+    total_size = 0
     for varsid in kact_args:
         size = 3 ** len(varsid) - 1
         total_size = total_size + size
