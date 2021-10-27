@@ -159,7 +159,7 @@ git clone https://github.com/eth-sri/ELINA.git
 cd ELINA
 ./configure -use-deeppoly -use-gurobi -use-fconv -use-cuda
 cd ./gpupoly/
-cmake
+cmake .
 cd ..
 make
 make install
