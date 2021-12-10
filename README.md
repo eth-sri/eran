@@ -349,7 +349,7 @@ Publications
 
    Mark Niklas Müller, Gleb Makarchuk, Gagandeep Singh, Markus Püschel, Martin Vechev
    
-   arXiv 2021.
+   POPL 2022.
    
 *  [Scaling Polyhedral Neural Network Verification on GPUs](https://www.sri.inf.ethz.ch/publications/mller2021neural)
 
