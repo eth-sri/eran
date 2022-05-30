@@ -303,6 +303,7 @@ class Analyzer:
                                 model.setObjective(obj, GRB.MINIMIZE)
                                 if self.complete:
                                     model.optimize(milp_callback)
+                                    assert model.Status not in [3, 4], f"Model status is {model.Status}: Infeasible Model encountered"
                                     if not hasattr(model,"objbound") or model.objbound <= 0:
                                         flag = False
                                         if self.label != -1:
